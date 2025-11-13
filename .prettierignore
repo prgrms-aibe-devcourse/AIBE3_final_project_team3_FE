@@ -1,0 +1,36 @@
+# ────────────────
+# ⚙️ Build & Cache
+# ────────────────
+.next
+dist
+build
+coverage
+.cache
+.turbo
+out
+*.tsbuildinfo
+
+# ────────────────
+# 🧩 Dependencies
+# ────────────────
+node_modules
+
+# ────────────────
+# 🔒 Environment Files
+# ────────────────
+.env
+.env.*
+.env.local
+.env.development
+.env.production
+
+# ────────────────
+# 🪵 Logs
+# ────────────────
+*.log
+
+# ────────────────
+# 🧪 Test / Reports
+# ────────────────
+reports
+.nyc_output

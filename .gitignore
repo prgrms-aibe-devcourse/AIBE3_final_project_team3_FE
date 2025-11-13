@@ -1,0 +1,75 @@
+# Node & Next.js
+node_modules/
+.next/
+out/
+dist/
+build/
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*.local
+npm-debug.log*
+.pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+.pnp.*
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# Operating System files
+.DS_Store
+Thumbs.db
+
+# Editor directories and files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Jest
+coverage/
+
+# Mac & Linux
+*.pid
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+override.tf
+override.tf.json
+
+# Java build artifacts (backend)
+**/target/
+**/*.class
+**/*.jar
+**/*.war
+
+# Other
+.env
+.vault
+.secret
+
+# Backup files
+*_backup.*
+*.backup
+*.bak
+
+# Optional: local dev files
+.local.env
+
+# If you have Docker
+docker-compose.override.yml
+
+# Ignore personal ssh config if present
+.ssh/

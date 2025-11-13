@@ -1,0 +1,78 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* Custom Scrollbar Styles */
+.overflow-y-auto::-webkit-scrollbar {
+  width: 6px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb {
+  background-color: #4b5563;
+  border-radius: 3px;
+  transition: background-color 0.2s ease;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background-color: #6b7280;
+}
+
+/* Hide scrollbar for participants dropdown on webkit browsers while keeping functionality */
+.participants-dropdown .overflow-y-auto::-webkit-scrollbar {
+  width: 4px;
+}
+
+.participants-dropdown .overflow-y-auto::-webkit-scrollbar-track {
+  background: #374151;
+  border-radius: 2px;
+}
+
+.participants-dropdown .overflow-y-auto::-webkit-scrollbar-thumb {
+  background-color: #4b5563;
+  border-radius: 2px;
+}
+
+.participants-dropdown .overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background-color: #6b7280;
+}
+
+/* 3D Card Flip Animation for Memory Palace */
+.backface-hidden {
+  backface-visibility: hidden;
+}
+
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}
+
+[class*="rotate-y"] {
+  transform-style: preserve-3d;
+}

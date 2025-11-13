@@ -1,0 +1,26 @@
+# Set default behavior, in case people don't have core.autocrlf set.
+* text=auto
+
+# Explicitly declare text files we want to always normalize and convert to LF in the repo
+*.js text
+*.jsx text
+*.ts text
+*.tsx text
+*.css text
+*.scss text
+*.html text
+*.json text
+*.md text
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.zip binary
+*.gz binary
+
+# Export-ignore (optional files we don't want in archives)
+README.md export-ignore
+*.local export-ignore
