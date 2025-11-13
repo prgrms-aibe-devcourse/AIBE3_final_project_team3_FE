@@ -1,30 +1,26 @@
 {
   "printWidth": 80,
   "tabWidth": 2,
-  "useTabs": false,
   "semi": false,
   "singleQuote": true,
   "trailingComma": "all",
-  "bracketSpacing": true,
-  "bracketSameLine": false,
-  "arrowParens": "always",
-  "proseWrap": "preserve",
-  "endOfLine": "auto",
-  "quoteProps": "as-needed",
-  "htmlWhitespaceSensitivity": "css",
-  "vueIndentScriptAndStyle": false,
-  "singleAttributePerLine": false,
-  "objectWrap": "preserve",
+  "endOfLine": "lf",
+
   "plugins": ["@trivago/prettier-plugin-sort-imports"],
   "importOrder": [
-    "^next-(.*)$",
-    "^next/(.*)$",
-    "^@/lib/backend/client",
-    "^@/lib/(.*)$",
+    "^react$",
+    "^next($|/)",
+    "^[a-zA-Z0-9]",
+    "^@/global/(.*)$",
+    "^@/features/(.*)$",
     "^@/components/ui/(.*)$",
+    "^@/(.*)$",
     "^lucide-react$",
-    "^[./]"
+    "^[./]",
+    ".(css|scss|sass)$"
   ],
   "importOrderSeparation": true,
-  "importOrderSortSpecifiers": true
+  "importOrderSortSpecifiers": true,
+  "importOrderParserPlugins": ["typescript", "jsx"],
+  "importOrderGroupNamespaceSpecifiers": true
 }

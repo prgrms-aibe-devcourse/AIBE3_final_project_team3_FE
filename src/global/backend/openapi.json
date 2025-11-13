@@ -1,0 +1,984 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API 서버",
+    "description": "API 서버 문서입니다.",
+    "version": "beta"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "Generated server url"
+    }
+  ],
+  "tags": [
+    {
+      "name": "ApiV1AuthController",
+      "description": "API 인증/인가 컨트롤러"
+    },
+    {
+      "name": "ApiV1FriendshipController",
+      "description": "API 친구관계 컨트롤러"
+    }
+  ],
+  "paths": {
+    "/api/v1/member/friends": {
+      "post": {
+        "tags": [
+          "ApiV1FriendshipController"
+        ],
+        "operationId": "sendFriendRequest",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "integer",
+                "format": "int64"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseLong"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/chats/rooms/{roomId}/reportUser": {
+      "post": {
+        "tags": [
+          "chat-controller"
+        ],
+        "operationId": "reportUser",
+        "parameters": [
+          {
+            "name": "roomId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/chats/rooms/{roomId}/message": {
+      "post": {
+        "tags": [
+          "chat-controller"
+        ],
+        "operationId": "sendMessage",
+        "parameters": [
+          {
+            "name": "roomId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "memberId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseMessageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/chats/rooms/{roomId}/files": {
+      "post": {
+        "tags": [
+          "chat-controller"
+        ],
+        "operationId": "uploadFile",
+        "parameters": [
+          {
+            "name": "roomId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "messageType",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "TEXT",
+                "IMAGE",
+                "FILE",
+                "SYSTEM"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                },
+                "required": [
+                  "file"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseMessageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/chats/rooms/{roomId}/block": {
+      "post": {
+        "tags": [
+          "chat-controller"
+        ],
+        "operationId": "blockUser",
+        "parameters": [
+          {
+            "name": "roomId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/chats/rooms/public": {
+      "post": {
+        "tags": [
+          "chat-controller"
+        ],
+        "operationId": "createPublicGroupRoom",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePublicChatReq"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseChatRoomResp"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/chats/rooms/group": {
+      "post": {
+        "tags": [
+          "chat-controller"
+        ],
+        "operationId": "createGroupRoom",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateGroupChatReq"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseChatRoomResp"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/chats/rooms/direct": {
+      "post": {
+        "tags": [
+          "chat-controller"
+        ],
+        "operationId": "createDirectRoom",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDirectChatReq"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseChatRoomResp"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/sign-in": {
+      "post": {
+        "tags": [
+          "ApiV1AuthController"
+        ],
+        "summary": "로그인",
+        "description": "사용자 인증을 수행하고 토큰을 발급합니다.",
+        "operationId": "signIn",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SigninReq"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseString"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/reissue": {
+      "post": {
+        "tags": [
+          "ApiV1AuthController"
+        ],
+        "summary": "토큰 재발급",
+        "description": "만료된 액세스 토큰을 재발급합니다.",
+        "operationId": "reissue",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseString"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/join": {
+      "post": {
+        "tags": [
+          "ApiV1AuthController"
+        ],
+        "summary": "회원가입",
+        "description": "새로운 사용자를 회원으로 가입시킵니다.",
+        "operationId": "join",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemberJoinReq"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseMemberSummaryResp"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/member/friends/{requestId}/reject": {
+      "patch": {
+        "tags": [
+          "ApiV1FriendshipController"
+        ],
+        "operationId": "rejectRequest",
+        "parameters": [
+          {
+            "name": "requestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/member/friends/{requestId}/accept": {
+      "patch": {
+        "tags": [
+          "ApiV1FriendshipController"
+        ],
+        "operationId": "acceptRequest",
+        "parameters": [
+          {
+            "name": "requestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/chats/rooms": {
+      "get": {
+        "tags": [
+          "chat-controller"
+        ],
+        "operationId": "getRooms",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListChatRoomResp"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/chats/rooms/{roomId}/messages": {
+      "get": {
+        "tags": [
+          "chat-controller"
+        ],
+        "operationId": "getMessages",
+        "parameters": [
+          {
+            "name": "roomId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListMessageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/": {
+      "get": {
+        "tags": [
+          "home-controller"
+        ],
+        "operationId": "main",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/member/friends/{friendId}": {
+      "delete": {
+        "tags": [
+          "ApiV1FriendshipController"
+        ],
+        "operationId": "deleteFriend",
+        "parameters": [
+          {
+            "name": "friendId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/chats/rooms/{roomId}/leave": {
+      "delete": {
+        "tags": [
+          "chat-controller"
+        ],
+        "operationId": "leaveRoom",
+        "parameters": [
+          {
+            "name": "roomId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ApiResponseLong": {
+        "type": "object",
+        "properties": {
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "required": [
+          "msg"
+        ]
+      },
+      "ApiResponseVoid": {
+        "type": "object",
+        "properties": {
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            
+          }
+        },
+        "required": [
+          "msg"
+        ]
+      },
+      "ApiResponseMessageResponse": {
+        "type": "object",
+        "properties": {
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/MessageResponse"
+          }
+        },
+        "required": [
+          "msg"
+        ]
+      },
+      "MessageResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "senderId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "sender": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "messageType": {
+            "type": "string",
+            "enum": [
+              "TEXT",
+              "IMAGE",
+              "FILE",
+              "SYSTEM"
+            ]
+          },
+          "amount": {
+            "type": "number",
+            "format": "double"
+          },
+          "memo": {
+            "type": "string"
+          },
+          "serviceId": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "CreatePublicChatReq": {
+        "type": "object",
+        "properties": {
+          "roomName": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "roomName"
+        ]
+      },
+      "ApiResponseChatRoomResp": {
+        "type": "object",
+        "properties": {
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ChatRoomResp"
+          }
+        },
+        "required": [
+          "msg"
+        ]
+      },
+      "ChatRoomResp": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "roomType": {
+            "type": "string",
+            "enum": [
+              "DIRECT",
+              "GROUP"
+            ]
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MemberDto"
+            }
+          }
+        }
+      },
+      "MemberDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "nickname": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateGroupChatReq": {
+        "type": "object",
+        "properties": {
+          "roomName": {
+            "type": "string"
+          },
+          "memberIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "memberIds",
+          "roomName"
+        ]
+      },
+      "CreateDirectChatReq": {
+        "type": "object",
+        "properties": {
+          "partnerId": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "required": [
+          "partnerId"
+        ]
+      },
+      "SigninReq": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "사용자 이메일 주소",
+            "example": "user@example.com"
+          },
+          "password": {
+            "type": "string",
+            "description": "비밀번호 (8자 이상, 대소문자/숫자 필수)",
+            "example": "P@sswOrd123",
+            "maxLength": 20,
+            "minLength": 8
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ]
+      },
+      "ApiResponseString": {
+        "type": "object",
+        "properties": {
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "msg"
+        ]
+      },
+      "MemberJoinReq": {
+        "type": "object",
+        "description": "사용자의 회원가입 요청 정보",
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "사용자 이메일 주소",
+            "example": "user@example.com"
+          },
+          "password": {
+            "type": "string",
+            "description": "비밀번호 (8자 이상, 대소문자/숫자 필수)",
+            "example": "P@sswOrd123",
+            "maxLength": 20,
+            "minLength": 8
+          },
+          "passwordConfirm": {
+            "type": "string",
+            "description": "비밀번호 확인 (password와 일치해야 함)"
+          },
+          "name": {
+            "type": "string",
+            "description": "실명"
+          },
+          "country": {
+            "type": "string",
+            "description": "국가 코드 (ISO 3166 Alpha-2)",
+            "example": "KR"
+          },
+          "nickname": {
+            "type": "string",
+            "description": "사용자 닉네임",
+            "example": "MixMaster"
+          },
+          "englishLevel": {
+            "type": "string",
+            "description": "영어 실력 레벨",
+            "enum": [
+              "BEGINNER",
+              "INTERMEDIATE",
+              "ADVANCED",
+              "NATIVE"
+            ]
+          },
+          "interest": {
+            "type": "string",
+            "description": "관심사",
+            "example": "요리, 여행"
+          },
+          "description": {
+            "type": "string",
+            "description": "자기소개"
+          }
+        },
+        "required": [
+          "country",
+          "description",
+          "email",
+          "englishLevel",
+          "interest",
+          "name",
+          "nickname",
+          "password",
+          "passwordConfirm"
+        ]
+      },
+      "ApiResponseMemberSummaryResp": {
+        "type": "object",
+        "properties": {
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/MemberSummaryResp"
+          }
+        },
+        "required": [
+          "msg"
+        ]
+      },
+      "MemberSummaryResp": {
+        "type": "object",
+        "description": "회원가입 완료 또는 멤버 조회 시 반환되는 요약된 사용자 정보",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "사용자 고유 ID",
+            "example": 1
+          },
+          "name": {
+            "type": "string",
+            "description": "사용자의 실명",
+            "example": "홍길동"
+          },
+          "country": {
+            "type": "string",
+            "description": "국가 코드 (Alpha-2)",
+            "example": "KR"
+          },
+          "nickname": {
+            "type": "string",
+            "description": "사용자 닉네임",
+            "example": "MixMaster"
+          },
+          "englishLevel": {
+            "type": "string",
+            "description": "영어 실력 레벨",
+            "example": "INTERMEDIATE"
+          },
+          "interest": {
+            "type": "string",
+            "description": "관심사 목록",
+            "example": "TRAVEL, FOOD"
+          },
+          "description": {
+            "type": "string",
+            "description": "자기소개"
+          }
+        }
+      },
+      "ApiResponseListChatRoomResp": {
+        "type": "object",
+        "properties": {
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChatRoomResp"
+            }
+          }
+        },
+        "required": [
+          "msg"
+        ]
+      },
+      "ApiResponseListMessageResponse": {
+        "type": "object",
+        "properties": {
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MessageResponse"
+            }
+          }
+        },
+        "required": [
+          "msg"
+        ]
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}
