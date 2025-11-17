@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useMembersQuery } from "@/global/api/useMemberQuery";
+import { useMembersQuery, useCreateDirectChat } from "@/global/api/useMemberQuery";
 import { MemberSummaryResp } from "@/global/types/auth.types";
 
 // A simple utility to generate a placeholder avatar
@@ -10,10 +10,12 @@ const getAvatar = (name: string) => `https://i.pravatar.cc/150?u=${name}`;
 export default function FindPage() {
   const { data: members, isLoading, error } = useMembersQuery();
   const [selectedUser, setSelectedUser] = useState<MemberSummaryResp | null>(null);
+  const createChatMutation = useCreateDirectChat();
 
   const startChat = (user: MemberSummaryResp) => {
-    // This would typically navigate to a chat page or open a chat modal
-    alert(`Starting chat with ${user.nickname}...`);
+    if (window.confirm(`${user.nickname}님과 채팅을 시작하시겠습니까?`)) {
+      createChatMutation.mutate({ partnerId: user.id });
+    }
   };
 
   const sendFriendRequest = (user: MemberSummaryResp) => {
@@ -83,7 +85,7 @@ export default function FindPage() {
                 INTERESTS
               </p>
               <div className="flex flex-wrap gap-1">
-                {user.interest.slice(0, 3).map((interest, index) => (
+                {user.interests.slice(0, 3).map((interest, index) => (
                   <span
                     key={index}
                     className="px-2 py-1 bg-emerald-600 text-white text-xs rounded-full"
@@ -182,7 +184,7 @@ export default function FindPage() {
                     Interests
                   </h3>
                   <div className="flex flex-wrap gap-2">
-                    {selectedUser.interest.split(',').map((interest, index) => (
+                    {selectedUser.interests.map((interest, index) => (
                       <span
                         key={index}
                         className="px-3 py-1 bg-emerald-600 text-white rounded-full text-sm"

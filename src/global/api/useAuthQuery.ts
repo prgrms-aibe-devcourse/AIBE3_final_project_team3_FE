@@ -14,7 +14,7 @@ import type { paths } from "../backend/schema"; // openapi-typescript로 생성�
 
 // 내 정보 조회
 const me = async () => {
-  const response = await client.GET("/api/v1/member/me", {}); // 실제 API 경로 확인 필요
+  const response = await client.GET("/api/v1/members/me", {}); // 실제 API 경로 확인 필요
   return unwrap<MemberSummaryResp>(response);
 };
 
@@ -59,14 +59,34 @@ export const useLogin = () => {
   return useMutation({
     mutationKey: authQueryKeys.login().queryKey,
     mutationFn: login,
-    onSuccess: (token) => {
-      setAccessToken(token); // Zustand 스토어에 토큰 저장
-      // 로그인 성공 후 내 정보 쿼리 무효화하여 최신 정보 가져오도록 유도
-      qc.invalidateQueries({ queryKey: authQueryKeys.me().queryKey });
-      // 또는 직접 내 정보 가져와서 저장 (옵션)
-      // qc.fetchQuery({ queryKey: authQueryKeys.me().queryKey, queryFn: me })
-      //   .then(memberData => setMember(memberData))
-      //   .catch(err => console.error("Failed to fetch member after login", err));
+    onSuccess: async (token) => {
+      console.log("Login successful. Received token:", token); // 로그 추가
+      // 1. 토큰을 먼저 스토어에 저장합니다.
+      setAccessToken(token);
+
+      try {
+        // 2. 방금 받은 토큰을 직접 사용하여 사용자 정보를 가져옵니다.
+        const memberData = await client.GET("/api/v1/members/me", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const unwrappedMemberData = await unwrap<MemberSummaryResp>(memberData);
+        console.log("Fetched member data after login:", unwrappedMemberData); // 기존 로그 유지
+        console.log("Member data to be stored in useLoginStore:", unwrappedMemberData); // 추가 로그
+        
+        // 3. 가져온 사용자 정보를 스토어에 저장합니다.
+        setMember(unwrappedMemberData);
+
+        // 4. 관련 쿼리를 무효화하여 다른 곳에서도 최신 데이터를 사용하도록 합니다.
+        await qc.invalidateQueries({ queryKey: authQueryKeys.me().queryKey });
+
+      } catch (err) {
+        console.error("로그인 후 사용자 정보를 가져오는 데 실패했습니다.", err);
+        // 토큰은 저장되었지만 사용자 정보가 없을 수 있으므로,
+        // 이 경우를 대비한 추가 처리가 필요할 수 있습니다.
+      }
     },
   });
 };

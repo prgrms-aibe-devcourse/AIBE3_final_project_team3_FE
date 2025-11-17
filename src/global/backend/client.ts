@@ -6,6 +6,11 @@ import { useLoginStore } from "../stores/useLoginStore";
 const customFetch: typeof fetch = async (input, init) => {
   const { accessToken } = useLoginStore.getState();
 
+  // 추가된 디버깅 코드
+  console.log("[API Client] Requesting:", input);
+  console.log("[API Client] Token being sent:", accessToken);
+  // ---
+
   // openapi-fetch가 생성한 Request 객체를 먼저 만듭니다.
   // 이렇게 하면 openapi-fetch가 설정한 기본 헤더(Content-Type 등)를 유지할 수 있습니다.
   const request = new Request(input, init);

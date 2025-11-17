@@ -8,6 +8,20 @@ export type UserLoginReqBody = components["schemas"]["SigninReq"];
 // components.schemas.MemberSummaryResp를 직접 사용
 export type MemberSummaryResp = components["schemas"]["MemberSummaryResp"];
 
+export type CustomResponse<T> = {
+  msg: string;
+  data?: T;
+};
+
+export type MessageResp = {
+  id: string;
+  senderId: number;
+  sender: string;
+  content: string;
+  createdAt: string; // ISO 8601 형식의 문자열
+  messageType: "TALK" | "IMAGE" | "FILE" | "SYSTEM"; // 백엔드 ChatMessage.MessageType enum 값에 따라
+};
+
 // Zustand 로그인 스토어의 상태 타입 정의 (프론트엔드 전용이므로 수동 정의 유지)
 export interface LoginState {
   member: MemberSummaryResp | null;

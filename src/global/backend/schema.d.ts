@@ -4,6 +4,34 @@
  */
 
 export interface paths {
+    "/api/v1/prompt/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 프롬프트 상세 조회
+         * @description 프리미엄 회원만 자신이 작성한 커스텀 프롬프트 상세정보를 조회할 수 있습니다.
+         */
+        get: operations["detail"];
+        /**
+         * 프롬프트 수정
+         * @description 본인이 생성한 커스텀 프롬프트를 수정합니다. (PREMIUM 회원만 가능)
+         */
+        put: operations["update"];
+        post?: never;
+        /**
+         * 프롬프트 삭제
+         * @description 본인이 생성한 커스텀 프롬프트를 삭제합니다. (PREMIUM 회원만 가능)
+         */
+        delete: operations["delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/members/profile": {
         parameters: {
             query?: never;
@@ -64,7 +92,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/member/friends": {
+    "/api/v1/prompt/create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 프롬프트 생성
+         * @description 새로운 커스텀 프롬프트를 DB에 저장합니다. (PREMIUM 회원만 가능)
+         */
+        post: operations["create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/members/friends": {
         parameters: {
             query?: never;
             header?: never;
@@ -84,14 +132,18 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/learning/notes": {
+    "/api/v1/learning-notes": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * 학습노트 목록 조회
+         * @description 태그와 학습 상태를 기준으로 회원의 학습노트를 조회합니다.
+         */
+        get: operations["getLearningNotes"];
         put?: never;
         /**
          * 학습노트 생성
@@ -304,7 +356,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/member/friends/{requestId}/reject": {
+    "/api/v1/notifications/read/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * 특정 알림 읽음 처리
+         * @description 특정 알림 ID를 읽음 처리합니다.
+         */
+        patch: operations["markAsRead"];
+        trace?: never;
+    };
+    "/api/v1/notifications/read-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * 모든 알림 읽음 처리
+         * @description 인증된 사용자의 모든 읽지 않은 알림을 읽음 처리합니다.
+         */
+        patch: operations["markAllAsRead"];
+        trace?: never;
+    };
+    "/api/v1/members/friends/{requestId}/reject": {
         parameters: {
             query?: never;
             header?: never;
@@ -324,7 +416,7 @@ export interface paths {
         patch: operations["rejectRequest"];
         trace?: never;
     };
-    "/api/v1/member/friends/{requestId}/accept": {
+    "/api/v1/members/friends/{requestId}/accept": {
         parameters: {
             query?: never;
             header?: never;
@@ -342,6 +434,46 @@ export interface paths {
          * @description 받은 친구 요청을 수락하여 친구 관계를 맺습니다.
          */
         patch: operations["acceptRequest"];
+        trace?: never;
+    };
+    "/api/v1/learning-notes/feedbacks/{feedbackId}/mark/unlearned": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * 피드백 학습 미완료로 변경
+         * @description 해당 피드백을 학습 미완료 상태로 변경합니다.
+         */
+        patch: operations["markUnLearned"];
+        trace?: never;
+    };
+    "/api/v1/learning-notes/feedbacks/{feedbackId}/mark/learned": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * 피드백 학습 완료로 변경
+         * @description 해당 피드백을 학습 완료 상태로 변경합니다.
+         */
+        patch: operations["markLearned"];
         trace?: never;
     };
     "/api/v1/admin/reports/{reportId}": {
@@ -364,7 +496,51 @@ export interface paths {
         patch: operations["updateReportStatus"];
         trace?: never;
     };
-    "/api/v1/find/members": {
+    "/api/v1/prompt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 프롬프트 목록 조회
+         * @description 사용 가능한 프롬프트 목록을 id와 제목만 조회합니다. (회원 등급별로 다름)
+         */
+        get: operations["list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 알림 목록 조회
+         * @description 인증된 사용자의 알림 목록을 최신순으로 페이지네이션하여 조회합니다.
+         */
+        get: operations["getNotifications"];
+        put?: never;
+        post?: never;
+        /**
+         * 모든 알림 삭제
+         * @description 인증된 사용자의 모든 알림을 삭제합니다.
+         */
+        delete: operations["deleteAllNotification"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/members": {
         parameters: {
             query?: never;
             header?: never;
@@ -373,9 +549,49 @@ export interface paths {
         };
         /**
          * 모든 회원 목록 조회
-         * @description 채팅 상대로 추가할 수 있는 모든 회원 목록을 조회합니다.
+         * @description 채팅 상대로 추가할 수 있는 모든 회원 목록을 조회합니다. 자기 자신은 목록에서 제외됩니다.
          */
         get: operations["findAllMembers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/members/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 회원 상세 프로필 조회
+         * @description 특정 회원의 상세 프로필을 조회합니다. 토큰이 없거나 유효하지 않아도 조회 가능합니다. 로그인된 경우 친구/요청 상태 정보가 추가됩니다.
+         */
+        get: operations["getMemberProfile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/members/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 내 정보 조회
+         * @description 인증된 사용자의 프로필 정보를 조회합니다.
+         */
+        get: operations["getMyProfile"];
         put?: never;
         post?: never;
         delete?: never;
@@ -444,7 +660,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/member/friends/{friendId}": {
+    "/api/v1/notifications/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * 특정 알림 삭제
+         * @description 특정 알림 ID를 삭제합니다.
+         */
+        delete: operations["deleteNotification"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/members/friends/{friendId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -488,6 +724,29 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** @description 프롬프트 생성/수정 요청 DTO */
+        PromptReq: {
+            /**
+             * @description 프롬프트 제목
+             * @example 상황극 프롬프트
+             */
+            title: string;
+            /**
+             * @description 프롬프트 내용
+             * @example 프롬프트 작성 예시 ...
+             */
+            content: string;
+            /**
+             * @description 프롬프트 타입
+             * @example CUSTOM
+             */
+            promptType: string;
+        };
+        CustomResponse: {
+            msg: string;
+            data?: unknown;
+        };
+        ApiResponse: unknown;
         /** @description 회원 정보 수정 요청 DTO */
         MemberInfoModifyReq: {
             /** @description 실명 */
@@ -515,7 +774,6 @@ export interface components {
             /** @description 자기소개 */
             description: string;
         };
-        ApiResponse: unknown;
         /** @description 신고 생성 요청 데이터 */
         ReportCreateReq: {
             /**
@@ -542,7 +800,7 @@ export interface components {
             reportedReason?: string;
         };
         /** @description 개별 피드백 항목 */
-        FeedbackItemReq: {
+        FeedbackCreateReq: {
             /**
              * @description 피드백 태그
              * @example Grammar
@@ -568,12 +826,6 @@ export interface components {
         /** @description 학습노트 생성 요청 */
         LearningNoteCreateReq: {
             /**
-             * Format: int64
-             * @description 학습노트를 소유할 회원 ID
-             * @example 123
-             */
-            memberId: number;
-            /**
              * @description 원본 텍스트
              * @example I goes to school every day.
              */
@@ -587,14 +839,14 @@ export interface components {
              * @description 피드백 리스트
              * @example [
              *       {
-             *         "tag": "Grammar",
+             *         "tag": "GRAMMAR",
              *         "problem": "goes",
              *         "correction": "go",
              *         "extra": "시제 수정"
              *       }
              *     ]
              */
-            feedback: components["schemas"]["FeedbackItemReq"][];
+            feedback: components["schemas"]["FeedbackCreateReq"][];
         };
         /** @description 텍스트 메시지 전송 요청 (WebSocket) */
         TextMessageReq: {
@@ -638,7 +890,8 @@ export interface components {
              */
             partnerId: number;
         };
-        SigninReq: {
+        /** @description 로그인 요청 DTO */
+        SignInReq: {
             /**
              * @description 사용자 이메일 주소
              * @example user@example.com
@@ -662,7 +915,10 @@ export interface components {
              * @example P@sswOrd123
              */
             password: string;
-            /** @description 비밀번호 확인 (password와 일치해야 함) */
+            /**
+             * @description 비밀번호 확인 (password와 일치해야 함)
+             * @example P@sswOrd123
+             */
             passwordConfirm: string;
             /** @description 실명 */
             name: string;
@@ -682,8 +938,11 @@ export interface components {
              */
             englishLevel: "BEGINNER" | "INTERMEDIATE" | "ADVANCED" | "NATIVE";
             /**
-             * @description 관심사
-             * @example 요리, 여행
+             * @description 관심사 목록 (최소 1개 이상 필수)
+             * @example [
+             *       "요리",
+             *       "여행"
+             *     ]
              */
             interests: string[];
             /** @description 자기소개 */
@@ -698,45 +957,12 @@ export interface components {
              */
             status: "WAITING" | "REVIEWING" | "APPROVED" | "REJECTED";
         };
-        ApiResponseListMemberSummaryResp: {
-            msg: string;
-            data?: components["schemas"]["MemberSummaryResp"][];
-        };
-        /** @description 회원가입 완료 또는 멤버 조회 시 반환되는 요약된 사용자 정보 */
-        MemberSummaryResp: {
-            /**
-             * Format: int64
-             * @description 사용자 고유 ID
-             * @example 1
-             */
-            id?: number;
-            /**
-             * @description 사용자의 실명
-             * @example 홍길동
-             */
-            name?: string;
-            /**
-             * @description 국가 코드 (Alpha-2)
-             * @example KR
-             */
-            country?: string;
-            /**
-             * @description 사용자 닉네임
-             * @example MixMaster
-             */
-            nickname?: string;
-            /**
-             * @description 영어 실력 레벨
-             * @example INTERMEDIATE
-             */
-            englishLevel?: string;
-            /**
-             * @description 관심사 목록
-             * @example TRAVEL, FOOD
-             */
-            interest?: string[];
-            /** @description 자기소개 */
-            description?: string;
+        Pageable: {
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            size?: number;
+            sort?: string[];
         };
     };
     responses: never;
@@ -747,6 +973,260 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    detail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 요청 처리 성공 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "요청 성공 메시지(메시지 내용은 다를 수 있음)"
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 잘못된 요청 (BAD_REQUEST) - 유효성 검증 실패 또는 필수 값 누락 등 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "요청 본문의 형식이 잘못되었거나 필수 값이 누락되었습니다."
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 인증 실패 (UNAUTHORIZED) - 유효하지 않은 토큰 또는 인증 정보 누락 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "인증 정보가 유효하지 않거나 누락되었습니다."
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 접근 권한 없음 (FORBIDDEN) - 인증은 성공했으나 해당 리소스 접근 권한이 없음 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "해당 리소스에 접근할 권한이 없습니다."
+                     *     }
+                     */
+                    "*/*": components["schemas"]["CustomResponse"];
+                };
+            };
+            /** @description 리소스를 찾을 수 없음 (NOT_FOUND) - 존재하지 않는 경로 또는 일반적인 리소스 미발견 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "요청하신 경로를 찾을 수 없습니다."
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+        };
+    };
+    update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        /** @description 프롬프트 수정 정보 */
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PromptReq"];
+            };
+        };
+        responses: {
+            /** @description 요청 처리 성공 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "요청 성공 메시지(메시지 내용은 다를 수 있음)"
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 잘못된 요청 (BAD_REQUEST) - 유효성 검증 실패 또는 필수 값 누락 등 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "요청 본문의 형식이 잘못되었거나 필수 값이 누락되었습니다."
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 인증 실패 (UNAUTHORIZED) - 유효하지 않은 토큰 또는 인증 정보 누락 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "인증 정보가 유효하지 않거나 누락되었습니다."
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 접근 권한 없음 (FORBIDDEN) - 인증은 성공했으나 해당 리소스 접근 권한이 없음 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "해당 리소스에 접근할 권한이 없습니다."
+                     *     }
+                     */
+                    "*/*": components["schemas"]["CustomResponse"];
+                };
+            };
+            /** @description 리소스를 찾을 수 없음 (NOT_FOUND) - 존재하지 않는 경로 또는 일반적인 리소스 미발견 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "요청하신 경로를 찾을 수 없습니다."
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+        };
+    };
+    delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 요청 처리 성공 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "요청 성공 메시지(메시지 내용은 다를 수 있음)"
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 잘못된 요청 (BAD_REQUEST) - 유효성 검증 실패 또는 필수 값 누락 등 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "요청 본문의 형식이 잘못되었거나 필수 값이 누락되었습니다."
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 인증 실패 (UNAUTHORIZED) - 유효하지 않은 토큰 또는 인증 정보 누락 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "인증 정보가 유효하지 않거나 누락되었습니다."
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 접근 권한 없음 (FORBIDDEN) - 인증은 성공했으나 해당 리소스 접근 권한이 없음 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "해당 리소스에 접근할 권한이 없습니다."
+                     *     }
+                     */
+                    "*/*": components["schemas"]["CustomResponse"];
+                };
+            };
+            /** @description 리소스를 찾을 수 없음 (NOT_FOUND) - 존재하지 않는 경로 또는 일반적인 리소스 미발견 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "요청하신 경로를 찾을 수 없습니다."
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+        };
+    };
     updateMyProfile: {
         parameters: {
             query?: never;
@@ -967,6 +1447,92 @@ export interface operations {
             };
         };
     };
+    create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description 프롬프트 생성 정보 */
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PromptReq"];
+            };
+        };
+        responses: {
+            /** @description 요청 처리 성공 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "요청 성공 메시지(메시지 내용은 다를 수 있음)"
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 잘못된 요청 (BAD_REQUEST) - 유효성 검증 실패 또는 필수 값 누락 등 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "요청 본문의 형식이 잘못되었거나 필수 값이 누락되었습니다."
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 인증 실패 (UNAUTHORIZED) - 유효하지 않은 토큰 또는 인증 정보 누락 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "인증 정보가 유효하지 않거나 누락되었습니다."
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 접근 권한 없음 (FORBIDDEN) - 인증은 성공했으나 해당 리소스 접근 권한이 없음 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "해당 리소스에 접근할 권한이 없습니다."
+                     *     }
+                     */
+                    "*/*": components["schemas"]["CustomResponse"];
+                };
+            };
+            /** @description 리소스를 찾을 수 없음 (NOT_FOUND) - 존재하지 않는 경로 또는 일반적인 리소스 미발견 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "요청하신 경로를 찾을 수 없습니다."
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+        };
+    };
     sendFriendRequest: {
         parameters: {
             query?: never;
@@ -980,6 +1546,86 @@ export interface operations {
                 "application/json": string;
             };
         };
+        responses: {
+            /** @description 요청 처리 성공 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "요청 성공 메시지(메시지 내용은 다를 수 있음)"
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 잘못된 요청 (BAD_REQUEST) - 유효성 검증 실패 또는 필수 값 누락 등 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "요청 본문의 형식이 잘못되었거나 필수 값이 누락되었습니다."
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 인증 실패 (UNAUTHORIZED) - 유효하지 않은 토큰 또는 인증 정보 누락 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "인증 정보가 유효하지 않거나 누락되었습니다."
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 리소스를 찾을 수 없음 (NOT_FOUND) - 존재하지 않는 경로 또는 일반적인 리소스 미발견 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "요청하신 경로를 찾을 수 없습니다."
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+        };
+    };
+    getLearningNotes: {
+        parameters: {
+            query: {
+                /** @description 페이지 정보 */
+                pageable: components["schemas"]["Pageable"];
+                /**
+                 * @description 번역 태그
+                 * @example TRANSLATION
+                 */
+                tag: "GRAMMAR" | "VOCABULARY" | "TRANSLATION";
+                /**
+                 * @description 학습 상태
+                 * @example LEARNED
+                 */
+                learningFilter: "ALL" | "LEARNED" | "UNLEARNED";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description 요청 처리 성공 */
             200: {
@@ -1631,7 +2277,7 @@ export interface operations {
         /** @description 로그인 정보 */
         requestBody: {
             content: {
-                "application/json": components["schemas"]["SigninReq"];
+                "application/json": components["schemas"]["SignInReq"];
             };
         };
         responses: {
@@ -1804,6 +2450,146 @@ export interface operations {
             };
         };
     };
+    markAsRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description 읽음 처리할 알림의 ID
+                 * @example 10
+                 */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 요청 처리 성공 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "요청 성공 메시지(메시지 내용은 다를 수 있음)"
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 잘못된 요청 (BAD_REQUEST) - 유효성 검증 실패 또는 필수 값 누락 등 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "요청 본문의 형식이 잘못되었거나 필수 값이 누락되었습니다."
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 인증 실패 (UNAUTHORIZED) - 유효하지 않은 토큰 또는 인증 정보 누락 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "인증 정보가 유효하지 않거나 누락되었습니다."
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 리소스를 찾을 수 없음 (NOT_FOUND) - 존재하지 않는 경로 또는 일반적인 리소스 미발견 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "요청하신 경로를 찾을 수 없습니다."
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+        };
+    };
+    markAllAsRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 요청 처리 성공 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "요청 성공 메시지(메시지 내용은 다를 수 있음)"
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 잘못된 요청 (BAD_REQUEST) - 유효성 검증 실패 또는 필수 값 누락 등 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "요청 본문의 형식이 잘못되었거나 필수 값이 누락되었습니다."
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 인증 실패 (UNAUTHORIZED) - 유효하지 않은 토큰 또는 인증 정보 누락 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "인증 정보가 유효하지 않거나 누락되었습니다."
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 리소스를 찾을 수 없음 (NOT_FOUND) - 존재하지 않는 경로 또는 일반적인 리소스 미발견 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "요청하신 경로를 찾을 수 없습니다."
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+        };
+    };
     rejectRequest: {
         parameters: {
             query?: never;
@@ -1869,7 +2655,7 @@ export interface operations {
                      *       "msg": "해당 리소스에 접근할 권한이 없습니다."
                      *     }
                      */
-                    "*/*": components["schemas"]["ApiResponse"];
+                    "*/*": components["schemas"]["CustomResponse"];
                 };
             };
             /** @description 리소스를 찾을 수 없음 (NOT_FOUND) - 존재하지 않는 경로 또는 일반적인 리소스 미발견 */
@@ -1951,6 +2737,152 @@ export interface operations {
                     /**
                      * @example {
                      *       "msg": "해당 리소스에 접근할 권한이 없습니다."
+                     *     }
+                     */
+                    "*/*": components["schemas"]["CustomResponse"];
+                };
+            };
+            /** @description 리소스를 찾을 수 없음 (NOT_FOUND) - 존재하지 않는 경로 또는 일반적인 리소스 미발견 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "요청하신 경로를 찾을 수 없습니다."
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+        };
+    };
+    markUnLearned: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description 피드백 ID
+                 * @example 1
+                 */
+                feedbackId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 요청 처리 성공 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "요청 성공 메시지(메시지 내용은 다를 수 있음)"
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 잘못된 요청 (BAD_REQUEST) - 유효성 검증 실패 또는 필수 값 누락 등 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "요청 본문의 형식이 잘못되었거나 필수 값이 누락되었습니다."
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 인증 실패 (UNAUTHORIZED) - 유효하지 않은 토큰 또는 인증 정보 누락 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "인증 정보가 유효하지 않거나 누락되었습니다."
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 리소스를 찾을 수 없음 (NOT_FOUND) - 존재하지 않는 경로 또는 일반적인 리소스 미발견 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "요청하신 경로를 찾을 수 없습니다."
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+        };
+    };
+    markLearned: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description 피드백 ID
+                 * @example 1
+                 */
+                feedbackId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 요청 처리 성공 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "요청 성공 메시지(메시지 내용은 다를 수 있음)"
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 잘못된 요청 (BAD_REQUEST) - 유효성 검증 실패 또는 필수 값 누락 등 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "요청 본문의 형식이 잘못되었거나 필수 값이 누락되었습니다."
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 인증 실패 (UNAUTHORIZED) - 유효하지 않은 토큰 또는 인증 정보 누락 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "인증 정보가 유효하지 않거나 누락되었습니다."
                      *     }
                      */
                     "*/*": components["schemas"]["ApiResponse"];
@@ -2045,6 +2977,210 @@ export interface operations {
                      *       "msg": "해당 리소스에 접근할 권한이 없습니다."
                      *     }
                      */
+                    "*/*": components["schemas"]["CustomResponse"];
+                };
+            };
+            /** @description 리소스를 찾을 수 없음 (NOT_FOUND) - 존재하지 않는 경로 또는 일반적인 리소스 미발견 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "요청하신 경로를 찾을 수 없습니다."
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+        };
+    };
+    list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 요청 처리 성공 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "요청 성공 메시지(메시지 내용은 다를 수 있음)"
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 잘못된 요청 (BAD_REQUEST) - 유효성 검증 실패 또는 필수 값 누락 등 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "요청 본문의 형식이 잘못되었거나 필수 값이 누락되었습니다."
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 인증 실패 (UNAUTHORIZED) - 유효하지 않은 토큰 또는 인증 정보 누락 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "인증 정보가 유효하지 않거나 누락되었습니다."
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 리소스를 찾을 수 없음 (NOT_FOUND) - 존재하지 않는 경로 또는 일반적인 리소스 미발견 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "요청하신 경로를 찾을 수 없습니다."
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+        };
+    };
+    getNotifications: {
+        parameters: {
+            query: {
+                /** @description 페이지네이션 정보 (size=20, sort=createdAt, direction=DESC 기본값) */
+                pageable: components["schemas"]["Pageable"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 요청 처리 성공 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "요청 성공 메시지(메시지 내용은 다를 수 있음)"
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 잘못된 요청 (BAD_REQUEST) - 유효성 검증 실패 또는 필수 값 누락 등 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "요청 본문의 형식이 잘못되었거나 필수 값이 누락되었습니다."
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 인증 실패 (UNAUTHORIZED) - 유효하지 않은 토큰 또는 인증 정보 누락 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "인증 정보가 유효하지 않거나 누락되었습니다."
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 리소스를 찾을 수 없음 (NOT_FOUND) - 존재하지 않는 경로 또는 일반적인 리소스 미발견 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "요청하신 경로를 찾을 수 없습니다."
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+        };
+    };
+    deleteAllNotification: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 요청 처리 성공 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "요청 성공 메시지(메시지 내용은 다를 수 있음)"
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 잘못된 요청 (BAD_REQUEST) - 유효성 검증 실패 또는 필수 값 누락 등 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "요청 본문의 형식이 잘못되었거나 필수 값이 누락되었습니다."
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 인증 실패 (UNAUTHORIZED) - 유효하지 않은 토큰 또는 인증 정보 누락 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "인증 정보가 유효하지 않거나 누락되었습니다."
+                     *     }
+                     */
                     "*/*": components["schemas"]["ApiResponse"];
                 };
             };
@@ -2073,13 +3209,172 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description OK */
+            /** @description 요청 처리 성공 */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["ApiResponseListMemberSummaryResp"];
+                    /**
+                     * @example {
+                     *       "msg": "요청 성공 메시지(메시지 내용은 다를 수 있음)"
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 잘못된 요청 (BAD_REQUEST) - 유효성 검증 실패 또는 필수 값 누락 등 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "요청 본문의 형식이 잘못되었거나 필수 값이 누락되었습니다."
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 리소스를 찾을 수 없음 (NOT_FOUND) - 존재하지 않는 경로 또는 일반적인 리소스 미발견 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "요청하신 경로를 찾을 수 없습니다."
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+        };
+    };
+    getMemberProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description 조회 대상 회원의 ID
+                 * @example 10
+                 */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 요청 처리 성공 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "요청 성공 메시지(메시지 내용은 다를 수 있음)"
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 잘못된 요청 (BAD_REQUEST) - 유효성 검증 실패 또는 필수 값 누락 등 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "요청 본문의 형식이 잘못되었거나 필수 값이 누락되었습니다."
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 리소스를 찾을 수 없음 (NOT_FOUND) - 존재하지 않는 경로 또는 일반적인 리소스 미발견 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "요청하신 경로를 찾을 수 없습니다."
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+        };
+    };
+    getMyProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 요청 처리 성공 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "요청 성공 메시지(메시지 내용은 다를 수 있음)"
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 잘못된 요청 (BAD_REQUEST) - 유효성 검증 실패 또는 필수 값 누락 등 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "요청 본문의 형식이 잘못되었거나 필수 값이 누락되었습니다."
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 인증 실패 (UNAUTHORIZED) - 유효하지 않은 토큰 또는 인증 정보 누락 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "인증 정보가 유효하지 않거나 누락되었습니다."
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 리소스를 찾을 수 없음 (NOT_FOUND) - 존재하지 않는 경로 또는 일반적인 리소스 미발견 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "요청하신 경로를 찾을 수 없습니다."
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
                 };
             };
         };
@@ -2272,6 +3567,79 @@ export interface operations {
                      *       "msg": "해당 리소스에 접근할 권한이 없습니다."
                      *     }
                      */
+                    "*/*": components["schemas"]["CustomResponse"];
+                };
+            };
+            /** @description 리소스를 찾을 수 없음 (NOT_FOUND) - 존재하지 않는 경로 또는 일반적인 리소스 미발견 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "요청하신 경로를 찾을 수 없습니다."
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+        };
+    };
+    deleteNotification: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description 삭제할 알림의 ID
+                 * @example 10
+                 */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 요청 처리 성공 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "요청 성공 메시지(메시지 내용은 다를 수 있음)"
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 잘못된 요청 (BAD_REQUEST) - 유효성 검증 실패 또는 필수 값 누락 등 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "요청 본문의 형식이 잘못되었거나 필수 값이 누락되었습니다."
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 인증 실패 (UNAUTHORIZED) - 유효하지 않은 토큰 또는 인증 정보 누락 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "인증 정보가 유효하지 않거나 누락되었습니다."
+                     *     }
+                     */
                     "*/*": components["schemas"]["ApiResponse"];
                 };
             };
@@ -2356,7 +3724,7 @@ export interface operations {
                      *       "msg": "해당 리소스에 접근할 권한이 없습니다."
                      *     }
                      */
-                    "*/*": components["schemas"]["ApiResponse"];
+                    "*/*": components["schemas"]["CustomResponse"];
                 };
             };
             /** @description 리소스를 찾을 수 없음 (NOT_FOUND) - 존재하지 않는 경로 또는 일반적인 리소스 미발견 */
