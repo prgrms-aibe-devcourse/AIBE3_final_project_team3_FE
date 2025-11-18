@@ -9,8 +9,14 @@ let tokenRefreshPromise: Promise<string | null> | null = null;
 const extractAccessToken = (payload: unknown): string | null => {
   if (!payload || typeof payload !== "object") return null;
 
-  const candidate = (payload as Record<string, unknown>).data;
-  if (typeof candidate === "string") {
+  const record = payload as Record<string, unknown>;
+
+  if (typeof record.accessToken === "string" && record.accessToken) {
+    return record.accessToken;
+  }
+
+  const candidate = record.data;
+  if (typeof candidate === "string" && candidate) {
     return candidate;
   }
 
@@ -23,6 +29,18 @@ const extractAccessToken = (payload: unknown): string | null => {
   }
 
   return null;
+};
+
+const extractTokenFromHeaders = (response: Response): string | null => {
+  const headerValue =
+    response.headers.get("authorization") ?? response.headers.get("Authorization");
+
+  if (!headerValue) {
+    return null;
+  }
+
+  const bearerMatch = headerValue.match(/^Bearer\s+(.+)$/i);
+  return bearerMatch ? bearerMatch[1] : headerValue;
 };
 
 const requestTokenReissue = async (): Promise<string | null> => {
@@ -38,8 +56,12 @@ const requestTokenReissue = async (): Promise<string | null> => {
           return null;
         }
 
-        const payload = await response.json().catch(() => null);
-        const newToken = extractAccessToken(payload);
+        let newToken = extractTokenFromHeaders(response);
+
+        if (!newToken) {
+          const payload = await response.json().catch(() => null);
+          newToken = extractAccessToken(payload);
+        }
 
         if (newToken) {
           const { setAccessToken } = useLoginStore.getState();
@@ -67,7 +89,10 @@ const buildRequest = (
   init: RequestInit | undefined,
   accessToken: string | null,
 ) => {
-  const request = new Request(input, init);
+  const request = new Request(input, {
+    ...init,
+    credentials: "include",
+  });
 
   if (accessToken) {
     request.headers.set("Authorization", `Bearer ${accessToken}`);

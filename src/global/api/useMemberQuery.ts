@@ -1,19 +1,19 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useLoginStore } from "@/global/stores/useLoginStore";
 import apiClient from "@/global/backend/client";
-import { CustomResponse, MemberSummaryResp } from "@/global/types/auth.types"; // CustomResponse 임포트 추가
-import { ChatRoomResp } from "@/global/types/chat.types";
-import { unwrap } from "@/global/backend/unwrap"; // unwrap 임포트 추가
-import { useRouter } from "next/navigation";
+import type { paths } from "@/global/backend/schema";
+import { useLoginStore } from "@/global/stores/useLoginStore";
+import { MemberSummaryResp } from "@/global/types/auth.types";
+import { MemberProfile, MemberProfileUpdateReq } from "@/global/types/member.types";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 const fetchAllMembers = async (): Promise<MemberSummaryResp[]> => {
-    const response = await apiClient.GET("/api/v1/members");
+    const { data: apiResponse, error } = await apiClient.GET("/api/v1/members");
 
-    const unwrappedResponse = await unwrap<CustomResponse<MemberSummaryResp[]>>(response);
-    console.log("fetchAllMembers: unwrappedResponse:", unwrappedResponse); // 로그 추가
-    console.log("fetchAllMembers: unwrappedResponse.data:", unwrappedResponse.data); // 로그 추가
-    
-    return unwrappedResponse || [];
+    if (error) {
+        throw new Error(JSON.stringify(error));
+    }
+
+    const payload = (apiResponse ?? {}) as { data?: MemberSummaryResp[] };
+    return payload.data ?? [];
 };
 
 export const useMembersQuery = () => {
@@ -28,66 +28,79 @@ export const useMembersQuery = () => {
     });
 };
 
-// --- New Mutation Hook ---
-
-interface CreateDirectChatVariables {
-  partnerId: number;
-}
-
-const createDirectChat = async (variables: CreateDirectChatVariables): Promise<ChatRoomResp> => {
-      const response = await apiClient.POST("/api/v1/chats/rooms/direct", {
-        body: variables,
-      });
-
-      const unwrappedResponse = await unwrap<ChatRoomResp>(response);
-      
-      if (!unwrappedResponse) { // unwrappedResponse 자체가 데이터이므로, 이것이 null/undefined인지 확인
-        throw new Error("Failed to create chat room: No data received.");
-      }
-      return unwrappedResponse; // unwrappedResponse 자체를 반환
-    };
-
-export const useCreateDirectChat = () => {
-  const queryClient = useQueryClient();
-  const router = useRouter();
-
-  return useMutation<ChatRoomResp, Error, CreateDirectChatVariables>({
-    mutationFn: createDirectChat,
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["chatRooms"] });
-      
-      if (data && data.id) {
-        router.push(`/chat/${data.id}`);
-      }
-    },
-    onError: (error) => {
-      console.error("Failed to create chat room:", error);
-      alert(`채팅방을 만드는 데 실패했습니다: ${error.message}`);
-    },
-  });
-};
-
-// --- New Query Hook for fetching current user's profile ---
-
-const fetchMyProfile = async (): Promise<MemberSummaryResp> => {
-    const response = await apiClient.GET("/api/v1/members/me");
-
-    const unwrappedResponse = await unwrap<MemberSummaryResp>(response); // unwrappedResponse는 MemberSummaryResp 객체
-    
-    if (!unwrappedResponse) { // unwrappedResponse 자체가 데이터이므로, 이것이 null/undefined인지 확인
-        throw new Error("Failed to get member profile from API response.");
+const getApiErrorMessage = (error: unknown, fallback: string) => {
+    if (error && typeof error === "object" && "msg" in error && typeof (error as { msg?: unknown }).msg === "string") {
+        return (error as { msg: string }).msg;
     }
-    return unwrappedResponse; // unwrappedResponse 자체를 반환
+    return fallback;
 };
 
-export const useMyProfileQuery = (options: { enabled: boolean }) => {
+const normaliseProfile = (payload: unknown): MemberProfile => {
+    const profile = (payload ?? {}) as Record<string, any>;
+    const interest = Array.isArray(profile.interest)
+        ? profile.interest
+        : typeof profile.interest === "string"
+            ? profile.interest.split(",").map((item: string) => item.trim()).filter(Boolean)
+            : Array.isArray(profile.interests)
+                ? profile.interests
+                : [];
+
+    return {
+        name: profile.name ?? "",
+        nickname: profile.nickname ?? "",
+        country: profile.country ?? "",
+        englishLevel: (profile.englishLevel ?? "BEGINNER") as MemberProfile["englishLevel"],
+        interest,
+        description: profile.description ?? "",
+        email: profile.email ?? "",
+        id: profile.id ?? profile.memberId,
+        joinedAt: profile.joinedAt ?? profile.createdAt ?? profile.joinDate,
+        totalChats: profile.totalChats ?? profile.chatCount,
+        vocabularyLearned: profile.vocabularyLearned,
+        streak: profile.streak,
+    } as MemberProfile;
+};
+
+const fetchMyProfile = async (): Promise<MemberProfile> => {
+    const { data, error } = await apiClient.GET("/api/v1/members/me", {});
+
+    if (error) {
+        throw new Error(getApiErrorMessage(error, "프로필 정보를 불러오지 못했습니다."));
+    }
+
+    const payload = (data ?? {}) as { data?: unknown };
+    return normaliseProfile(payload.data);
+};
+
+export const useMyProfile = () => {
     const { accessToken } = useLoginStore();
 
-    return useQuery<MemberSummaryResp, Error>({
-        queryKey: ["myProfile"],
+    return useQuery<MemberProfile, Error>({
+        queryKey: ["member", "me"],
         queryFn: fetchMyProfile,
-        enabled: options.enabled && !!accessToken,
-        staleTime: Infinity, // Profile data is unlikely to change during a session
+        enabled: !!accessToken,
+        staleTime: 1000 * 60 * 5,
         refetchOnWindowFocus: false,
+    });
+};
+
+const updateMyProfile = async (payload: MemberProfileUpdateReq) => {
+    const { error } = await apiClient.PUT("/api/v1/members/profile", {
+        body: payload as paths["/api/v1/members/profile"]["put"]["requestBody"]["content"]["application/json"],
+    });
+
+    if (error) {
+        throw new Error(getApiErrorMessage(error, "프로필 정보를 수정하지 못했습니다."));
+    }
+};
+
+export const useUpdateProfile = () => {
+    const qc = useQueryClient();
+
+    return useMutation<void, Error, MemberProfileUpdateReq>({
+        mutationFn: updateMyProfile,
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ["member", "me"] });
+        },
     });
 };
