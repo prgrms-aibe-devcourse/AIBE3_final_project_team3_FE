@@ -1,17 +1,23 @@
 import { Client } from "@stomp/stompjs";
-import SockJS from "sockjs-client";
+// import SockJS from "sockjs-client";
 import { API_BASE_URL } from "@/global/consts";
-// useLoginStore will be used in the component that calls connect, not here directly for token retrieval
 
 let stompClient: Client | null = null;
 
-// This function will now only create the client instance without authentication headers
+// HTTP URL을 WebSocket URL로 변환하는 헬퍼 함수
+const getWebSocketURL = (): string => {
+  const protocol = API_BASE_URL.startsWith("https://") ? "wss://" : "ws://";
+  const domain = API_BASE_URL.replace(/^https?:\/\//, "");
+  return `${protocol}${domain}/ws-stomp`;
+};
+
+
 const createClientInstance = (): Client => {
   const client = new Client({
-    webSocketFactory: () => {
-      return new SockJS(`${API_BASE_URL}/ws-stomp`);
-    },
-    // connectHeaders will be set in the connect function
+    // webSocketFactory 대신 brokerURL을 사용하여 표준 웹소켓 주소를 지정합니다.
+    brokerURL: getWebSocketURL(),
+
+    // connectHeaders는 connect 함수에서 설정됩니다.
     debug: (str) => {
       console.log(`STOMP Debug: ${str}`);
     },
@@ -35,7 +41,7 @@ export const getStompClient = (): Client => {
   return stompClient;
 };
 
-// The connect function now takes the accessToken as an argument
+// connect 함수는 accessToken을 인자로 받습니다.
 export const connect = (accessToken: string, onConnectCallback: () => void) => {
   const client = getStompClient();
 
@@ -45,7 +51,7 @@ export const connect = (accessToken: string, onConnectCallback: () => void) => {
     return;
   }
 
-  // Set connectHeaders right before activation with the provided accessToken
+  // 제공된 accessToken으로 연결 헤더를 활성화 직전에 설정합니다.
   console.log("STOMP client connecting with accessToken (first 10 chars):", accessToken ? accessToken.substring(0, 10) + "..." : "null"); // 로그 추가
   client.connectHeaders = {
     Authorization: `Bearer ${accessToken}`,
@@ -61,7 +67,7 @@ export const connect = (accessToken: string, onConnectCallback: () => void) => {
 };
 
 export const disconnect = () => {
-  if (stompClient && stompClient.connected) { // Use client.connected instead of client.active
+  if (stompClient && stompClient.connected) { // client.active 대신 client.connected 사용
     stompClient.deactivate();
     stompClient = null;
     console.log("STOMP client deactivated and instance reset.");

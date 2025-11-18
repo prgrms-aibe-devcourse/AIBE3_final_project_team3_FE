@@ -6,7 +6,15 @@ export type UserLoginReqBody = components["schemas"]["SigninReq"];
 
 // openapi.json의 MemberSummaryResp 스키마를 기반으로 사용자 요약 정보 타입 정의
 // components.schemas.MemberSummaryResp를 직접 사용
-export type MemberSummaryResp = components["schemas"]["MemberSummaryResp"];
+export type MemberSummaryResp = {
+  id: number;
+  name: string;
+  country: string;
+  nickname: string;
+  englishLevel: string;
+  interest: string[];
+  description: string;
+};
 
 export type CustomResponse<T> = {
   msg: string;

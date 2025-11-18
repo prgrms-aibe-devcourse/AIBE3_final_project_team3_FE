@@ -296,26 +296,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/auth/sign-in": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * 로그인
-         * @description 사용자 인증을 수행하고 토큰을 발급합니다.
-         */
-        post: operations["signIn"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/auth/reissue": {
         parameters: {
             query?: never;
@@ -330,6 +310,46 @@ export interface paths {
          * @description 만료된 액세스 토큰을 리프레시 토큰을 통해 재발급합니다.
          */
         post: operations["reissue"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 로그아웃
+         * @description Refresh Token을 무효화하고 클라이언트 쿠키를 만료시킵니다.
+         */
+        post: operations["logout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 로그인
+         * @description 사용자 인증을 수행하고 토큰을 발급합니다.
+         */
+        post: operations["login"];
         delete?: never;
         options?: never;
         head?: never;
@@ -891,7 +911,7 @@ export interface components {
             partnerId: number;
         };
         /** @description 로그인 요청 DTO */
-        SignInReq: {
+        LogInReq: {
             /**
              * @description 사용자 이메일 주소
              * @example user@example.com
@@ -2267,19 +2287,14 @@ export interface operations {
             };
         };
     };
-    signIn: {
+    reissue: {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** @description 로그인 정보 */
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SignInReq"];
-            };
-        };
+        requestBody?: never;
         responses: {
             /** @description 요청 처리 성공 */
             200: {
@@ -2325,7 +2340,7 @@ export interface operations {
             };
         };
     };
-    reissue: {
+    logout: {
         parameters: {
             query?: never;
             header?: never;
@@ -2362,15 +2377,59 @@ export interface operations {
                     "*/*": components["schemas"]["ApiResponse"];
                 };
             };
-            /** @description 인증 실패 (UNAUTHORIZED) - 유효하지 않은 토큰 또는 인증 정보 누락 */
-            401: {
+            /** @description 리소스를 찾을 수 없음 (NOT_FOUND) - 존재하지 않는 경로 또는 일반적인 리소스 미발견 */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     /**
                      * @example {
-                     *       "msg": "인증 정보가 유효하지 않거나 누락되었습니다."
+                     *       "msg": "요청하신 경로를 찾을 수 없습니다."
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+        };
+    };
+    login: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description 로그인 정보 */
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LogInReq"];
+            };
+        };
+        responses: {
+            /** @description 요청 처리 성공 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "요청 성공 메시지(메시지 내용은 다를 수 있음)"
+                     *     }
+                     */
+                    "*/*": components["schemas"]["ApiResponse"];
+                };
+            };
+            /** @description 잘못된 요청 (BAD_REQUEST) - 유효성 검증 실패 또는 필수 값 누락 등 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "msg": "요청 본문의 형식이 잘못되었거나 필수 값이 누락되었습니다."
                      *     }
                      */
                     "*/*": components["schemas"]["ApiResponse"];

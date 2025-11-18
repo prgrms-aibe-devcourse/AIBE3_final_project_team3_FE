@@ -74,7 +74,7 @@ export const useLogin = () => {
 
         const unwrappedMemberData = await unwrap<MemberSummaryResp>(memberData);
         console.log("Fetched member data after login:", unwrappedMemberData); // 기존 로그 유지
-        console.log("Member data to be stored in useLoginStore:", unwrappedMemberData); // 추가 로그
+        console.log("Member data to be stored in useLoginStore (before setMember):", unwrappedMemberData); // 추가 로그
         
         // 3. 가져온 사용자 정보를 스토어에 저장합니다.
         setMember(unwrappedMemberData);

@@ -84,7 +84,7 @@ export default function ChatRoomPage() {
     }
 
     console.log("Member object in handleSendMessage:", member); // 로그 추가
-    console.log("Current member ID:", member.id); // <-- 이 로그를 추가합니다.
+    console.log("Current member ID:", member.id); //로그 추가
       console.log("Getting STOMP client...");
     const client = getStompClient();
 
@@ -96,7 +96,7 @@ export default function ChatRoomPage() {
           roomId: roomId,
           content: newMessage,
           messageType: "TEXT",
-          senderId: member.id, // <-- 이 부분을 추가합니다.
+          senderId: member.id,
         }),
       });
       console.log("Message published.");
