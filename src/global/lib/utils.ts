@@ -6,6 +6,7 @@ const ALLOWED_PATHS = [
   "/",
   "/api/v1/auth/sign-in", // API 엔드포인트도 포함
   "/api/v1/auth/join",
+  "/api/v1/auth/reissue",
 ];
 
 export const isAllowedPath = (pathname: string) => {
