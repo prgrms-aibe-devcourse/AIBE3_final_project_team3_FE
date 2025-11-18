@@ -3,13 +3,17 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { useLogout } from "@/global/api/useAuthQuery";
+import { useLoginStore } from "@/global/stores/useLoginStore";
+import { useShallow } from "zustand/react/shallow";
+
 interface Notification {
   id: number;
   type:
-    | "friend_request"
-    | "friend_accepted"
-    | "chat_invitation"
-    | "room_invitation";
+  | "friend_request"
+  | "friend_accepted"
+  | "chat_invitation"
+  | "room_invitation";
   message: string;
   from: string;
   timestamp: Date;
@@ -131,6 +135,21 @@ export default function Header() {
     markAsRead(notification.id);
   };
 
+  const { accessToken, hasHydrated } = useLoginStore(
+    useShallow((state) => ({
+      accessToken: state.accessToken,
+      hasHydrated: state.hasHydrated,
+    })),
+  );
+  const { mutate: triggerLogout, isPending: isLoggingOut } = useLogout();
+  const isLoggedIn = Boolean(accessToken);
+
+  const handleLogout = () => {
+    if (!isLoggingOut) {
+      triggerLogout();
+    }
+  };
+
   return (
     <header className="fixed top-0 left-0 right-0 bg-gray-800/95 backdrop-blur-sm shadow-lg border-b border-gray-600 z-50">
       <div className="container mx-auto px-4">
@@ -225,9 +244,8 @@ export default function Header() {
                       notifications.map((notification) => (
                         <div
                           key={notification.id}
-                          className={`p-3 border-b border-gray-700 hover:bg-gray-750 transition-colors ${
-                            !notification.isRead ? "bg-gray-750/50" : ""
-                          }`}
+                          className={`p-3 border-b border-gray-700 hover:bg-gray-750 transition-colors ${!notification.isRead ? "bg-gray-750/50" : ""
+                            }`}
                           onClick={() => markAsRead(notification.id)}
                         >
                           <div className="flex items-start space-x-3">
@@ -287,18 +305,30 @@ export default function Header() {
               )}
             </div>
 
-            <Link
-              href="/auth/login"
-              className="text-gray-200 hover:text-emerald-400 transition-colors flex items-center"
-            >
-              Login
-            </Link>
-            <Link
-              href="/auth/signup"
-              className="bg-emerald-600 text-white px-4 py-2 rounded-md hover:bg-emerald-500 transition-colors shadow-lg flex items-center"
-            >
-              Sign Up
-            </Link>
+            {hasHydrated && (isLoggedIn ? (
+              <button
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                className="text-gray-200 hover:text-emerald-400 transition-colors flex items-center disabled:opacity-70"
+              >
+                {isLoggingOut ? "Logging out..." : "Logout"}
+              </button>
+            ) : (
+              <>
+                <Link
+                  href="/auth/login"
+                  className="text-gray-200 hover:text-emerald-400 transition-colors flex items-center"
+                >
+                  Login
+                </Link>
+                <Link
+                  href="/auth/signup"
+                  className="bg-emerald-600 text-white px-4 py-2 rounded-md hover:bg-emerald-500 transition-colors shadow-lg flex items-center"
+                >
+                  Sign Up
+                </Link>
+              </>
+            ))}
           </div>
 
           {/* Mobile Menu Button */}
@@ -308,19 +338,16 @@ export default function Header() {
           >
             <div className="w-6 h-6 flex flex-col justify-center">
               <span
-                className={`block h-0.5 w-6 bg-gray-200 transition-all ${
-                  isMenuOpen ? "rotate-45 translate-y-1" : "mb-1"
-                }`}
+                className={`block h-0.5 w-6 bg-gray-200 transition-all ${isMenuOpen ? "rotate-45 translate-y-1" : "mb-1"
+                  }`}
               ></span>
               <span
-                className={`block h-0.5 w-6 bg-gray-200 transition-all ${
-                  isMenuOpen ? "hidden" : "mb-1"
-                }`}
+                className={`block h-0.5 w-6 bg-gray-200 transition-all ${isMenuOpen ? "hidden" : "mb-1"
+                  }`}
               ></span>
               <span
-                className={`block h-0.5 w-6 bg-gray-200 transition-all ${
-                  isMenuOpen ? "-rotate-45 -translate-y-1" : ""
-                }`}
+                className={`block h-0.5 w-6 bg-gray-200 transition-all ${isMenuOpen ? "-rotate-45 -translate-y-1" : ""
+                  }`}
               ></span>
             </div>
           </button>
@@ -372,9 +399,8 @@ export default function Header() {
                     {notifications.map((notification) => (
                       <div
                         key={notification.id}
-                        className={`p-2 border-b border-gray-700 last:border-b-0 ${
-                          !notification.isRead ? "bg-gray-700/50" : ""
-                        }`}
+                        className={`p-2 border-b border-gray-700 last:border-b-0 ${!notification.isRead ? "bg-gray-700/50" : ""
+                          }`}
                         onClick={() => markAsRead(notification.id)}
                       >
                         <div className="flex items-start space-x-2">
@@ -426,18 +452,30 @@ export default function Header() {
               >
                 My Page
               </Link>
-              <Link
-                href="/auth/login"
-                className="text-gray-200 hover:text-emerald-400 transition-colors py-2"
-              >
-                Login
-              </Link>
-              <Link
-                href="/auth/signup"
-                className="bg-emerald-600 text-white px-4 py-2 rounded-md hover:bg-emerald-500 transition-colors text-center shadow-lg"
-              >
-                Sign Up
-              </Link>
+              {hasHydrated && (isLoggedIn ? (
+                <button
+                  onClick={handleLogout}
+                  disabled={isLoggingOut}
+                  className="text-gray-200 hover:text-emerald-400 transition-colors py-2 text-left disabled:opacity-70"
+                >
+                  {isLoggingOut ? "Logging out..." : "Logout"}
+                </button>
+              ) : (
+                <>
+                  <Link
+                    href="/auth/login"
+                    className="text-gray-200 hover:text-emerald-400 transition-colors py-2"
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    href="/auth/signup"
+                    className="bg-emerald-600 text-white px-4 py-2 rounded-md hover:bg-emerald-500 transition-colors text-center shadow-lg"
+                  >
+                    Sign Up
+                  </Link>
+                </>
+              ))}
             </nav>
           </div>
         )}

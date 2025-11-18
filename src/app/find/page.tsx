@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import { useMembersQuery } from "@/global/api/useMemberQuery";
 import { MemberSummaryResp } from "@/global/types/auth.types";
+import Image from "next/image";
+import { useState } from "react";
 
 // A simple utility to generate a placeholder avatar
 const getAvatar = (name: string) => `https://i.pravatar.cc/150?u=${name}`;
@@ -55,9 +56,11 @@ export default function FindPage() {
           >
             <div className="flex items-center mb-4">
               <div className="relative">
-                <img
+                <Image
                   src={getAvatar(user.nickname)}
                   alt={user.name}
+                  width={64}
+                  height={64}
                   className="w-16 h-16 rounded-full object-cover"
                 />
                 <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 border-2 border-gray-800 rounded-full"></div>
@@ -140,9 +143,11 @@ export default function FindPage() {
               <div className="flex justify-between items-start mb-6">
                 <div className="flex items-center">
                   <div className="relative">
-                    <img
+                    <Image
                       src={getAvatar(selectedUser.nickname)}
                       alt={selectedUser.name}
+                      width={80}
+                      height={80}
                       className="w-20 h-20 rounded-full object-cover"
                     />
                     <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 border-2 border-gray-800 rounded-full"></div>

@@ -1,17 +1,64 @@
 "use client";
 
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
+
+import { useMyProfile, useUpdateProfile } from "@/global/api/useMemberQuery";
+import { useLoginStore } from "@/global/stores/useLoginStore";
+import { MemberProfileUpdateReq } from "@/global/types/member.types";
 
 interface UserProfile {
   name: string;
+  nickname: string;
   email: string;
   country: string;
   level: string;
-  joinDate: Date;
+  description: string;
+  interest: string[];
+  joinDate: Date | null;
   totalChats: number;
   vocabularyLearned: number;
   streak: number;
 }
+
+type ProfileEditFormState = MemberProfileUpdateReq & {
+  email?: string;
+  level?: MemberProfileUpdateReq["englishLevel"];
+};
+
+const DEFAULT_EDIT_FORM: ProfileEditFormState = {
+  name: "",
+  country: "",
+  nickname: "",
+  englishLevel: "BEGINNER",
+  interest: [],
+  description: "",
+  email: "",
+  level: "BEGINNER",
+};
+
+const COUNTRY_OPTIONS = [
+  { value: "KR", label: "South Korea" },
+  { value: "JP", label: "Japan" },
+  { value: "CN", label: "China" },
+  { value: "US", label: "USA" },
+  { value: "UK", label: "UK" },
+  { value: "OTHER", label: "Other" },
+];
+
+const ENGLISH_LEVEL_OPTIONS: MemberProfileUpdateReq["englishLevel"][] = [
+  "BEGINNER",
+  "INTERMEDIATE",
+  "ADVANCED",
+  "NATIVE",
+];
+
+const ENGLISH_LEVEL_LABELS: Record<MemberProfileUpdateReq["englishLevel"], string> = {
+  BEGINNER: "Beginner",
+  INTERMEDIATE: "Intermediate",
+  ADVANCED: "Advanced",
+  NATIVE: "Native",
+};
 
 interface Friend {
   id: number;
@@ -24,22 +71,33 @@ interface Friend {
 }
 
 export default function ProfilePage() {
+  const router = useRouter();
+  const accessToken = useLoginStore((state) => state.accessToken);
+  const hasHydrated = useLoginStore((state) => state.hasHydrated);
   const [profile, setProfile] = useState<UserProfile>({
-    name: "John Doe",
-    email: "john.doe@example.com",
-    country: "South Korea",
-    level: "Intermediate",
-    joinDate: new Date("2024-09-15"),
-    totalChats: 45,
-    vocabularyLearned: 156,
-    streak: 7,
+    name: "",
+    nickname: "",
+    email: "",
+    country: "",
+    level: "BEGINNER",
+    description: "",
+    interest: [],
+    joinDate: null,
+    totalChats: 0,
+    vocabularyLearned: 0,
+    streak: 0,
   });
 
   const [isEditing, setIsEditing] = useState(false);
-  const [editForm, setEditForm] = useState(profile);
+  const [editForm, setEditForm] = useState<ProfileEditFormState>(DEFAULT_EDIT_FORM);
+  const [interestDraft, setInterestDraft] = useState("");
   const [showFriendProfile, setShowFriendProfile] = useState(false);
   const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null);
   const [showInviteModal, setShowInviteModal] = useState(false);
+
+  const { data: profileData, isLoading, error } = useMyProfile();
+  const updateProfileMutation = useUpdateProfile();
+  const isSaving = updateProfileMutation.isPending;
 
   // Mock friends data
   const [friends, setFriends] = useState<Friend[]>([
@@ -85,13 +143,72 @@ export default function ProfilePage() {
     },
   ]);
 
+  const syncFormWithProfile = useCallback(
+    (source?: ReturnType<typeof useMyProfile>["data"]) => {
+      const base = source ?? profileData;
+      if (!base) {
+        setEditForm(DEFAULT_EDIT_FORM);
+        setInterestDraft("");
+        return;
+      }
+
+      const englishLevel = base.englishLevel ?? "BEGINNER";
+
+      setEditForm({
+        name: base.name ?? "",
+        nickname: base.nickname ?? "",
+        country: base.country ?? "",
+        englishLevel,
+        level: englishLevel,
+        interest: base.interest ?? [],
+        description: base.description ?? "",
+        email: base.email ?? "",
+      });
+      setInterestDraft((base.interest ?? []).join(", "));
+    },
+    [profileData]
+  );
+
   const handleSave = () => {
-    setProfile(editForm);
-    setIsEditing(false);
+    const trimmedName = editForm.name.trim();
+    const trimmedNickname = editForm.nickname.trim();
+    const trimmedDescription = editForm.description.trim();
+    const sanitisedInterests = interestDraft
+      .split(",")
+      .map((value) => value.trim())
+      .filter((value) => value.length > 0);
+
+    if (!trimmedName || !trimmedNickname || !trimmedDescription) {
+      alert("이름, 닉네임, 자기소개는 필수 입력 항목입니다.");
+      return;
+    }
+
+    if (sanitisedInterests.length === 0) {
+      alert("관심사를 최소 1개 이상 입력해주세요.");
+      return;
+    }
+
+    const payload: MemberProfileUpdateReq = {
+      name: trimmedName,
+      nickname: trimmedNickname,
+      country: editForm.country,
+      englishLevel: editForm.englishLevel ?? editForm.level ?? "BEGINNER",
+      interest: sanitisedInterests,
+      description: trimmedDescription,
+    };
+
+    updateProfileMutation.mutate(payload, {
+      onSuccess: () => {
+        setIsEditing(false);
+      },
+      onError: (mutationError) => {
+        alert(mutationError.message);
+      },
+    });
   };
 
   const handleCancel = () => {
-    setEditForm(profile);
+    syncFormWithProfile();
     setIsEditing(false);
   };
 
@@ -141,6 +258,52 @@ export default function ProfilePage() {
     if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
     return `${Math.floor(diffInMinutes / 1440)}d ago`;
   };
+
+  useEffect(() => {
+    if (!profileData) {
+      return;
+    }
+
+    const englishLevel = profileData.englishLevel ?? "BEGINNER";
+    const joinedAt = profileData.joinedAt ? new Date(profileData.joinedAt) : null;
+    const joinDate = joinedAt && !Number.isNaN(joinedAt.getTime()) ? joinedAt : null;
+
+    setProfile({
+      name: profileData.name ?? "",
+      nickname: profileData.nickname ?? "",
+      email: profileData.email ?? "",
+      country: profileData.country ?? "",
+      level: ENGLISH_LEVEL_LABELS[englishLevel],
+      description: profileData.description ?? "",
+      interest: profileData.interest ?? [],
+      joinDate,
+      totalChats: profileData.totalChats ?? 0,
+      vocabularyLearned: profileData.vocabularyLearned ?? 0,
+      streak: profileData.streak ?? 0,
+    });
+
+    if (!isEditing) {
+      syncFormWithProfile(profileData);
+    }
+  }, [profileData, isEditing, syncFormWithProfile]);
+
+  useEffect(() => {
+    if (!hasHydrated) {
+      return;
+    }
+
+    if (!accessToken) {
+      router.replace("/auth/login");
+    }
+  }, [accessToken, hasHydrated, router]);
+
+  if (!hasHydrated) {
+    return null;
+  }
+
+  if (!accessToken) {
+    return null;
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -246,16 +409,22 @@ export default function ProfilePage() {
                 </label>
                 {isEditing ? (
                   <select
-                    value={editForm.level}
-                    onChange={(e) =>
-                      setEditForm({ ...editForm, level: e.target.value })
-                    }
+                    value={editForm.englishLevel ?? "BEGINNER"}
+                    onChange={(e) => {
+                      const nextLevel = e.target.value as MemberProfileUpdateReq["englishLevel"];
+                      setEditForm({
+                        ...editForm,
+                        englishLevel: nextLevel,
+                        level: nextLevel,
+                      });
+                    }}
                     className="w-full px-3 py-2 border border-gray-600 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   >
-                    <option value="Beginner">Beginner</option>
-                    <option value="Intermediate">Intermediate</option>
-                    <option value="Advanced">Advanced</option>
-                    <option value="Native">Native</option>
+                    {ENGLISH_LEVEL_OPTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {ENGLISH_LEVEL_LABELS[option]}
+                      </option>
+                    ))}
                   </select>
                 ) : (
                   <p className="text-gray-200">{profile.level}</p>
@@ -267,7 +436,7 @@ export default function ProfilePage() {
                   Member Since
                 </label>
                 <p className="text-gray-200">
-                  {profile.joinDate.toLocaleDateString()}
+                  {profile.joinDate ? profile.joinDate.toLocaleDateString() : "-"}
                 </p>
               </div>
             </div>
@@ -310,9 +479,8 @@ export default function ProfilePage() {
                           </span>
                         </div>
                         <div
-                          className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-gray-700 ${
-                            friend.isOnline ? "bg-emerald-500" : "bg-gray-500"
-                          }`}
+                          className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-gray-700 ${friend.isOnline ? "bg-emerald-500" : "bg-gray-500"
+                            }`}
                         />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -526,9 +694,8 @@ export default function ProfilePage() {
                   </span>
                 </div>
                 <div
-                  className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-gray-800 ${
-                    selectedFriend.isOnline ? "bg-emerald-500" : "bg-gray-500"
-                  }`}
+                  className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-gray-800 ${selectedFriend.isOnline ? "bg-emerald-500" : "bg-gray-500"
+                    }`}
                 />
               </div>
 
