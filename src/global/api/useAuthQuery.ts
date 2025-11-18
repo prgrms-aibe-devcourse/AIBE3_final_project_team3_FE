@@ -1,16 +1,16 @@
 import { createQueryKeys } from "@lukemorales/query-key-factory";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRouter, usePathname } from "next/navigation"; // Next.js 라우터 훅
+import { usePathname, useRouter } from "next/navigation"; // Next.js 라우터 훅
 
 import client from "../backend/client"; // openapi-fetch 클라이언트
-import { unwrap } from "../backend/unwrap"; // 응답 처리 헬퍼
-import { useLoginStore } from "../stores/useLoginStore"; // Zustand 로그인 스토어
-import { isAllowedPath } from "../lib/utils"; // 유틸리티 함수
-import { UserLoginReqBody, MemberSummaryResp } from "../types/auth.types"; // 타입 정의
 import type { paths } from "../backend/schema"; // openapi-typescript로 생성된 타입
+import { unwrap } from "../backend/unwrap"; // 응답 처리 헬퍼
+import { isAllowedPath } from "../lib/utils"; // 유틸리티 함수
+import { useLoginStore } from "../stores/useLoginStore"; // Zustand 로그인 스토어
+import { MemberSummaryResp, UserJoinReqBody, UserLoginReqBody } from "../types/auth.types"; // 타입 정의
 
 // --- 1. 순수 API 호출 함수 정의 ---
-// openapi-fetch 클라이언트의 타입은 paths['/api/v1/auth/sign-in']['post'] 등으로 접근합니다.
+// openapi-fetch 클라이언트의 타입은 paths['/api/v1/auth/login']['post'] 등으로 접근합니다.
 
 // 내 정보 조회
 const me = async () => {
@@ -20,13 +20,19 @@ const me = async () => {
 
 // 로그인
 const login = async (body: UserLoginReqBody) => {
-  const response = await client.POST("/api/v1/auth/sign-in", { body: body as paths["/api/v1/auth/sign-in"]["post"]["requestBody"]["content"]["application/json"] });
+  const response = await client.POST("/api/v1/auth/login", { body: body as paths["/api/v1/auth/login"]["post"]["requestBody"]["content"]["application/json"] });
   return unwrap<string>(response); // 토큰 문자열 반환 예상
+};
+
+// 회원가입
+const signup = async (body: UserJoinReqBody) => {
+  const response = await client.POST("/api/v1/auth/join", { body: body as paths["/api/v1/auth/join"]["post"]["requestBody"]["content"]["application/json"] });
+  return unwrap<void>(response);
 };
 
 // 로그아웃
 const logout = async () => {
-  const response = await client.POST("/api/v1/auth/sign-out", {}); // 실제 API 경로 확인 필요
+  const response = await client.POST("/api/v1/auth/logout", {}); // 실제 API 경로 확인 필요
   return unwrap<void>(response);
 };
 
@@ -35,6 +41,7 @@ export const authQueryKeys = createQueryKeys("auth", {
   me: () => ["me"],
   login: () => ["login"],
   logout: () => ["logout"],
+  signup: () => ["signup"],
 });
 
 // --- 3. React Query 커스텀 훅 정의 ---
@@ -88,6 +95,14 @@ export const useLogin = () => {
         // 이 경우를 대비한 추가 처리가 필요할 수 있습니다.
       }
     },
+  });
+};
+
+// 회원가입 훅
+export const useSignup = () => {
+  return useMutation({
+    mutationKey: authQueryKeys.signup().queryKey,
+    mutationFn: signup,
   });
 };
 

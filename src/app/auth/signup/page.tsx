@@ -1,18 +1,26 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { useSignup } from "@/global/api/useAuthQuery";
+
 export default function SignupPage() {
+  const router = useRouter();
+  const { mutate: signup, isPending } = useSignup();
+
   const [formData, setFormData] = useState({
     name: "",
+    nickname: "",
     email: "",
     password: "",
     confirmPassword: "",
     country: "",
-    level: "Beginner",
+    level: "BEGINNER",
+    interests: "",
+    description: "",
   });
-  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,16 +30,44 @@ export default function SignupPage() {
       return;
     }
 
-    setIsLoading(true);
+    const interests = formData.interests
+      .split(",")
+      .map((interest) => interest.trim())
+      .filter((interest) => interest.length > 0);
 
-    // Mock signup process
-    setTimeout(() => {
-      setIsLoading(false);
-      // In real app, handle registration here
-      alert(
-        "Signup functionality will be implemented with Spring Boot backend"
-      );
-    }, 1000);
+    if (interests.length === 0) {
+      alert("Please enter at least one interest.");
+      return;
+    }
+
+    const countryCode = formData.country === "OTHER" ? "ZZ" : formData.country;
+
+    signup(
+      {
+        email: formData.email,
+        password: formData.password,
+        passwordConfirm: formData.confirmPassword,
+        name: formData.name,
+        country: countryCode,
+        nickname: formData.nickname,
+        englishLevel: formData.level as "BEGINNER" | "INTERMEDIATE" | "ADVANCED" | "NATIVE",
+        interests,
+        description: formData.description,
+      },
+      {
+        onSuccess: () => {
+          alert("Account created! Please sign in.");
+          router.replace("/auth/login");
+        },
+        onError: (error) => {
+          const message =
+            error instanceof Error
+              ? error.message
+              : "Signup failed. Please try again.";
+          alert(message);
+        },
+      }
+    );
   };
 
   return (
@@ -76,6 +112,27 @@ export default function SignupPage() {
 
             <div>
               <label
+                htmlFor="nickname"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Nickname
+              </label>
+              <input
+                id="nickname"
+                name="nickname"
+                type="text"
+                required
+                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                placeholder="Enter a nickname"
+                value={formData.nickname}
+                onChange={(e) =>
+                  setFormData({ ...formData, nickname: e.target.value })
+                }
+              />
+            </div>
+
+            <div>
+              <label
                 htmlFor="email"
                 className="block text-sm font-medium text-gray-700"
               >
@@ -114,14 +171,14 @@ export default function SignupPage() {
                 }
               >
                 <option value="">Select your country</option>
-                <option value="South Korea">South Korea</option>
-                <option value="Japan">Japan</option>
-                <option value="China">China</option>
-                <option value="USA">USA</option>
-                <option value="UK">UK</option>
-                <option value="Canada">Canada</option>
-                <option value="Australia">Australia</option>
-                <option value="Other">Other</option>
+                <option value="KR">South Korea</option>
+                <option value="JP">Japan</option>
+                <option value="CN">China</option>
+                <option value="US">United States</option>
+                <option value="GB">United Kingdom</option>
+                <option value="CA">Canada</option>
+                <option value="AU">Australia</option>
+                <option value="OTHER">Other</option>
               </select>
             </div>
 
@@ -141,11 +198,32 @@ export default function SignupPage() {
                   setFormData({ ...formData, level: e.target.value })
                 }
               >
-                <option value="Beginner">Beginner</option>
-                <option value="Intermediate">Intermediate</option>
-                <option value="Advanced">Advanced</option>
-                <option value="Native">Native</option>
+                <option value="BEGINNER">Beginner</option>
+                <option value="INTERMEDIATE">Intermediate</option>
+                <option value="ADVANCED">Advanced</option>
+                <option value="NATIVE">Native</option>
               </select>
+            </div>
+
+            <div>
+              <label
+                htmlFor="interests"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Interests
+              </label>
+              <input
+                id="interests"
+                name="interests"
+                type="text"
+                required
+                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                placeholder="Separate interests with commas (e.g. travel, food)"
+                value={formData.interests}
+                onChange={(e) =>
+                  setFormData({ ...formData, interests: e.target.value })
+                }
+              />
             </div>
 
             <div>
@@ -191,15 +269,36 @@ export default function SignupPage() {
                 }
               />
             </div>
+
+            <div>
+              <label
+                htmlFor="description"
+                className="block text-sm font-medium text-gray-700"
+              >
+                About You
+              </label>
+              <textarea
+                id="description"
+                name="description"
+                required
+                rows={4}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                placeholder="Tell us briefly about yourself"
+                value={formData.description}
+                onChange={(e) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
+              />
+            </div>
           </div>
 
           <div>
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isPending}
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? "Creating account..." : "Create account"}
+              {isPending ? "Creating account..." : "Create account"}
             </button>
           </div>
 
@@ -240,8 +339,8 @@ export default function SignupPage() {
             Getting Started
           </h3>
           <p className="text-sm text-blue-700">
-            This is a wireframe. Registration will be implemented with Spring
-            Boot backend.
+            Fill in all required details and you&apos;ll be redirected to the
+            sign-in page once registration succeeds.
           </p>
         </div>
       </div>
