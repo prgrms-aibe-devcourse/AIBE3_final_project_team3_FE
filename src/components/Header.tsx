@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 
 import { useLogout } from "@/global/api/useAuthQuery";
 import { useLoginStore } from "@/global/stores/useLoginStore";
+import { useShallow } from "zustand/react/shallow";
 
 interface Notification {
   id: number;
@@ -134,7 +135,12 @@ export default function Header() {
     markAsRead(notification.id);
   };
 
-  const accessToken = useLoginStore((state) => state.accessToken);
+  const { accessToken, hasHydrated } = useLoginStore(
+    useShallow((state) => ({
+      accessToken: state.accessToken,
+      hasHydrated: state.hasHydrated,
+    })),
+  );
   const { mutate: triggerLogout, isPending: isLoggingOut } = useLogout();
   const isLoggedIn = Boolean(accessToken);
 
@@ -299,7 +305,7 @@ export default function Header() {
               )}
             </div>
 
-            {isLoggedIn ? (
+            {hasHydrated && (isLoggedIn ? (
               <button
                 onClick={handleLogout}
                 disabled={isLoggingOut}
@@ -322,7 +328,7 @@ export default function Header() {
                   Sign Up
                 </Link>
               </>
-            )}
+            ))}
           </div>
 
           {/* Mobile Menu Button */}
@@ -446,7 +452,7 @@ export default function Header() {
               >
                 My Page
               </Link>
-              {isLoggedIn ? (
+              {hasHydrated && (isLoggedIn ? (
                 <button
                   onClick={handleLogout}
                   disabled={isLoggingOut}
@@ -469,7 +475,7 @@ export default function Header() {
                     Sign Up
                   </Link>
                 </>
-              )}
+              ))}
             </nav>
           </div>
         )}
