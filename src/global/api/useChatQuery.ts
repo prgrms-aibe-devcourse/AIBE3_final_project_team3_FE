@@ -8,16 +8,18 @@ import { useRouter } from "next/navigation";
 
 const fetchChatMessages = async (roomId: number): Promise<MessageResp[]> => {
     if (!roomId) return [];
-    
+
     const response = await apiClient.GET("/api/v1/chats/rooms/{roomId}/messages", {
         params: {
             path: { roomId },
         },
     });
 
-    const unwrappedResponse = await unwrap<CustomResponse<MessageResp[]>>(response);
+    // 1. unwrap의 제네릭 타입을 실제 데이터의 타입인 MessageResp[]로 수정
+    const unwrappedResponse = await unwrap<MessageResp[]>(response);
 
-    return unwrappedResponse.data || [];
+    // 2. unwrap이 이미 data를 추출했으므로, 결과를 그대로 반환
+    return unwrappedResponse || [];
 };
 
 export const useChatMessagesQuery = (roomId: number) => {
@@ -68,5 +70,25 @@ export const useCreateDirectChat = () => {
       console.error("Failed to create chat room:", error);
       alert(`채팅방을 만드는 데 실패했습니다: ${error.message}`);
     },
+  });
+};
+
+// --- Query hook for fetching user's chat rooms ---
+
+const fetchUserChatRooms = async (): Promise<ChatRoomResp[]> => {
+  const response = await apiClient.GET("/api/v1/chats/rooms");
+  const unwrappedResponse = await unwrap<ChatRoomResp[]>(response);
+  return unwrappedResponse || [];
+};
+
+export const useUserChatRoomsQuery = () => {
+  const { accessToken } = useLoginStore();
+
+  return useQuery<ChatRoomResp[], Error>({
+    queryKey: ["chatRooms"],
+    queryFn: fetchUserChatRooms,
+    enabled: !!accessToken,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    refetchOnWindowFocus: true,
   });
 };

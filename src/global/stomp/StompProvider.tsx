@@ -16,7 +16,7 @@ const StompProvider = ({ children }: { children: React.ReactNode }) => {
       const onConnected = () => {
         // This code runs after the STOMP client is successfully connected
         const client = getStompClient();
-        console.log(`Subscribing to /topic/user/${member.id}/rooms`);
+        console.log(`Subscribing to /topic/user/${member.memberId}/rooms`);
         
         // Unsubscribe from previous subscription if it exists
         if (subscriptionRef.current) {
@@ -24,7 +24,7 @@ const StompProvider = ({ children }: { children: React.ReactNode }) => {
         }
 
         subscriptionRef.current = client.subscribe(
-          `/topic/user/${member.id}/rooms`,
+          `/topic/user/${member.memberId}/rooms`,
           (message) => {
             console.log("Received new room info:", message.body);
             // When a new room is created, invalidate queries for the chat room list
