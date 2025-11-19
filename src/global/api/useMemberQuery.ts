@@ -1,5 +1,6 @@
 import apiClient from "@/global/backend/client";
 import type { paths } from "@/global/backend/schema";
+import { normaliseCountryValue } from "@/global/lib/countries";
 import { useLoginStore } from "@/global/stores/useLoginStore";
 import { MemberSummaryResp } from "@/global/types/auth.types";
 import { MemberProfile, MemberProfileUpdateReq } from "@/global/types/member.types";
@@ -37,23 +38,66 @@ const getApiErrorMessage = (error: unknown, fallback: string) => {
 
 const normaliseProfile = (payload: unknown): MemberProfile => {
     const profile = (payload ?? {}) as Record<string, any>;
-    const interest = Array.isArray(profile.interest)
-        ? profile.interest
-        : typeof profile.interest === "string"
-            ? profile.interest.split(",").map((item: string) => item.trim()).filter(Boolean)
-            : Array.isArray(profile.interests)
-                ? profile.interests
-                : [];
+
+    const resolveInterests = (): string[] => {
+        const candidates = [profile.interests, profile.interest];
+
+        for (const candidate of candidates) {
+            if (Array.isArray(candidate)) {
+                return candidate;
+            }
+
+            if (typeof candidate === "string") {
+                return candidate
+                    .split(",")
+                    .map((item) => item.trim())
+                    .filter((item) => item.length > 0);
+            }
+        }
+
+        return [];
+    };
+
+    const resolveEnglishLevel = (): MemberProfile["englishLevel"] => {
+        const level = profile.englishLevel;
+
+        if (typeof level === "string" && level.length > 0) {
+            return level as MemberProfile["englishLevel"];
+        }
+
+        if (typeof level === "object" && level) {
+            const levelRecord = level as Record<string, unknown>;
+            const value = levelRecord.name ?? levelRecord.value ?? levelRecord.code;
+            if (typeof value === "string" && value.length > 0) {
+                return value as MemberProfile["englishLevel"];
+            }
+        }
+
+        return "BEGINNER";
+    };
+
+    const interests = resolveInterests()
+        .map((item) => (typeof item === "string" ? item.trim() : String(item ?? "").trim()))
+        .filter((item) => item.length > 0);
+
+    const { code: countryCode, name: countryName } = normaliseCountryValue(profile.country);
 
     return {
         name: profile.name ?? "",
         nickname: profile.nickname ?? "",
-        country: profile.country ?? "",
-        englishLevel: (profile.englishLevel ?? "BEGINNER") as MemberProfile["englishLevel"],
-        interest,
+        country: countryCode,
+        countryCode,
+        countryName,
+        englishLevel: resolveEnglishLevel(),
+        interest: interests,
+        interests,
         description: profile.description ?? "",
         email: profile.email ?? "",
+        memberId: profile.memberId ?? profile.id,
         id: profile.id ?? profile.memberId,
+        profileImageUrl: typeof profile.profileImageUrl === "string" ? profile.profileImageUrl : undefined,
+        isFriend: Boolean(profile.isFriend),
+        isPendingRequest: Boolean(profile.isPendingRequest),
         joinedAt: profile.joinedAt ?? profile.createdAt ?? profile.joinDate,
         totalChats: profile.totalChats ?? profile.chatCount,
         vocabularyLearned: profile.vocabularyLearned,

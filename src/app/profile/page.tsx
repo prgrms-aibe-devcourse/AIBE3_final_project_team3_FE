@@ -4,24 +4,31 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import { useMyProfile, useUpdateProfile } from "@/global/api/useMemberQuery";
+import { COUNTRY_OPTIONS, getCountryLabel } from "@/global/lib/countries";
 import { useLoginStore } from "@/global/stores/useLoginStore";
 import { MemberProfileUpdateReq } from "@/global/types/member.types";
 
 interface UserProfile {
+  memberId: number | null;
   name: string;
   nickname: string;
   email: string;
-  country: string;
+  countryCode: string;
+  countryName: string;
   level: string;
   description: string;
-  interest: string[];
+  interests: string[];
+  profileImageUrl?: string;
+  isFriend: boolean;
+  isPendingRequest: boolean;
   joinDate: Date | null;
   totalChats: number;
   vocabularyLearned: number;
   streak: number;
 }
 
-type ProfileEditFormState = MemberProfileUpdateReq & {
+type ProfileEditFormState = Omit<MemberProfileUpdateReq, "country"> & {
+  country: string;
   email?: string;
   level?: MemberProfileUpdateReq["englishLevel"];
 };
@@ -36,15 +43,6 @@ const DEFAULT_EDIT_FORM: ProfileEditFormState = {
   email: "",
   level: "BEGINNER",
 };
-
-const COUNTRY_OPTIONS = [
-  { value: "KR", label: "South Korea" },
-  { value: "JP", label: "Japan" },
-  { value: "CN", label: "China" },
-  { value: "US", label: "USA" },
-  { value: "UK", label: "UK" },
-  { value: "OTHER", label: "Other" },
-];
 
 const ENGLISH_LEVEL_OPTIONS: MemberProfileUpdateReq["englishLevel"][] = [
   "BEGINNER",
@@ -75,13 +73,18 @@ export default function ProfilePage() {
   const accessToken = useLoginStore((state) => state.accessToken);
   const hasHydrated = useLoginStore((state) => state.hasHydrated);
   const [profile, setProfile] = useState<UserProfile>({
+    memberId: null,
     name: "",
     nickname: "",
     email: "",
-    country: "",
+    countryCode: "",
+    countryName: "",
     level: "BEGINNER",
     description: "",
-    interest: [],
+    interests: [],
+    profileImageUrl: "",
+    isFriend: false,
+    isPendingRequest: false,
     joinDate: null,
     totalChats: 0,
     vocabularyLearned: 0,
@@ -153,18 +156,19 @@ export default function ProfilePage() {
       }
 
       const englishLevel = base.englishLevel ?? "BEGINNER";
+      const interests = base.interest ?? base.interests ?? [];
 
       setEditForm({
         name: base.name ?? "",
         nickname: base.nickname ?? "",
-        country: base.country ?? "",
+        country: (base.country ?? base.countryCode ?? "").toUpperCase(),
         englishLevel,
         level: englishLevel,
-        interest: base.interest ?? [],
+        interest: interests,
         description: base.description ?? "",
         email: base.email ?? "",
       });
-      setInterestDraft((base.interest ?? []).join(", "));
+      setInterestDraft(interests.join(", "));
     },
     [profileData]
   );
@@ -188,10 +192,17 @@ export default function ProfilePage() {
       return;
     }
 
+    const countryCode = (editForm.country ?? "").trim().toUpperCase();
+
+    if (!countryCode) {
+      alert("국가를 선택해주세요.");
+      return;
+    }
+
     const payload: MemberProfileUpdateReq = {
       name: trimmedName,
       nickname: trimmedNickname,
-      country: editForm.country,
+      country: countryCode as MemberProfileUpdateReq["country"],
       englishLevel: editForm.englishLevel ?? editForm.level ?? "BEGINNER",
       interest: sanitisedInterests,
       description: trimmedDescription,
@@ -237,6 +248,13 @@ export default function ProfilePage() {
     setShowFriendProfile(false);
   };
 
+  useEffect(() => {
+    if (!selectedFriend) {
+      setShowFriendProfile(false);
+      setShowInviteModal(false);
+    }
+  }, [selectedFriend]);
+
   const handleSendInvite = (roomName: string) => {
     if (selectedFriend) {
       alert(
@@ -265,17 +283,29 @@ export default function ProfilePage() {
     }
 
     const englishLevel = profileData.englishLevel ?? "BEGINNER";
+    const levelLabel = ENGLISH_LEVEL_LABELS[
+      englishLevel as MemberProfileUpdateReq["englishLevel"]
+    ] ?? englishLevel;
     const joinedAt = profileData.joinedAt ? new Date(profileData.joinedAt) : null;
     const joinDate = joinedAt && !Number.isNaN(joinedAt.getTime()) ? joinedAt : null;
+    const interests = (profileData.interest ?? profileData.interests ?? []).map((item) => item?.trim?.() ?? String(item ?? "").trim()).filter((item) => item.length > 0);
+    const countryCodeRaw = profileData.country ?? "";
+    const countryCode = countryCodeRaw ? countryCodeRaw.toUpperCase() : "";
+    const countryName = profileData.countryName ?? getCountryLabel(countryCode);
 
     setProfile({
+      memberId: profileData.memberId ?? profileData.id ?? null,
       name: profileData.name ?? "",
       nickname: profileData.nickname ?? "",
       email: profileData.email ?? "",
-      country: profileData.country ?? "",
-      level: ENGLISH_LEVEL_LABELS[englishLevel],
+      countryCode,
+      countryName,
+      level: levelLabel,
       description: profileData.description ?? "",
-      interest: profileData.interest ?? [],
+      interests,
+      profileImageUrl: profileData.profileImageUrl ?? "",
+      isFriend: Boolean(profileData.isFriend),
+      isPendingRequest: Boolean(profileData.isPendingRequest),
       joinDate,
       totalChats: profileData.totalChats ?? 0,
       vocabularyLearned: profileData.vocabularyLearned ?? 0,
@@ -343,6 +373,36 @@ export default function ProfilePage() {
             </div>
 
             <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                <div className="w-20 h-20 rounded-full overflow-hidden bg-gray-700 flex items-center justify-center text-2xl text-gray-300">
+                  {profile.profileImageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={profile.profileImageUrl}
+                      alt={`${profile.nickname || profile.name} profile`}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span>{profile.nickname?.charAt(0) ?? profile.name.charAt(0) ?? "?"}</span>
+                  )}
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm text-gray-300">
+                    Member ID: <span className="text-white">{profile.memberId ?? "-"}</span>
+                  </p>
+                  <p className="text-sm text-gray-300">
+                    Connection:
+                    <span className="ml-1 text-white">
+                      {profile.isFriend
+                        ? "Friends"
+                        : profile.isPendingRequest
+                          ? "Pending"
+                          : "Not connected"}
+                    </span>
+                  </p>
+                </div>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">
                   Name
@@ -381,6 +441,26 @@ export default function ProfilePage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">
+                  About Me
+                </label>
+                {isEditing ? (
+                  <textarea
+                    value={editForm.description}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, description: e.target.value })
+                    }
+                    rows={4}
+                    className="w-full px-3 py-2 border border-gray-600 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                ) : (
+                  <p className="text-gray-200 whitespace-pre-line">
+                    {profile.description || "소개가 아직 등록되지 않았습니다."}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
                   Country
                 </label>
                 {isEditing ? (
@@ -391,15 +471,17 @@ export default function ProfilePage() {
                     }
                     className="w-full px-3 py-2 border border-gray-600 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   >
-                    <option value="South Korea">South Korea</option>
-                    <option value="Japan">Japan</option>
-                    <option value="China">China</option>
-                    <option value="USA">USA</option>
-                    <option value="UK">UK</option>
-                    <option value="Other">Other</option>
+                    <option value="">Select country</option>
+                    {COUNTRY_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
                   </select>
                 ) : (
-                  <p className="text-gray-200">{profile.country}</p>
+                  <p className="text-gray-200">
+                    {profile.countryName || getCountryLabel(profile.countryCode) || "-"}
+                  </p>
                 )}
               </div>
 
@@ -428,6 +510,39 @@ export default function ProfilePage() {
                   </select>
                 ) : (
                   <p className="text-gray-200">{profile.level}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  Interests
+                </label>
+                {isEditing ? (
+                  <div>
+                    <input
+                      type="text"
+                      value={interestDraft}
+                      onChange={(e) => setInterestDraft(e.target.value)}
+                      placeholder="예: 영화 감상, 러닝, 여행"
+                      className="w-full px-3 py-2 border border-gray-600 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    />
+                    <p className="text-xs text-gray-400 mt-1">
+                      복수의 관심사는 콤마(,)로 구분해서 입력해주세요.
+                    </p>
+                  </div>
+                ) : profile.interests.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {profile.interests.map((interest, index) => (
+                      <span
+                        key={`${interest}-${index}`}
+                        className="px-3 py-1 bg-emerald-600 text-white rounded-full text-xs"
+                      >
+                        {interest}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-400 text-sm">등록된 관심사가 없습니다.</p>
                 )}
               </div>
 
@@ -660,15 +775,27 @@ export default function ProfilePage() {
 
       {/* Friend Profile Modal */}
       {showFriendProfile && selectedFriend && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-800 rounded-lg border border-gray-600 w-full max-w-md">
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={() => {
+            setShowFriendProfile(false);
+            setSelectedFriend(null);
+          }}
+        >
+          <div
+            className="bg-gray-800 rounded-lg border border-gray-600 w-full max-w-md"
+            onClick={(event) => event.stopPropagation()}
+          >
             <div className="p-4 border-b border-gray-600">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-white">
                   Friend Profile
                 </h3>
                 <button
-                  onClick={() => setShowFriendProfile(false)}
+                  onClick={() => {
+                    setShowFriendProfile(false);
+                    setSelectedFriend(null);
+                  }}
                   className="text-gray-400 hover:text-white"
                 >
                   <svg
@@ -770,8 +897,17 @@ export default function ProfilePage() {
 
       {/* Invite to Room Modal */}
       {showInviteModal && selectedFriend && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-800 rounded-lg border border-gray-600 w-full max-w-md">
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={() => {
+            setShowInviteModal(false);
+            setSelectedFriend(null);
+          }}
+        >
+          <div
+            className="bg-gray-800 rounded-lg border border-gray-600 w-full max-w-md"
+            onClick={(event) => event.stopPropagation()}
+          >
             <div className="p-4 border-b border-gray-600">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-white">
