@@ -1,6 +1,7 @@
 "use client";
 
 import { useMembersQuery } from "@/global/api/useMemberQuery";
+import { useCreateDirectChat } from "@/global/api/useChatQuery";
 import { MemberSummaryResp } from "@/global/types/auth.types";
 import Image from "next/image";
 import { useState } from "react";
@@ -11,10 +12,12 @@ const getAvatar = (name: string) => `https://i.pravatar.cc/150?u=${name}`;
 export default function FindPage() {
   const { data: members, isLoading, error } = useMembersQuery();
   const [selectedUser, setSelectedUser] = useState<MemberSummaryResp | null>(null);
+  const createChatMutation = useCreateDirectChat();
 
   const startChat = (user: MemberSummaryResp) => {
-    // This would typically navigate to a chat page or open a chat modal
-    alert(`Starting chat with ${user.nickname}...`);
+    if (window.confirm(`${user.nickname}님과 채팅을 시작하시겠습니까?`)) {
+      createChatMutation.mutate({ partnerId: user.id });
+    }
   };
 
   const sendFriendRequest = (user: MemberSummaryResp) => {
@@ -56,11 +59,9 @@ export default function FindPage() {
           >
             <div className="flex items-center mb-4">
               <div className="relative">
-                <Image
+                <img
                   src={getAvatar(user.nickname)}
                   alt={user.name}
-                  width={64}
-                  height={64}
                   className="w-16 h-16 rounded-full object-cover"
                 />
                 <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 border-2 border-gray-800 rounded-full"></div>
@@ -86,7 +87,7 @@ export default function FindPage() {
                 INTERESTS
               </p>
               <div className="flex flex-wrap gap-1">
-                {user.interest.slice(0, 3).map((interest, index) => (
+                {user.interests.slice(0, 3).map((interest, index) => (
                   <span
                     key={index}
                     className="px-2 py-1 bg-emerald-600 text-white text-xs rounded-full"
@@ -143,11 +144,9 @@ export default function FindPage() {
               <div className="flex justify-between items-start mb-6">
                 <div className="flex items-center">
                   <div className="relative">
-                    <Image
+                    <img
                       src={getAvatar(selectedUser.nickname)}
                       alt={selectedUser.name}
-                      width={80}
-                      height={80}
                       className="w-20 h-20 rounded-full object-cover"
                     />
                     <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 border-2 border-gray-800 rounded-full"></div>
@@ -187,7 +186,7 @@ export default function FindPage() {
                     Interests
                   </h3>
                   <div className="flex flex-wrap gap-2">
-                    {selectedUser.interest.split(',').map((interest, index) => (
+                    {selectedUser.interests.map((interest, index) => (
                       <span
                         key={index}
                         className="px-3 py-1 bg-emerald-600 text-white rounded-full text-sm"

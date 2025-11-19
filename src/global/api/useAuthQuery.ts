@@ -14,7 +14,7 @@ import { MemberSummaryResp, UserJoinReqBody, UserLoginReqBody } from "../types/a
 
 // 내 정보 조회
 const me = async () => {
-  const response = await client.GET("/api/v1/member/me", {}); // 실제 API 경로 확인 필요
+  const response = await client.GET("/api/v1/members/me", {}); // 실제 API 경로 확인 필요
   return unwrap<MemberSummaryResp>(response);
 };
 
@@ -71,9 +71,9 @@ export const useLogin = () => {
       // 로그인 성공 후 내 정보 쿼리 무효화하여 최신 정보 가져오도록 유도
       qc.invalidateQueries({ queryKey: authQueryKeys.me().queryKey });
       // 또는 직접 내 정보 가져와서 저장 (옵션)
-      // qc.fetchQuery({ queryKey: authQueryKeys.me().queryKey, queryFn: me })
-      //   .then(memberData => setMember(memberData))
-      //   .catch(err => console.error("Failed to fetch member after login", err));
+      qc.fetchQuery({ queryKey: authQueryKeys.me().queryKey, queryFn: me })
+        .then(memberData => setMember(memberData))
+        .catch(err => console.error("Failed to fetch member after login", err));
     },
   });
 };
