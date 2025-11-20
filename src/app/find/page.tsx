@@ -1,9 +1,9 @@
 "use client";
 
-import { useMembersQuery } from "@/global/api/useMemberQuery";
 import { useCreateDirectChat } from "@/global/api/useChatQuery";
+import { useMembersQuery } from "@/global/api/useMemberQuery";
+import { useFriendshipActions } from "@/global/hooks/useFriendshipActions";
 import { MemberSummaryResp } from "@/global/types/auth.types";
-import Image from "next/image";
 import { useState } from "react";
 
 // A simple utility to generate a placeholder avatar
@@ -13,6 +13,7 @@ export default function FindPage() {
   const { data: members, isLoading, error } = useMembersQuery();
   const [selectedUser, setSelectedUser] = useState<MemberSummaryResp | null>(null);
   const createChatMutation = useCreateDirectChat();
+  const { sendFriendRequest, status: friendshipStatus } = useFriendshipActions();
 
   const startChat = (user: MemberSummaryResp) => {
     if (window.confirm(`${user.nickname}님과 채팅을 시작하시겠습니까?`)) {
@@ -20,8 +21,17 @@ export default function FindPage() {
     }
   };
 
-  const sendFriendRequest = (user: MemberSummaryResp) => {
-    alert(`Friend request sent to ${user.nickname}!`);
+  const handleSendFriendRequest = async (user: MemberSummaryResp) => {
+    try {
+      await sendFriendRequest(user.id);
+      alert(`${user.nickname}님께 친구 요청을 보냈습니다.`);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "친구 요청을 보낼 수 없습니다. 잠시 후 다시 시도해 주세요.";
+      alert(message);
+    }
   };
 
   const renderContent = () => {
@@ -111,11 +121,12 @@ export default function FindPage() {
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  sendFriendRequest(user);
+                  void handleSendFriendRequest(user);
                 }}
-                className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors"
+                disabled={friendshipStatus.isSending}
+                className="flex-1 bg-gray-600 hover:bg-gray-700 disabled:opacity-60 disabled:cursor-not-allowed text-white px-3 py-2 rounded text-sm font-medium transition-colors"
               >
-                Add Friend
+                {friendshipStatus.isSending ? "Sending..." : "Add Friend"}
               </button>
             </div>
           </div>
@@ -206,10 +217,11 @@ export default function FindPage() {
                   Start Conversation
                 </button>
                 <button
-                  onClick={() => sendFriendRequest(selectedUser)}
-                  className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-4 py-3 rounded font-medium transition-colors"
+                  onClick={() => void handleSendFriendRequest(selectedUser)}
+                  disabled={friendshipStatus.isSending}
+                  className="flex-1 bg-gray-600 hover:bg-gray-700 disabled:opacity-60 disabled:cursor-not-allowed text-white px-4 py-3 rounded font-medium transition-colors"
                 >
-                  Send Friend Request
+                  {friendshipStatus.isSending ? "Sending..." : "Send Friend Request"}
                 </button>
               </div>
             </div>
