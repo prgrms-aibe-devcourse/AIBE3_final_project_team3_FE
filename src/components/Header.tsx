@@ -4,69 +4,32 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { useLogout } from "@/global/api/useAuthQuery";
+import {
+  useMarkAllNotificationsRead,
+  useMarkNotificationRead,
+  useNotificationsQuery,
+} from "@/global/api/useNotificationQuery";
 import { useLoginStore } from "@/global/stores/useLoginStore";
+import { useNotificationStore } from "@/global/stores/useNotificationStore";
+import { NotificationItem } from "@/global/types/notification.types";
 import { useShallow } from "zustand/react/shallow";
-
-interface Notification {
-  id: number;
-  type:
-  | "friend_request"
-  | "friend_accepted"
-  | "chat_invitation"
-  | "room_invitation";
-  message: string;
-  from: string;
-  timestamp: Date;
-  isRead: boolean;
-}
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>([
-    {
-      id: 1,
-      type: "friend_request",
-      message: "Sarah Johnson sent you a friend request",
-      from: "Sarah Johnson",
-      timestamp: new Date(Date.now() - 5 * 60 * 1000), // 5 minutes ago
-      isRead: false,
-    },
-    {
-      id: 2,
-      type: "friend_accepted",
-      message: "Miguel Rodriguez accepted your friend request",
-      from: "Miguel Rodriguez",
-      timestamp: new Date(Date.now() - 30 * 60 * 1000), // 30 minutes ago
-      isRead: false,
-    },
-    {
-      id: 3,
-      type: "chat_invitation",
-      message: "Emma Wilson wants to start a 1:1 chat with you",
-      from: "Emma Wilson",
-      timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000), // 1 hour ago
-      isRead: false,
-    },
-    {
-      id: 4,
-      type: "room_invitation",
-      message: "Yuki Tanaka invited you to join 'Travel Stories' chat room",
-      from: "Yuki Tanaka",
-      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-      isRead: true,
-    },
-    {
-      id: 5,
-      type: "room_invitation",
-      message: "Chen Wei invited you to join 'Study Buddy' chat room",
-      from: "Chen Wei",
-      timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000), // 4 hours ago
-      isRead: true,
-    },
-  ]);
-
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
+  const {
+    notifications,
+    unreadCount,
+    markNotificationInStore,
+    markAllNotificationsInStore,
+  } = useNotificationStore(
+    useShallow((state) => ({
+      notifications: state.items,
+      unreadCount: state.unreadCount,
+      markNotificationInStore: state.markAsRead,
+      markAllNotificationsInStore: state.markAllAsRead,
+    })),
+  );
 
   // Close notifications dropdown when clicking outside
   useEffect(() => {
@@ -83,10 +46,15 @@ export default function Header() {
     };
   }, []);
 
-  const formatTimeAgo = (timestamp: Date) => {
+  const formatTimeAgo = (timestamp: string) => {
+    const date = new Date(timestamp);
+    if (Number.isNaN(date.getTime())) {
+      return "-";
+    }
+
     const now = new Date();
     const diffInMinutes = Math.floor(
-      (now.getTime() - timestamp.getTime()) / (1000 * 60)
+      (now.getTime() - date.getTime()) / (1000 * 60)
     );
 
     if (diffInMinutes < 1) return "Just now";
@@ -95,33 +63,25 @@ export default function Header() {
     return `${Math.floor(diffInMinutes / 1440)}d ago`;
   };
 
-  const getNotificationIcon = (type: Notification["type"]) => {
+  const getNotificationIcon = (type: NotificationItem["type"]) => {
     switch (type) {
       case "friend_request":
         return "👤";
-      case "friend_accepted":
+      case "friend_request_accept":
         return "✅";
+      case "friend_request_reject":
+        return "❌";
       case "chat_invitation":
         return "💬";
-      case "room_invitation":
-        return "🏠";
+      case "chat_message":
+        return "💭";
       default:
         return "📢";
     }
   };
 
-  const markAsRead = (notificationId: number) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === notificationId ? { ...n, isRead: true } : n))
-    );
-  };
-
-  const markAllAsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
-  };
-
   const handleNotificationAction = (
-    notification: Notification,
+    notification: NotificationItem,
     action: "accept" | "decline"
   ) => {
     // Mock notification actions
@@ -129,10 +89,8 @@ export default function Header() {
       alert(`Friend request ${action}ed!`);
     } else if (notification.type === "chat_invitation") {
       alert(`Chat invitation ${action}ed!`);
-    } else if (notification.type === "room_invitation") {
-      alert(`Room invitation ${action}ed!`);
     }
-    markAsRead(notification.id);
+    handleMarkAsRead(notification.id);
   };
 
   const { accessToken, hasHydrated } = useLoginStore(
@@ -143,6 +101,23 @@ export default function Header() {
   );
   const { mutate: triggerLogout, isPending: isLoggingOut } = useLogout();
   const isLoggedIn = Boolean(accessToken);
+  const { mutate: markNotificationRead } = useMarkNotificationRead();
+  const { mutate: markAllNotificationsRead, isPending: isMarkingAll } = useMarkAllNotificationsRead();
+  useNotificationsQuery({ enabled: hasHydrated && isLoggedIn });
+
+  const handleMarkAsRead = (notificationId: number) => {
+    markNotificationInStore(notificationId);
+    if (isLoggedIn) {
+      markNotificationRead(notificationId);
+    }
+  };
+
+  const handleMarkAllAsRead = () => {
+    markAllNotificationsInStore();
+    if (isLoggedIn) {
+      markAllNotificationsRead();
+    }
+  };
 
   const handleLogout = () => {
     if (!isLoggingOut) {
@@ -225,10 +200,11 @@ export default function Header() {
                     </h3>
                     {unreadCount > 0 && (
                       <button
-                        onClick={markAllAsRead}
-                        className="text-xs text-emerald-400 hover:text-emerald-300"
+                        onClick={handleMarkAllAsRead}
+                        disabled={isMarkingAll}
+                        className="text-xs text-emerald-400 hover:text-emerald-300 disabled:opacity-60"
                       >
-                        Mark all as read
+                        {isMarkingAll ? "Marking..." : "Mark all as read"}
                       </button>
                     )}
                   </div>
@@ -244,9 +220,8 @@ export default function Header() {
                       notifications.map((notification) => (
                         <div
                           key={notification.id}
-                          className={`p-3 border-b border-gray-700 hover:bg-gray-750 transition-colors ${!notification.isRead ? "bg-gray-750/50" : ""
-                            }`}
-                          onClick={() => markAsRead(notification.id)}
+                          className={`p-3 border-b border-gray-700 hover:bg-gray-750 transition-colors ${!notification.isRead ? "bg-gray-750/50" : ""}`}
+                          onClick={() => handleMarkAsRead(notification.id)}
                         >
                           <div className="flex items-start space-x-3">
                             <div className="text-lg">
@@ -257,7 +232,7 @@ export default function Header() {
                                 {notification.message}
                               </p>
                               <p className="text-xs text-gray-400 mt-1">
-                                {formatTimeAgo(notification.timestamp)}
+                                {formatTimeAgo(notification.createdAt)}
                               </p>
                               {!notification.isRead && (
                                 <div className="w-2 h-2 bg-emerald-500 rounded-full mt-1"></div>
@@ -265,17 +240,13 @@ export default function Header() {
 
                               {/* Action buttons for certain notification types */}
                               {(notification.type === "friend_request" ||
-                                notification.type === "chat_invitation" ||
-                                notification.type === "room_invitation") &&
+                                notification.type === "chat_invitation") &&
                                 !notification.isRead && (
                                   <div className="flex space-x-2 mt-2">
                                     <button
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        handleNotificationAction(
-                                          notification,
-                                          "accept"
-                                        );
+                                        handleNotificationAction(notification, "accept");
                                       }}
                                       className="bg-emerald-600 text-white px-3 py-1 rounded text-xs hover:bg-emerald-700 transition-colors"
                                     >
@@ -284,10 +255,7 @@ export default function Header() {
                                     <button
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        handleNotificationAction(
-                                          notification,
-                                          "decline"
-                                        );
+                                        handleNotificationAction(notification, "decline");
                                       }}
                                       className="bg-gray-600 text-white px-3 py-1 rounded text-xs hover:bg-gray-700 transition-colors"
                                     >
@@ -389,7 +357,7 @@ export default function Header() {
                       </span>
                       {unreadCount > 0 && (
                         <button
-                          onClick={markAllAsRead}
+                          onClick={handleMarkAllAsRead}
                           className="text-xs text-emerald-400 hover:text-emerald-300"
                         >
                           Mark all read
@@ -401,7 +369,7 @@ export default function Header() {
                         key={notification.id}
                         className={`p-2 border-b border-gray-700 last:border-b-0 ${!notification.isRead ? "bg-gray-700/50" : ""
                           }`}
-                        onClick={() => markAsRead(notification.id)}
+                        onClick={() => handleMarkAsRead(notification.id)}
                       >
                         <div className="flex items-start space-x-2">
                           <div className="text-sm">
@@ -412,7 +380,7 @@ export default function Header() {
                               {notification.message}
                             </p>
                             <p className="text-xs text-gray-400 mt-1">
-                              {formatTimeAgo(notification.timestamp)}
+                              {formatTimeAgo(notification.createdAt)}
                             </p>
                           </div>
                         </div>
