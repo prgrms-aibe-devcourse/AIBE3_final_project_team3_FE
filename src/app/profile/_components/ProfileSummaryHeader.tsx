@@ -4,6 +4,8 @@ interface ProfileSummaryHeaderProps {
     imageUrl?: string | null;
     imageAlt?: string;
     fallbackName?: string;
+    nickname?: string;
+    name?: string;
     memberId?: number | null;
     connectionLabel?: string;
     onClickChangeAvatar?: () => void;
@@ -39,6 +41,8 @@ export function ProfileSummaryHeader({
     imageUrl,
     imageAlt,
     fallbackName,
+    nickname,
+    name,
     memberId,
     connectionLabel,
     onClickChangeAvatar,
@@ -53,7 +57,7 @@ export function ProfileSummaryHeader({
     const fallbackInitial = resolveFallbackInitial(fallbackName);
 
     return (
-        <div className={combineClassName(className)}>
+        <div className={combineClassName(className)} data-member-id={memberId ?? undefined}>
             <div className="relative w-20 h-20 rounded-full overflow-hidden bg-gray-700 flex items-center justify-center text-2xl text-gray-300">
                 {displayImageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -68,10 +72,11 @@ export function ProfileSummaryHeader({
                 )}
             </div>
             <div className="space-y-1">
-                {memberId !== undefined && (
-                    <p className="text-sm text-gray-300">
-                        Member ID: <span className="text-white">{memberId ?? "-"}</span>
-                    </p>
+                {nickname && (
+                    <p className="text-base font-semibold text-white">{nickname}</p>
+                )}
+                {name && (
+                    <p className="text-sm text-gray-300">{name}</p>
                 )}
                 {connectionLabel && (
                     <p className="text-sm text-gray-300">

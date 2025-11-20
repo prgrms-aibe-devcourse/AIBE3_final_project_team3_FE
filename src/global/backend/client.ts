@@ -84,6 +84,38 @@ const requestTokenReissue = async (): Promise<string | null> => {
   return tokenRefreshPromise;
 };
 
+const isMultipartLikeBody = (body: BodyInit | null | undefined): boolean => {
+  if (!body) {
+    return false;
+  }
+
+  if (typeof FormData !== "undefined" && body instanceof FormData) {
+    return true;
+  }
+
+  if (typeof Blob !== "undefined" && body instanceof Blob) {
+    return true;
+  }
+
+  if (typeof URLSearchParams !== "undefined" && body instanceof URLSearchParams) {
+    return true;
+  }
+
+  if (typeof ReadableStream !== "undefined" && body instanceof ReadableStream) {
+    return true;
+  }
+
+  if (body instanceof ArrayBuffer) {
+    return true;
+  }
+
+  if (ArrayBuffer.isView(body)) {
+    return true;
+  }
+
+  return false;
+};
+
 const buildRequest = (
   input: RequestInfo | URL,
   init: RequestInit | undefined,
@@ -98,11 +130,14 @@ const buildRequest = (
     request.headers.set("Authorization", `Bearer ${accessToken}`);
   }
 
-  if (
-    (request.method === "POST" || request.method === "PUT" || request.method === "PATCH") &&
-    request.body &&
-    !request.headers.has("Content-Type")
-  ) {
+  const method = request.method?.toUpperCase?.() ?? "";
+  const body = init?.body ?? null;
+  const shouldAttachJsonHeader =
+    (method === "POST" || method === "PUT" || method === "PATCH") &&
+    !request.headers.has("Content-Type") &&
+    !isMultipartLikeBody(body);
+
+  if (shouldAttachJsonHeader) {
     request.headers.set("Content-Type", "application/json");
   }
 

@@ -1,12 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { ChangeEvent, useCallback, useEffect, useRef, useState } from "react";
 
-import { useMyProfile, useUpdateProfile } from "@/global/api/useMemberQuery";
+import { useMyProfile, useUpdateProfile, useUploadProfileImage } from "@/global/api/useMemberQuery";
 import { COUNTRY_OPTIONS, getCountryLabel } from "@/global/lib/countries";
 import { useLoginStore } from "@/global/stores/useLoginStore";
 import { MemberProfileUpdateReq } from "@/global/types/member.types";
+import { ProfileSummaryHeader } from "./_components/ProfileSummaryHeader";
 
 interface UserProfile {
   memberId: number | null;
@@ -68,6 +69,48 @@ interface Friend {
   avatar?: string;
 }
 
+const MAX_PROFILE_IMAGE_SIZE = 3 * 1024 * 1024;
+const SUPPORTED_IMAGE_MIME_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/jpg",
+  "image/pjpeg",
+];
+const SUPPORTED_IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "webp"];
+
+const buildVersionedImageUrl = (url?: string | null, version?: number) => {
+  if (!url) {
+    return undefined;
+  }
+
+  if (!version) {
+    return url;
+  }
+
+  const [base, queryString = ""] = url.split("?", 2);
+  const params = new URLSearchParams(queryString);
+  params.set("v", String(version));
+  const nextQuery = params.toString();
+  return nextQuery ? `${base}?${nextQuery}` : base;
+};
+
+const isSupportedImageFile = (file: File) => {
+  if (file.type && SUPPORTED_IMAGE_MIME_TYPES.includes(file.type)) {
+    return true;
+  }
+
+  if (!file.type || file.type === "application/octet-stream") {
+    const extension = file.name.split(".").pop()?.toLowerCase();
+    if (!extension) {
+      return false;
+    }
+    return SUPPORTED_IMAGE_EXTENSIONS.includes(extension);
+  }
+
+  return false;
+};
+
 export default function ProfilePage() {
   const router = useRouter();
   const accessToken = useLoginStore((state) => state.accessToken);
@@ -97,10 +140,16 @@ export default function ProfilePage() {
   const [showFriendProfile, setShowFriendProfile] = useState(false);
   const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null);
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
+  const [avatarVersion, setAvatarVersion] = useState<number>(0);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const previewUrlRef = useRef<string | null>(null);
 
   const { data: profileData, isLoading, error } = useMyProfile();
   const updateProfileMutation = useUpdateProfile();
+  const uploadProfileImageMutation = useUploadProfileImage();
   const isSaving = updateProfileMutation.isPending;
+  const isUploadingAvatar = uploadProfileImageMutation.isPending;
 
   // Mock friends data
   const [friends, setFriends] = useState<Friend[]>([
@@ -248,12 +297,82 @@ export default function ProfilePage() {
     setShowFriendProfile(false);
   };
 
+  const handleAvatarButtonClick = () => {
+    if (isUploadingAvatar) {
+      return;
+    }
+    fileInputRef.current?.click();
+  };
+
+  const handleAvatarFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const input = event.target;
+    const file = input.files?.[0];
+
+    if (!file) {
+      input.value = "";
+      return;
+    }
+
+    if (!isSupportedImageFile(file)) {
+      alert("이미지 파일(jpg, jpeg, png, webp)만 업로드할 수 있습니다.");
+      input.value = "";
+      return;
+    }
+
+    if (file.size > MAX_PROFILE_IMAGE_SIZE) {
+      alert("이미지 파일은 최대 3MB까지 업로드할 수 있습니다.");
+      input.value = "";
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(file);
+    setAvatarPreviewUrl(previewUrl);
+
+    uploadProfileImageMutation.mutate(file, {
+      onSuccess: (uploadedUrl) => {
+        if (uploadedUrl) {
+          setProfile((prev) => ({
+            ...prev,
+            profileImageUrl: uploadedUrl,
+          }));
+          setAvatarPreviewUrl(null);
+        }
+        setAvatarVersion(Date.now());
+      },
+      onError: (mutationError) => {
+        alert(mutationError.message);
+        setAvatarPreviewUrl(null);
+      },
+      onSettled: () => {
+        input.value = "";
+      },
+    });
+  };
+
   useEffect(() => {
     if (!selectedFriend) {
       setShowFriendProfile(false);
       setShowInviteModal(false);
     }
   }, [selectedFriend]);
+
+  useEffect(() => {
+    const previousPreview = previewUrlRef.current;
+    if (previousPreview && previousPreview !== avatarPreviewUrl) {
+      URL.revokeObjectURL(previousPreview);
+    }
+
+    previewUrlRef.current = avatarPreviewUrl;
+  }, [avatarPreviewUrl]);
+
+  useEffect(() => {
+    return () => {
+      const preview = previewUrlRef.current;
+      if (preview) {
+        URL.revokeObjectURL(preview);
+      }
+    };
+  }, []);
 
   const handleSendInvite = (roomName: string) => {
     if (selectedFriend) {
@@ -315,7 +434,10 @@ export default function ProfilePage() {
     if (!isEditing) {
       syncFormWithProfile(profileData);
     }
-  }, [profileData, isEditing, syncFormWithProfile]);
+    if (avatarPreviewUrl && profileData.profileImageUrl) {
+      setAvatarPreviewUrl(null);
+    }
+  }, [profileData, isEditing, syncFormWithProfile, avatarPreviewUrl]);
 
   useEffect(() => {
     if (!hasHydrated) {
@@ -334,6 +456,17 @@ export default function ProfilePage() {
   if (!accessToken) {
     return null;
   }
+
+  const connectionLabel = profile.isFriend
+    ? "Friends"
+    : profile.isPendingRequest
+      ? "Pending"
+      : "Not connected";
+
+  const displayProfileImageUrl = avatarPreviewUrl ?? buildVersionedImageUrl(
+    profile.profileImageUrl,
+    avatarVersion,
+  );
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -373,35 +506,27 @@ export default function ProfilePage() {
             </div>
 
             <div className="space-y-4">
-              <div className="flex items-center gap-4">
-                <div className="w-20 h-20 rounded-full overflow-hidden bg-gray-700 flex items-center justify-center text-2xl text-gray-300">
-                  {profile.profileImageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={profile.profileImageUrl}
-                      alt={`${profile.nickname || profile.name} profile`}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <span>{profile.nickname?.charAt(0) ?? profile.name.charAt(0) ?? "?"}</span>
-                  )}
-                </div>
-                <div className="space-y-1">
-                  <p className="text-sm text-gray-300">
-                    Member ID: <span className="text-white">{profile.memberId ?? "-"}</span>
-                  </p>
-                  <p className="text-sm text-gray-300">
-                    Connection:
-                    <span className="ml-1 text-white">
-                      {profile.isFriend
-                        ? "Friends"
-                        : profile.isPendingRequest
-                          ? "Pending"
-                          : "Not connected"}
-                    </span>
-                  </p>
-                </div>
-              </div>
+              <ProfileSummaryHeader
+                imageUrl={displayProfileImageUrl}
+                imageAlt={`${profile.nickname || profile.name} profile`}
+                fallbackName={profile.nickname || profile.name}
+                nickname={profile.nickname || "-"}
+                name={profile.name}
+                memberId={profile.memberId}
+                connectionLabel={connectionLabel}
+                onClickChangeAvatar={handleAvatarButtonClick}
+                changeButtonDisabled={isUploadingAvatar}
+                isUploadingAvatar={isUploadingAvatar}
+              />
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/jpg,image/webp"
+                className="hidden"
+                onChange={handleAvatarFileChange}
+                disabled={isUploadingAvatar}
+                aria-hidden="true"
+              />
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">
@@ -423,17 +548,37 @@ export default function ProfilePage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Email
+                  Nickname
                 </label>
                 {isEditing ? (
                   <input
-                    type="email"
-                    value={editForm.email}
+                    type="text"
+                    value={editForm.nickname}
                     onChange={(e) =>
-                      setEditForm({ ...editForm, email: e.target.value })
+                      setEditForm({ ...editForm, nickname: e.target.value })
                     }
                     className="w-full px-3 py-2 border border-gray-600 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
+                ) : (
+                  <p className="text-gray-200">{profile.nickname || "-"}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  Email
+                </label>
+                {isEditing ? (
+                  <>
+                    <input
+                      type="email"
+                      value={editForm.email}
+                      readOnly
+                      className="w-full px-3 py-2 border border-gray-600 bg-gray-800 text-gray-400 rounded-lg cursor-not-allowed"
+                      aria-readonly="true"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">이메일은 변경할 수 없습니다.</p>
+                  </>
                 ) : (
                   <p className="text-gray-200">{profile.email}</p>
                 )}

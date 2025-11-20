@@ -138,11 +138,79 @@ const updateMyProfile = async (payload: MemberProfileUpdateReq) => {
     }
 };
 
+const extractProfileImageUrl = (payload: unknown): string | null => {
+    if (!payload) {
+        return null;
+    }
+
+    if (typeof payload === "string") {
+        return payload;
+    }
+
+    if (typeof payload !== "object") {
+        return null;
+    }
+
+    const record = payload as Record<string, unknown>;
+    const candidateKeys = ["profileImageUrl", "url", "imageUrl"] as const;
+
+    for (const key of candidateKeys) {
+        const value = record[key];
+        if (typeof value === "string" && value.length > 0) {
+            return value;
+        }
+    }
+
+    const dataField = record.data;
+
+    if (typeof dataField === "string" && dataField.length > 0) {
+        return dataField;
+    }
+
+    if (dataField && typeof dataField === "object") {
+        const nested = dataField as Record<string, unknown>;
+        for (const key of candidateKeys) {
+            const value = nested[key];
+            if (typeof value === "string" && value.length > 0) {
+                return value;
+            }
+        }
+    }
+
+    return null;
+};
+
+const uploadProfileImage = async (file: File): Promise<string | null> => {
+    const formData = new FormData();
+    formData.append("multipartFile", file);
+
+    const { data, error } = await apiClient.PUT("/api/v1/members/profile/image", {
+        body: formData as never,
+    });
+
+    if (error) {
+        throw new Error(getApiErrorMessage(error, "프로필 이미지를 업로드하지 못했습니다."));
+    }
+
+    return extractProfileImageUrl(data);
+};
+
 export const useUpdateProfile = () => {
     const qc = useQueryClient();
 
     return useMutation<void, Error, MemberProfileUpdateReq>({
         mutationFn: updateMyProfile,
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ["member", "me"] });
+        },
+    });
+};
+
+export const useUploadProfileImage = () => {
+    const qc = useQueryClient();
+
+    return useMutation<string | null, Error, File>({
+        mutationFn: uploadProfileImage,
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ["member", "me"] });
         },
