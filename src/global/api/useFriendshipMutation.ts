@@ -156,60 +156,97 @@ const deleteFriend = async (friendId: number) => {
     }
 };
 
-const invalidateFriendshipCaches = (qc: QueryClient) => {
-    qc.invalidateQueries({ queryKey: ["members"] });
+type InvalidateOptions = {
+    targetProfileId?: number | null;
+    refreshMembers?: boolean;
+};
+
+const invalidateFriendshipCaches = (qc: QueryClient, options?: InvalidateOptions) => {
+    if (options?.refreshMembers) {
+        qc.invalidateQueries({ queryKey: ["members"] });
+    }
+
     qc.invalidateQueries({ queryKey: ["member", "me"] });
+
+    const targetId = options?.targetProfileId;
+    if (typeof targetId === "number" && Number.isFinite(targetId)) {
+        qc.invalidateQueries({ queryKey: ["member", "profile", targetId] });
+        return;
+    }
+
     qc.invalidateQueries({ queryKey: ["member", "profile"] });
+};
+
+type SendFriendRequestVariables = {
+    receiverId: number;
+    targetProfileId?: number | null;
+    refreshMembers?: boolean;
+};
+
+type FriendRequestDecisionVariables = {
+    requestId: number;
+    opponentMemberId?: number | null;
+    refreshMembers?: boolean;
+};
+
+type DeleteFriendVariables = {
+    friendId: number;
+    opponentMemberId?: number | null;
+    refreshMembers?: boolean;
 };
 
 export const useSendFriendRequest = () => {
     const qc = useQueryClient();
 
-    return useMutation<void, Error, { receiverId: number }>(
-        {
-            mutationFn: ({ receiverId }) => sendFriendRequest(receiverId),
-            onSuccess: () => {
-                invalidateFriendshipCaches(qc);
-            },
+    return useMutation<void, Error, SendFriendRequestVariables>({
+        mutationFn: ({ receiverId }) => sendFriendRequest(receiverId),
+        onSuccess: (_data, variables) => {
+            invalidateFriendshipCaches(qc, {
+                targetProfileId: variables.targetProfileId ?? variables.receiverId,
+                refreshMembers: variables.refreshMembers,
+            });
         },
-    );
+    });
 };
 
 export const useAcceptFriendRequest = () => {
     const qc = useQueryClient();
 
-    return useMutation<void, Error, { requestId: number }>(
-        {
-            mutationFn: ({ requestId }) => acceptFriendRequest(requestId),
-            onSuccess: () => {
-                invalidateFriendshipCaches(qc);
-            },
+    return useMutation<void, Error, FriendRequestDecisionVariables>({
+        mutationFn: ({ requestId }) => acceptFriendRequest(requestId),
+        onSuccess: (_data, variables) => {
+            invalidateFriendshipCaches(qc, {
+                targetProfileId: variables.opponentMemberId,
+                refreshMembers: variables.refreshMembers,
+            });
         },
-    );
+    });
 };
 
 export const useRejectFriendRequest = () => {
     const qc = useQueryClient();
 
-    return useMutation<void, Error, { requestId: number }>(
-        {
-            mutationFn: ({ requestId }) => rejectFriendRequest(requestId),
-            onSuccess: () => {
-                invalidateFriendshipCaches(qc);
-            },
+    return useMutation<void, Error, FriendRequestDecisionVariables>({
+        mutationFn: ({ requestId }) => rejectFriendRequest(requestId),
+        onSuccess: (_data, variables) => {
+            invalidateFriendshipCaches(qc, {
+                targetProfileId: variables.opponentMemberId,
+                refreshMembers: variables.refreshMembers,
+            });
         },
-    );
+    });
 };
 
 export const useDeleteFriend = () => {
     const qc = useQueryClient();
 
-    return useMutation<void, Error, { friendId: number }>(
-        {
-            mutationFn: ({ friendId }) => deleteFriend(friendId),
-            onSuccess: () => {
-                invalidateFriendshipCaches(qc);
-            },
+    return useMutation<void, Error, DeleteFriendVariables>({
+        mutationFn: ({ friendId }) => deleteFriend(friendId),
+        onSuccess: (_data, variables) => {
+            invalidateFriendshipCaches(qc, {
+                targetProfileId: variables.opponentMemberId ?? variables.friendId,
+                refreshMembers: variables.refreshMembers,
+            });
         },
-    );
+    });
 };

@@ -15,11 +15,28 @@ interface FriendshipActionStatus {
   isDeleting: boolean;
 }
 
+type SendFriendRequestParams = {
+  receiverId: number;
+  refreshMembers?: boolean;
+};
+
+type FriendRequestDecisionParams = {
+  requestId: number;
+  opponentMemberId?: number;
+  refreshMembers?: boolean;
+};
+
+type DeleteFriendParams = {
+  friendId: number;
+  opponentMemberId?: number;
+  refreshMembers?: boolean;
+};
+
 export interface FriendshipActions {
-  sendFriendRequest: (receiverId: number) => Promise<void>;
-  acceptFriendRequest: (requestId: number) => Promise<void>;
-  rejectFriendRequest: (requestId: number) => Promise<void>;
-  deleteFriend: (friendId: number) => Promise<void>;
+  sendFriendRequest: (params: SendFriendRequestParams) => Promise<void>;
+  acceptFriendRequest: (params: FriendRequestDecisionParams) => Promise<void>;
+  rejectFriendRequest: (params: FriendRequestDecisionParams) => Promise<void>;
+  deleteFriend: (params: DeleteFriendParams) => Promise<void>;
   status: FriendshipActionStatus;
 }
 
@@ -40,29 +57,33 @@ export const useFriendshipActions = (): FriendshipActions => {
   const deleteMutation = useDeleteFriend();
 
   const sendFriendRequest = useCallback(
-    async (receiverId: number) => {
-      await sendMutation.mutateAsync({ receiverId });
+    async ({ receiverId, refreshMembers }: SendFriendRequestParams) => {
+      await sendMutation.mutateAsync({
+        receiverId,
+        targetProfileId: receiverId,
+        refreshMembers,
+      });
     },
     [sendMutation],
   );
 
   const acceptFriendRequest = useCallback(
-    async (requestId: number) => {
-      await acceptMutation.mutateAsync({ requestId });
+    async ({ requestId, opponentMemberId, refreshMembers }: FriendRequestDecisionParams) => {
+      await acceptMutation.mutateAsync({ requestId, opponentMemberId, refreshMembers });
     },
     [acceptMutation],
   );
 
   const rejectFriendRequest = useCallback(
-    async (requestId: number) => {
-      await rejectMutation.mutateAsync({ requestId });
+    async ({ requestId, opponentMemberId, refreshMembers }: FriendRequestDecisionParams) => {
+      await rejectMutation.mutateAsync({ requestId, opponentMemberId, refreshMembers });
     },
     [rejectMutation],
   );
 
   const deleteFriend = useCallback(
-    async (friendId: number) => {
-      await deleteMutation.mutateAsync({ friendId });
+    async ({ friendId, opponentMemberId, refreshMembers }: DeleteFriendParams) => {
+      await deleteMutation.mutateAsync({ friendId, opponentMemberId, refreshMembers });
     },
     [deleteMutation],
   );

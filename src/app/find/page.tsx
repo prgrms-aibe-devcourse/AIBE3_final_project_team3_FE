@@ -95,7 +95,11 @@ export default function FindPage() {
   }, [selectedProfile, selectedUserId]);
 
   const opponentPendingRequestId = useMemo(
-    () => normaliseNumericId(selectedProfile?.pendingFriendRequestIdFromOpponent),
+    () =>
+      normaliseNumericId(
+        selectedProfile?.receivedFriendRequestId ??
+        selectedProfile?.pendingFriendRequestIdFromOpponent,
+      ),
     [selectedProfile],
   );
 
@@ -138,12 +142,19 @@ export default function FindPage() {
   const modalEnglishLevelDisplay = modalEnglishLevel || "-";
   const modalDescriptionDisplay = modalDescription || "소개 정보가 아직 없습니다.";
   const isProfilePending = Boolean(selectedUser) && (isProfileLoading || isProfileFetching);
+  const hasIncomingFriendRequest = Boolean(
+    opponentPendingRequestId ??
+    selectedProfile?.receivedFriendRequestId ??
+    (typeof selectedProfile?.isPendingFriendRequestFromOpponent === "boolean" &&
+      selectedProfile.isPendingFriendRequestFromOpponent),
+  );
+
   const modalFriendshipState: FriendshipState | undefined = selectedProfile
     ? selectedProfile.isFriend
       ? "FRIEND"
-      : selectedProfile.isPendingFriendRequestFromMe
+      : selectedProfile.isFriendRequestSent || selectedProfile.isPendingFriendRequestFromMe
         ? "REQUEST_SENT"
-        : selectedProfile.isPendingFriendRequestFromOpponent
+        : hasIncomingFriendRequest
           ? "REQUEST_RECEIVED"
           : "NONE"
     : undefined;
@@ -161,7 +172,7 @@ export default function FindPage() {
     }
 
     try {
-      await mutateSendFriendRequest(selectedProfileMemberId);
+      await mutateSendFriendRequest({ receiverId: selectedProfileMemberId });
       alert("친구 요청을 전송했습니다.");
     } catch (error) {
       const message = error instanceof Error ? error.message : "친구 요청 전송 중 문제가 발생했습니다.";
@@ -176,7 +187,10 @@ export default function FindPage() {
     }
 
     try {
-      await mutateAcceptFriendRequest(opponentPendingRequestId);
+      await mutateAcceptFriendRequest({
+        requestId: opponentPendingRequestId,
+        opponentMemberId: selectedProfileMemberId ?? undefined,
+      });
       alert("친구 요청을 수락했습니다.");
     } catch (error) {
       const message = error instanceof Error ? error.message : "친구 요청 수락 중 문제가 발생했습니다.";
@@ -191,7 +205,10 @@ export default function FindPage() {
     }
 
     try {
-      await mutateRejectFriendRequest(opponentPendingRequestId);
+      await mutateRejectFriendRequest({
+        requestId: opponentPendingRequestId,
+        opponentMemberId: selectedProfileMemberId ?? undefined,
+      });
       alert("친구 요청을 거절했습니다.");
     } catch (error) {
       const message = error instanceof Error ? error.message : "친구 요청 거절 중 문제가 발생했습니다.";
@@ -213,7 +230,10 @@ export default function FindPage() {
     }
 
     try {
-      await mutateDeleteFriend(friendId);
+      await mutateDeleteFriend({
+        friendId,
+        opponentMemberId: selectedProfileMemberId ?? undefined,
+      });
       alert("친구 관계를 해제했습니다.");
     } catch (error) {
       const message = error instanceof Error ? error.message : "친구 관계 해제 중 문제가 발생했습니다.";

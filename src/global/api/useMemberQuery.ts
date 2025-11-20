@@ -107,6 +107,19 @@ const normaliseProfile = (payload: unknown): MemberProfile => {
 
     const { code: countryCode, name: countryName } = normaliseCountryValue(profile.country);
 
+    const friendRequestSentFlag = Boolean(
+        profile.isFriendRequestSent ??
+            profile.friendRequestSent ??
+            profile.isPendingFriendRequestFromMe,
+    );
+
+    const receivedFriendRequestId = normaliseNumericId(
+        profile.receivedFriendRequestId ??
+            profile.pendingFriendRequestIdFromOpponent ??
+            profile.friendRequestId ??
+            profile.pendingFriendRequestId,
+    );
+
     const pendingFromMeCandidates = [
         profile.pendingFriendRequestIdFromMe,
         profile.friendRequestIdFromMe,
@@ -116,6 +129,7 @@ const normaliseProfile = (payload: unknown): MemberProfile => {
     ];
 
     const pendingFromOpponentCandidates = [
+        receivedFriendRequestId,
         profile.pendingFriendRequestIdFromOpponent,
         profile.friendRequestIdFromOpponent,
         profile.pendingRequestIdFromOpponent,
@@ -127,11 +141,16 @@ const normaliseProfile = (payload: unknown): MemberProfile => {
     let pendingFriendRequestIdFromOpponent = pickFirstNumericId(pendingFromOpponentCandidates);
     const sharedPendingId = normaliseNumericId(profile.friendRequestId ?? profile.pendingFriendRequestId);
 
-    if (!pendingFriendRequestIdFromMe && sharedPendingId && profile.isPendingFriendRequestFromMe) {
+    if (!pendingFriendRequestIdFromMe && sharedPendingId && friendRequestSentFlag) {
         pendingFriendRequestIdFromMe = sharedPendingId;
     }
 
-    if (!pendingFriendRequestIdFromOpponent && sharedPendingId && profile.isPendingFriendRequestFromOpponent) {
+    const isPendingFriendRequestFromOpponent =
+        typeof receivedFriendRequestId === "number"
+            ? true
+            : Boolean(profile.isPendingFriendRequestFromOpponent);
+
+    if (!pendingFriendRequestIdFromOpponent && sharedPendingId && isPendingFriendRequestFromOpponent) {
         pendingFriendRequestIdFromOpponent = sharedPendingId;
     }
 
@@ -158,8 +177,10 @@ const normaliseProfile = (payload: unknown): MemberProfile => {
         profileImageUrl: typeof profile.profileImageUrl === "string" ? profile.profileImageUrl : undefined,
         isFriend: Boolean(profile.isFriend),
         isPendingRequest: Boolean(profile.isPendingRequest),
-        isPendingFriendRequestFromMe: Boolean(profile.isPendingFriendRequestFromMe),
-        isPendingFriendRequestFromOpponent: Boolean(profile.isPendingFriendRequestFromOpponent),
+        isPendingFriendRequestFromMe: friendRequestSentFlag,
+        isPendingFriendRequestFromOpponent,
+        isFriendRequestSent: friendRequestSentFlag,
+        receivedFriendRequestId: receivedFriendRequestId ?? null,
         pendingFriendRequestIdFromMe,
         pendingFriendRequestIdFromOpponent,
         friendshipId,

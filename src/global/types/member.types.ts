@@ -12,6 +12,8 @@ export type MemberProfile = MemberProfileUpdateReq & {
   isPendingRequest?: boolean;
   isPendingFriendRequestFromMe?: boolean;
   isPendingFriendRequestFromOpponent?: boolean;
+  isFriendRequestSent?: boolean;
+  receivedFriendRequestId?: number | null;
   pendingFriendRequestIdFromMe?: number;
   pendingFriendRequestIdFromOpponent?: number;
   friendshipId?: number;
