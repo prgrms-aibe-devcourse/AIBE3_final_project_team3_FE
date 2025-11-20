@@ -128,6 +128,35 @@ export const useMyProfile = () => {
     });
 };
 
+const fetchMemberProfile = async (memberId: number): Promise<MemberProfile> => {
+    const { data, error } = await apiClient.GET("/api/v1/members/{id}", {
+        params: {
+            path: {
+                id: memberId,
+            },
+        },
+    });
+
+    if (error) {
+        throw new Error(getApiErrorMessage(error, "회원 정보를 불러오지 못했습니다."));
+    }
+
+    const payload = (data ?? {}) as { data?: unknown };
+    return normaliseProfile(payload.data);
+};
+
+export const useMemberProfileQuery = (memberId?: number | null) => {
+    const enabled = typeof memberId === "number" && Number.isFinite(memberId) && memberId > 0;
+
+    return useQuery<MemberProfile, Error>({
+        queryKey: ["member", "profile", memberId],
+        queryFn: () => fetchMemberProfile(memberId as number),
+        enabled,
+        staleTime: 1000 * 60 * 5,
+        refetchOnWindowFocus: false,
+    });
+};
+
 const updateMyProfile = async (payload: MemberProfileUpdateReq) => {
     const { error } = await apiClient.PUT("/api/v1/members/profile", {
         body: payload as paths["/api/v1/members/profile"]["put"]["requestBody"]["content"]["application/json"],

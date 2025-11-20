@@ -1,10 +1,9 @@
 "use client";
 
 import { useCreateDirectChat } from "@/global/api/useChatQuery";
-import { useMembersQuery } from "@/global/api/useMemberQuery";
-import { useFriendshipActions } from "@/global/hooks/useFriendshipActions";
+import { useMemberProfileQuery, useMembersQuery } from "@/global/api/useMemberQuery";
 import { MemberSummaryResp } from "@/global/types/auth.types";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 // A simple utility to generate a placeholder avatar
 const getAvatar = (name: string) => `https://i.pravatar.cc/150?u=${name}`;
@@ -13,24 +12,70 @@ export default function FindPage() {
   const { data: members, isLoading, error } = useMembersQuery();
   const [selectedUser, setSelectedUser] = useState<MemberSummaryResp | null>(null);
   const createChatMutation = useCreateDirectChat();
-  const { sendFriendRequest, status: friendshipStatus } = useFriendshipActions();
+  const viewUserPosts = (user: MemberSummaryResp) => {
+    alert(`${user.nickname}님의 게시글 보기 기능은 추후 제공될 예정입니다.`);
+  };
+
+  const selectedUserId = useMemo(() => {
+    if (!selectedUser) {
+      return null;
+    }
+
+    const rawId = (selectedUser as { id?: number | string }).id;
+    if (typeof rawId === "number" && Number.isFinite(rawId)) {
+      return rawId;
+    }
+
+    if (typeof rawId === "string" && rawId.trim().length > 0) {
+      const parsed = Number.parseInt(rawId, 10);
+      if (!Number.isNaN(parsed)) {
+        return parsed;
+      }
+    }
+
+    return null;
+  }, [selectedUser]);
+
+  const {
+    data: selectedProfile,
+    isLoading: isProfileLoading,
+    isFetching: isProfileFetching,
+    error: selectedProfileError,
+  } = useMemberProfileQuery(selectedUserId ?? undefined);
+
+  const normaliseInterests = (value?: string[] | null) => {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+    return value
+      .map((item) => (typeof item === "string" ? item.trim() : String(item ?? "").trim()))
+      .filter((item) => item.length > 0);
+  };
+
+  const modalNickname = selectedProfile?.nickname ?? selectedUser?.nickname ?? "";
+  const modalName = selectedProfile?.name ?? selectedUser?.name ?? "";
+  const modalCountry =
+    selectedProfile?.countryName ??
+    selectedProfile?.country ??
+    selectedUser?.country ??
+    "";
+  const modalEnglishLevel = selectedProfile?.englishLevel ?? selectedUser?.englishLevel ?? "";
+  const modalDescription = selectedProfile?.description ?? selectedUser?.description ?? "";
+  const modalInterests = selectedProfile
+    ? normaliseInterests(selectedProfile.interests)
+    : normaliseInterests(selectedUser?.interests);
+  const modalDisplayName =
+    (modalName ? `${modalNickname} (${modalName})` : modalNickname) ||
+    selectedUser?.nickname ||
+    "회원 정보";
+  const modalCountryDisplay = modalCountry || "-";
+  const modalEnglishLevelDisplay = modalEnglishLevel || "-";
+  const modalDescriptionDisplay = modalDescription || "소개 정보가 아직 없습니다.";
+  const isProfilePending = Boolean(selectedUser) && (isProfileLoading || isProfileFetching);
 
   const startChat = (user: MemberSummaryResp) => {
     if (window.confirm(`${user.nickname}님과 채팅을 시작하시겠습니까?`)) {
       createChatMutation.mutate({ partnerId: user.id });
-    }
-  };
-
-  const handleSendFriendRequest = async (user: MemberSummaryResp) => {
-    try {
-      await sendFriendRequest(user.id);
-      alert(`${user.nickname}님께 친구 요청을 보냈습니다.`);
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "친구 요청을 보낼 수 없습니다. 잠시 후 다시 시도해 주세요.";
-      alert(message);
     }
   };
 
@@ -121,12 +166,11 @@ export default function FindPage() {
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  void handleSendFriendRequest(user);
+                  viewUserPosts(user);
                 }}
-                disabled={friendshipStatus.isSending}
-                className="flex-1 bg-gray-600 hover:bg-gray-700 disabled:opacity-60 disabled:cursor-not-allowed text-white px-3 py-2 rounded text-sm font-medium transition-colors"
+                className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors"
               >
-                {friendshipStatus.isSending ? "Sending..." : "Add Friend"}
+                게시글 보러가기
               </button>
             </div>
           </div>
@@ -156,24 +200,29 @@ export default function FindPage() {
                 <div className="flex items-center">
                   <div className="relative">
                     <img
-                      src={getAvatar(selectedUser.nickname)}
-                      alt={selectedUser.name}
+                      src={getAvatar(modalNickname || selectedUser.nickname)}
+                      alt={modalDisplayName || selectedUser.nickname}
                       className="w-20 h-20 rounded-full object-cover"
                     />
                     <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 border-2 border-gray-800 rounded-full"></div>
                   </div>
                   <div className="ml-4">
-                    <h2 className="text-2xl font-bold text-white">
-                      {selectedUser.nickname} ({selectedUser.name})
-                    </h2>
+                    <h2 className="text-2xl font-bold text-white">{modalDisplayName}</h2>
                     <p className="text-emerald-400 flex items-center">
                       <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
                       Online now
                     </p>
-                    <p className="text-gray-400">{selectedUser.country}</p>
-                    <p className="text-gray-400 text-sm">
-                      {selectedUser.englishLevel}
-                    </p>
+                    <p className="text-gray-400">{modalCountryDisplay}</p>
+                    <p className="text-gray-400 text-sm">{modalEnglishLevelDisplay}</p>
+                    {isProfilePending && (
+                      <p className="text-xs text-gray-300 mt-1">상세 정보를 불러오는 중입니다...</p>
+                    )}
+                    {selectedProfileError && (
+                      <p className="text-xs text-red-400 mt-1">
+                        상세 정보를 불러오지 못했습니다.
+                        {selectedProfileError.message ? ` (${selectedProfileError.message})` : ""}
+                      </p>
+                    )}
                   </div>
                 </div>
                 <button
@@ -189,7 +238,7 @@ export default function FindPage() {
                   <h3 className="text-lg font-semibold text-white mb-2">
                     About
                   </h3>
-                  <p className="text-gray-300">{selectedUser.description}</p>
+                  <p className="text-gray-300">{modalDescriptionDisplay}</p>
                 </div>
 
                 <div>
@@ -197,14 +246,17 @@ export default function FindPage() {
                     Interests
                   </h3>
                   <div className="flex flex-wrap gap-2">
-                    {selectedUser.interests.map((interest, index) => (
+                    {modalInterests.map((interest, index) => (
                       <span
                         key={index}
                         className="px-3 py-1 bg-emerald-600 text-white rounded-full text-sm"
                       >
-                        {interest.trim()}
+                        {interest}
                       </span>
                     ))}
+                    {modalInterests.length === 0 && (
+                      <span className="text-sm text-gray-400">등록된 관심사가 없습니다.</span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -217,11 +269,10 @@ export default function FindPage() {
                   Start Conversation
                 </button>
                 <button
-                  onClick={() => void handleSendFriendRequest(selectedUser)}
-                  disabled={friendshipStatus.isSending}
-                  className="flex-1 bg-gray-600 hover:bg-gray-700 disabled:opacity-60 disabled:cursor-not-allowed text-white px-4 py-3 rounded font-medium transition-colors"
+                  onClick={() => viewUserPosts(selectedUser)}
+                  className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-4 py-3 rounded font-medium transition-colors"
                 >
-                  {friendshipStatus.isSending ? "Sending..." : "Send Friend Request"}
+                  게시글 보러가기
                 </button>
               </div>
             </div>
