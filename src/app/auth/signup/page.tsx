@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { useSignup } from "@/global/api/useAuthQuery";
+import { COUNTRY_OPTIONS } from "@/global/lib/countries";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -40,7 +41,12 @@ export default function SignupPage() {
       return;
     }
 
-    const countryCode = formData.country === "OTHER" ? "ZZ" : formData.country;
+    const countryCode = (formData.country ?? "").trim().toUpperCase();
+
+    if (!countryCode) {
+      alert("Please select your country.");
+      return;
+    }
 
     signup(
       {
@@ -167,18 +173,15 @@ export default function SignupPage() {
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white text-gray-900 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 value={formData.country}
                 onChange={(e) =>
-                  setFormData({ ...formData, country: e.target.value })
+                  setFormData({ ...formData, country: e.target.value.toUpperCase() })
                 }
               >
                 <option value="">Select your country</option>
-                <option value="KR">South Korea</option>
-                <option value="JP">Japan</option>
-                <option value="CN">China</option>
-                <option value="US">United States</option>
-                <option value="GB">United Kingdom</option>
-                <option value="CA">Canada</option>
-                <option value="AU">Australia</option>
-                <option value="OTHER">Other</option>
+                {COUNTRY_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
               </select>
             </div>
 
