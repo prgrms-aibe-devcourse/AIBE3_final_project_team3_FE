@@ -36,6 +36,31 @@ const getApiErrorMessage = (error: unknown, fallback: string) => {
     return fallback;
 };
 
+const normaliseNumericId = (value: unknown): number | undefined => {
+    if (typeof value === "number" && Number.isFinite(value)) {
+        return value;
+    }
+
+    if (typeof value === "string" && value.trim().length > 0) {
+        const parsed = Number.parseInt(value, 10);
+        if (!Number.isNaN(parsed)) {
+            return parsed;
+        }
+    }
+
+    return undefined;
+};
+
+const pickFirstNumericId = (values: unknown[]): number | undefined => {
+    for (const value of values) {
+        const id = normaliseNumericId(value);
+        if (typeof id === "number") {
+            return id;
+        }
+    }
+    return undefined;
+};
+
 const normaliseProfile = (payload: unknown): MemberProfile => {
     const profile = (payload ?? {}) as Record<string, any>;
 
@@ -82,6 +107,41 @@ const normaliseProfile = (payload: unknown): MemberProfile => {
 
     const { code: countryCode, name: countryName } = normaliseCountryValue(profile.country);
 
+    const pendingFromMeCandidates = [
+        profile.pendingFriendRequestIdFromMe,
+        profile.friendRequestIdFromMe,
+        profile.pendingRequestIdFromMe,
+        profile.friendRequestId,
+        profile.pendingFriendRequestId,
+    ];
+
+    const pendingFromOpponentCandidates = [
+        profile.pendingFriendRequestIdFromOpponent,
+        profile.friendRequestIdFromOpponent,
+        profile.pendingRequestIdFromOpponent,
+        profile.friendRequestId,
+        profile.pendingFriendRequestId,
+    ];
+
+    let pendingFriendRequestIdFromMe = pickFirstNumericId(pendingFromMeCandidates);
+    let pendingFriendRequestIdFromOpponent = pickFirstNumericId(pendingFromOpponentCandidates);
+    const sharedPendingId = normaliseNumericId(profile.friendRequestId ?? profile.pendingFriendRequestId);
+
+    if (!pendingFriendRequestIdFromMe && sharedPendingId && profile.isPendingFriendRequestFromMe) {
+        pendingFriendRequestIdFromMe = sharedPendingId;
+    }
+
+    if (!pendingFriendRequestIdFromOpponent && sharedPendingId && profile.isPendingFriendRequestFromOpponent) {
+        pendingFriendRequestIdFromOpponent = sharedPendingId;
+    }
+
+    const friendshipId = pickFirstNumericId([
+        profile.friendshipId,
+        profile.friendRelationId,
+        profile.friendId,
+        profile.friendMemberId,
+    ]);
+
     return {
         name: profile.name ?? "",
         nickname: profile.nickname ?? "",
@@ -98,6 +158,11 @@ const normaliseProfile = (payload: unknown): MemberProfile => {
         profileImageUrl: typeof profile.profileImageUrl === "string" ? profile.profileImageUrl : undefined,
         isFriend: Boolean(profile.isFriend),
         isPendingRequest: Boolean(profile.isPendingRequest),
+        isPendingFriendRequestFromMe: Boolean(profile.isPendingFriendRequestFromMe),
+        isPendingFriendRequestFromOpponent: Boolean(profile.isPendingFriendRequestFromOpponent),
+        pendingFriendRequestIdFromMe,
+        pendingFriendRequestIdFromOpponent,
+        friendshipId,
         joinedAt: profile.joinedAt ?? profile.createdAt ?? profile.joinDate,
         totalChats: profile.totalChats ?? profile.chatCount,
         vocabularyLearned: profile.vocabularyLearned,
