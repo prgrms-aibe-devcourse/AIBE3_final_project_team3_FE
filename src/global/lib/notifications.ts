@@ -37,6 +37,36 @@ const parseDate = (value: unknown): string => {
   return new Date().toISOString();
 };
 
+const resolveSenderLabel = (nickname: unknown, senderId: number | null): string => {
+  if (typeof nickname === "string" && nickname.trim().length > 0) {
+    return nickname.trim();
+  }
+
+  if (typeof senderId === "number" && Number.isFinite(senderId)) {
+    return `ID ${senderId}`;
+  }
+
+  return "상대방";
+};
+
+const buildDefaultMessage = (type: NotificationType, senderLabel: string): string => {
+  switch (type) {
+    case "friend_request":
+      return `${senderLabel}님이 친구 요청을 보냈습니다.`;
+    case "friend_request_accept":
+      return `${senderLabel}님에게 보낸 친구 요청이 수락되었습니다.`;
+    case "friend_request_reject":
+      return `${senderLabel}님에게 보낸 친구 요청이 거절되었습니다.`;
+    case "chat_invitation":
+      return `${senderLabel}님이 그룹 채팅에 초대했습니다.`;
+    case "chat_message":
+      return `${senderLabel}님이 새로운 메시지를 보냈습니다.`;
+    case "system_alert":
+    default:
+      return "새로운 시스템 알림이 도착했습니다.";
+  }
+};
+
 const normaliseNotificationType = (value: unknown): NotificationType => {
   const fallback: NotificationType = "system_alert";
 
@@ -81,12 +111,7 @@ export const normaliseNotificationPayload = (payload: unknown): NotificationItem
 
   const id = normaliseNumericId(record.id ?? record.notificationId) ?? Date.now();
   const senderId = normaliseNumericId(record.senderId ?? record.memberId ?? record.fromMemberId);
-  const messageCandidate =
-    record.message ??
-    record.content ??
-    record.body ??
-    record.description ??
-    "You have a new notification.";
+  const rawMessageCandidate = record.message ?? record.content ?? record.body ?? record.description;
 
   const titleCandidate = record.title ?? record.summary ?? record.subject ?? null;
 
@@ -108,23 +133,34 @@ export const normaliseNotificationPayload = (payload: unknown): NotificationItem
   })();
 
   const isReadCandidate = record.isRead ?? record.read ?? record.is_read;
+  const type = normaliseNotificationType(record.type ?? record.notificationType);
+  const senderNickname =
+    typeof record.senderNickname === "string"
+      ? record.senderNickname
+      : typeof record.senderName === "string"
+        ? record.senderName
+        : typeof record.from === "string"
+          ? record.from
+          : null;
+
+  const message = (() => {
+    if (typeof rawMessageCandidate === "string" && rawMessageCandidate.trim().length > 0) {
+      return rawMessageCandidate;
+    }
+
+    const senderLabel = resolveSenderLabel(senderNickname, senderId ?? null);
+    return buildDefaultMessage(type, senderLabel);
+  })();
 
   return {
     id,
-    type: normaliseNotificationType(record.type ?? record.notificationType),
-    message: typeof messageCandidate === "string" ? messageCandidate : String(messageCandidate ?? ""),
+    type,
+    message,
     title: typeof titleCandidate === "string" && titleCandidate.trim().length > 0 ? titleCandidate : undefined,
     createdAt: parseDate(createdAtCandidate),
     isRead: Boolean(isReadCandidate),
     senderId: senderId ?? null,
-    senderNickname:
-      typeof record.senderNickname === "string"
-        ? record.senderNickname
-        : typeof record.senderName === "string"
-          ? record.senderName
-          : typeof record.from === "string"
-            ? record.from
-            : null,
+    senderNickname,
     receiverId: receiverId ?? null,
     metadata,
   };

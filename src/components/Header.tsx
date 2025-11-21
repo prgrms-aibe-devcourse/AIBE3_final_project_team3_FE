@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { useLogout } from "@/global/api/useAuthQuery";
@@ -17,6 +18,7 @@ import { useShallow } from "zustand/react/shallow";
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const router = useRouter();
   const {
     notifications,
     unreadCount,
@@ -125,6 +127,16 @@ export default function Header() {
     }
   };
 
+  const handleViewSenderProfile = (senderId: number | null) => {
+    if (!senderId) {
+      alert("보낸 사람 정보를 확인할 수 없습니다.");
+      return;
+    }
+
+    setShowNotifications(false);
+    router.push(`/find?memberId=${senderId}`);
+  };
+
   return (
     <header className="fixed top-0 left-0 right-0 bg-gray-800/95 backdrop-blur-sm shadow-lg border-b border-gray-600 z-50">
       <div className="container mx-auto px-4">
@@ -221,7 +233,6 @@ export default function Header() {
                         <div
                           key={notification.id}
                           className={`p-3 border-b border-gray-700 hover:bg-gray-750 transition-colors ${!notification.isRead ? "bg-gray-750/50" : ""}`}
-                          onClick={() => handleMarkAsRead(notification.id)}
                         >
                           <div className="flex items-start space-x-3">
                             <div className="text-lg">
@@ -234,9 +245,27 @@ export default function Header() {
                               <p className="text-xs text-gray-400 mt-1">
                                 {formatTimeAgo(notification.createdAt)}
                               </p>
-                              {!notification.isRead && (
-                                <div className="w-2 h-2 bg-emerald-500 rounded-full mt-1"></div>
-                              )}
+                              <div className="flex items-center gap-2 mt-1">
+                                {!notification.isRead && (
+                                  <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                                )}
+                                {!notification.isRead && (
+                                  <button
+                                    onClick={() => handleMarkAsRead(notification.id)}
+                                    className="text-emerald-400 text-xs hover:text-emerald-300"
+                                  >
+                                    Mark as read
+                                  </button>
+                                )}
+                                {notification.senderId ? (
+                                  <button
+                                    onClick={() => handleViewSenderProfile(notification.senderId)}
+                                    className="text-gray-300 text-xs hover:text-white"
+                                  >
+                                    View profile
+                                  </button>
+                                ) : null}
+                              </div>
 
                               {/* Action buttons for certain notification types */}
                               {(notification.type === "friend_request" ||
@@ -369,7 +398,6 @@ export default function Header() {
                         key={notification.id}
                         className={`p-2 border-b border-gray-700 last:border-b-0 ${!notification.isRead ? "bg-gray-700/50" : ""
                           }`}
-                        onClick={() => handleMarkAsRead(notification.id)}
                       >
                         <div className="flex items-start space-x-2">
                           <div className="text-sm">
@@ -382,6 +410,22 @@ export default function Header() {
                             <p className="text-xs text-gray-400 mt-1">
                               {formatTimeAgo(notification.createdAt)}
                             </p>
+                            {notification.senderId ? (
+                              <button
+                                onClick={() => handleViewSenderProfile(notification.senderId)}
+                                className="text-gray-300 text-xs mt-1 hover:text-white"
+                              >
+                                View profile
+                              </button>
+                            ) : null}
+                            {!notification.isRead && (
+                              <button
+                                onClick={() => handleMarkAsRead(notification.id)}
+                                className="text-emerald-400 text-xs mt-1 hover:text-emerald-300"
+                              >
+                                Mark as read
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>
