@@ -6,6 +6,8 @@ import { useEffect, useState } from "react";
 
 import { useLogout } from "@/global/api/useAuthQuery";
 import {
+  useDeleteAllNotifications,
+  useDeleteNotification,
   useMarkAllNotificationsRead,
   useMarkNotificationRead,
   useNotificationsQuery,
@@ -18,6 +20,7 @@ import { useShallow } from "zustand/react/shallow";
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
   const router = useRouter();
   const {
     notifications,
@@ -105,6 +108,8 @@ export default function Header() {
   const isLoggedIn = Boolean(accessToken);
   const { mutate: markNotificationRead } = useMarkNotificationRead();
   const { mutate: markAllNotificationsRead, isPending: isMarkingAll } = useMarkAllNotificationsRead();
+  const { mutate: deleteNotificationMutation } = useDeleteNotification();
+  const { mutate: deleteAllNotificationsMutation } = useDeleteAllNotifications();
   useNotificationsQuery({ enabled: hasHydrated && isLoggedIn });
 
   const handleMarkAsRead = (notificationId: number) => {
@@ -135,6 +140,19 @@ export default function Header() {
 
     setShowNotifications(false);
     router.push(`/find?memberId=${senderId}`);
+  };
+
+  const handleDeleteNotification = (notificationId: number) => {
+    if (deletingId) {
+      return;
+    }
+
+    setDeletingId(notificationId);
+    deleteNotificationMutation(notificationId, {
+      onSettled: () => {
+        setDeletingId(null);
+      },
+    });
   };
 
   return (
@@ -186,7 +204,7 @@ export default function Header() {
             <div className="relative notifications-dropdown">
               <button
                 onClick={() => setShowNotifications(!showNotifications)}
-                className="relative text-gray-200 hover:text-emerald-400 transition-colors p-2 rounded-full hover:bg-gray-700/50"
+                className={`relative p-2 rounded-full transition-colors ${showNotifications ? "text-emerald-400 bg-gray-700/50" : "text-gray-200 hover:text-emerald-400 hover:bg-gray-700/50"}`}
                 title="Notifications"
               >
                 <svg
@@ -210,15 +228,39 @@ export default function Header() {
                     <h3 className="text-sm font-medium text-white">
                       Notifications
                     </h3>
-                    {unreadCount > 0 && (
+                    <div className="flex items-center gap-2">
+                      {unreadCount > 0 && (
+                        <button
+                          onClick={handleMarkAllAsRead}
+                          disabled={isMarkingAll}
+                          className="text-xs text-emerald-400 hover:text-emerald-300 disabled:opacity-60"
+                        >
+                          {isMarkingAll ? "Marking..." : "Mark all as read"}
+                        </button>
+                      )}
                       <button
-                        onClick={handleMarkAllAsRead}
-                        disabled={isMarkingAll}
-                        className="text-xs text-emerald-400 hover:text-emerald-300 disabled:opacity-60"
+                        onClick={() => {
+                          if (!notifications.length) {
+                            alert("삭제할 알림이 없습니다.");
+                            return;
+                          }
+                          const confirmed = window.confirm("전체 알림을 삭제하시겠습니까?");
+                          if (!confirmed) {
+                            return;
+                          }
+                          deleteAllNotificationsMutation();
+                          setShowNotifications(false);
+                        }}
+                        className={`flex h-6 w-6 items-center justify-center rounded text-sm ${notifications.length === 0
+                            ? "text-gray-500 cursor-not-allowed"
+                            : "text-gray-400 hover:bg-gray-700 hover:text-red-400"
+                          }`}
+                        aria-label="Delete all notifications"
+                        aria-disabled={notifications.length === 0}
                       >
-                        {isMarkingAll ? "Marking..." : "Mark all as read"}
+                        ×
                       </button>
-                    )}
+                    </div>
                   </div>
                   <div className="max-h-80 overflow-y-auto">
                     {notifications.length === 0 ? (
@@ -232,13 +274,21 @@ export default function Header() {
                       notifications.map((notification) => (
                         <div
                           key={notification.id}
-                          className={`p-3 border-b border-gray-700 hover:bg-gray-750 transition-colors ${!notification.isRead ? "bg-gray-750/50" : ""}`}
+                          className={`relative p-3 border-b border-gray-700 hover:bg-gray-750 transition-colors ${!notification.isRead ? "bg-gray-750/50" : ""}`}
                         >
+                          <button
+                            onClick={() => handleDeleteNotification(notification.id)}
+                            className="absolute top-1 right-1 flex h-8 w-8 items-center justify-center rounded-full text-gray-200 hover:bg-gray-700 hover:text-red-400 text-lg"
+                            aria-label="Delete notification"
+                            disabled={deletingId === notification.id}
+                          >
+                            ×
+                          </button>
                           <div className="flex items-start space-x-3">
                             <div className="text-lg">
                               {getNotificationIcon(notification.type)}
                             </div>
-                            <div className="flex-1 min-w-0">
+                            <div className="flex-1 min-w-0 pr-10">
                               <p className="text-sm text-white">
                                 {notification.message}
                               </p>
@@ -358,7 +408,7 @@ export default function Header() {
               <div className="py-2">
                 <button
                   onClick={() => setShowNotifications(!showNotifications)}
-                  className="flex items-center justify-between w-full text-gray-200 hover:text-emerald-400 transition-colors"
+                  className={`flex items-center justify-between w-full transition-colors ${showNotifications ? "text-emerald-400" : "text-gray-200 hover:text-emerald-400"}`}
                 >
                   <span className="flex items-center space-x-2">
                     <svg
@@ -396,14 +446,22 @@ export default function Header() {
                     {notifications.map((notification) => (
                       <div
                         key={notification.id}
-                        className={`p-2 border-b border-gray-700 last:border-b-0 ${!notification.isRead ? "bg-gray-700/50" : ""
+                        className={`relative p-2 border-b border-gray-700 last:border-b-0 ${!notification.isRead ? "bg-gray-700/50" : ""
                           }`}
                       >
+                        <button
+                          onClick={() => handleDeleteNotification(notification.id)}
+                          className="absolute top-1 right-1 flex h-8 w-8 items-center justify-center rounded-full text-gray-200 hover:bg-gray-700 hover:text-red-400 text-lg"
+                          aria-label="Delete notification"
+                          disabled={deletingId === notification.id}
+                        >
+                          ×
+                        </button>
                         <div className="flex items-start space-x-2">
                           <div className="text-sm">
                             {getNotificationIcon(notification.type)}
                           </div>
-                          <div className="flex-1 min-w-0">
+                          <div className="flex-1 min-w-0 pr-10">
                             <p className="text-xs text-white">
                               {notification.message}
                             </p>

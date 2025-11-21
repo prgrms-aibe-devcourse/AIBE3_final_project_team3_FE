@@ -5,7 +5,7 @@ import { useMemberProfileQuery, useMembersQuery } from "@/global/api/useMemberQu
 import { useFriendshipActions } from "@/global/hooks/useFriendshipActions";
 import { MemberSummaryResp } from "@/global/types/auth.types";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 // A simple utility to generate a placeholder avatar
 const getAvatar = (name: string) => `https://i.pravatar.cc/150?u=${name}`;
@@ -53,12 +53,18 @@ export default function FindPage() {
   const [selectedUser, setSelectedUser] = useState<MemberSummaryResp | null>(null);
   const searchParams = useSearchParams();
   const router = useRouter();
+  const skipAutoSelectRef = useRef(false);
   const requestedMemberId = useMemo(() => {
     const raw = searchParams.get("memberId");
     return normaliseNumericId(raw);
   }, [searchParams]);
 
   useEffect(() => {
+    if (skipAutoSelectRef.current) {
+      skipAutoSelectRef.current = false;
+      return;
+    }
+
     if (!requestedMemberId || !members) {
       return;
     }
@@ -525,6 +531,7 @@ export default function FindPage() {
                 </div>
                 <button
                   onClick={() => {
+                    skipAutoSelectRef.current = true;
                     setSelectedUser(null);
                     const params = new URLSearchParams(searchParams.toString());
                     if (params.has("memberId")) {
