@@ -1,14 +1,32 @@
 import { Client } from "@stomp/stompjs";
 
 import { API_BASE_URL } from "@/global/consts";
-// useLoginStore will be used in the component that calls connect, not here directly for token retrieval
 
 let stompClient: Client | null = null;
+
+const buildBrokerUrl = () => {
+  const explicit = process.env.NEXT_PUBLIC_WS_BASE_URL;
+  if (explicit && explicit.trim().length > 0) {
+    return `${explicit.replace(/\/$/, "")}/ws-stomp`;
+  }
+
+  try {
+    const url = new URL(API_BASE_URL);
+    url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
+    url.pathname = `${url.pathname.replace(/\/$/, "")}/ws-stomp`;
+    return url.toString();
+  } catch (error) {
+    console.warn("Failed to derive STOMP broker URL from API_BASE_URL, falling back to localhost.", error);
+    return "ws://localhost:8080/ws-stomp";
+  }
+};
+
+const BROKER_URL = buildBrokerUrl();
 
 // This function will now only create the client instance without authentication headers
 const createClientInstance = (): Client => {
   const client = new Client({
-    brokerURL: "ws://localhost:8080/ws-stomp",
+    brokerURL: BROKER_URL,
     // connectHeaders will be set in the connect function
     debug: (str) => {
       console.log(`STOMP Debug: ${str}`);
@@ -38,8 +56,13 @@ export const connect = (accessToken: string, onConnectCallback: () => void) => {
   const client = getStompClient();
 
   if (client.connected) {
-    console.log('Already connected');
+    console.log("Already connected");
     onConnectCallback();
+    return;
+  }
+
+  if (client.active) {
+    console.log("STOMP client is already attempting to connect.");
     return;
   }
 
@@ -59,9 +82,14 @@ export const connect = (accessToken: string, onConnectCallback: () => void) => {
 };
 
 export const disconnect = () => {
-  if (stompClient && stompClient.connected) { // Use client.connected instead of client.active
-    stompClient.deactivate();
-    stompClient = null;
-    console.log("STOMP client deactivated and instance reset.");
+  if (!stompClient) {
+    return;
   }
+
+  if (stompClient.active || stompClient.connected) {
+    void stompClient.deactivate();
+  }
+
+  stompClient = null;
+  console.log("STOMP client deactivated and instance reset.");
 };

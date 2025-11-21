@@ -4,7 +4,8 @@ import { useCreateDirectChat } from "@/global/api/useChatQuery";
 import { useMemberProfileQuery, useMembersQuery } from "@/global/api/useMemberQuery";
 import { useFriendshipActions } from "@/global/hooks/useFriendshipActions";
 import { MemberSummaryResp } from "@/global/types/auth.types";
-import { useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 // A simple utility to generate a placeholder avatar
 const getAvatar = (name: string) => `https://i.pravatar.cc/150?u=${name}`;
@@ -50,6 +51,34 @@ const normaliseNumericId = (value: unknown): number | null => {
 export default function FindPage() {
   const { data: members, isLoading, error } = useMembersQuery();
   const [selectedUser, setSelectedUser] = useState<MemberSummaryResp | null>(null);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const skipAutoSelectRef = useRef(false);
+  const requestedMemberId = useMemo(() => {
+    const raw = searchParams.get("memberId");
+    return normaliseNumericId(raw);
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (skipAutoSelectRef.current) {
+      skipAutoSelectRef.current = false;
+      return;
+    }
+
+    if (!requestedMemberId || !members) {
+      return;
+    }
+
+    const currentSelectedId = normaliseNumericId((selectedUser as { id?: number | string } | null)?.id);
+    if (currentSelectedId === requestedMemberId) {
+      return;
+    }
+
+    const matched = members.find((user) => normaliseNumericId(user.id) === requestedMemberId);
+    if (matched) {
+      setSelectedUser(matched);
+    }
+  }, [requestedMemberId, members, selectedUser]);
   const createChatMutation = useCreateDirectChat();
   const {
     sendFriendRequest: mutateSendFriendRequest,
@@ -501,7 +530,15 @@ export default function FindPage() {
                   </div>
                 </div>
                 <button
-                  onClick={() => setSelectedUser(null)}
+                  onClick={() => {
+                    skipAutoSelectRef.current = true;
+                    setSelectedUser(null);
+                    const params = new URLSearchParams(searchParams.toString());
+                    if (params.has("memberId")) {
+                      params.delete("memberId");
+                      router.replace(`?${params.toString()}`, { scroll: false });
+                    }
+                  }}
                   className="text-gray-400 hover:text-white text-2xl"
                 >
                   ×

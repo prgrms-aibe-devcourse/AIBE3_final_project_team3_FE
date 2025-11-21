@@ -1,72 +1,40 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { useLogout } from "@/global/api/useAuthQuery";
+import {
+  useDeleteAllNotifications,
+  useDeleteNotification,
+  useMarkAllNotificationsRead,
+  useMarkNotificationRead,
+  useNotificationsQuery,
+} from "@/global/api/useNotificationQuery";
 import { useLoginStore } from "@/global/stores/useLoginStore";
+import { useNotificationStore } from "@/global/stores/useNotificationStore";
+import { NotificationItem } from "@/global/types/notification.types";
 import { useShallow } from "zustand/react/shallow";
-
-interface Notification {
-  id: number;
-  type:
-  | "friend_request"
-  | "friend_accepted"
-  | "chat_invitation"
-  | "room_invitation";
-  message: string;
-  from: string;
-  timestamp: Date;
-  isRead: boolean;
-}
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>([
-    {
-      id: 1,
-      type: "friend_request",
-      message: "Sarah Johnson sent you a friend request",
-      from: "Sarah Johnson",
-      timestamp: new Date(Date.now() - 5 * 60 * 1000), // 5 minutes ago
-      isRead: false,
-    },
-    {
-      id: 2,
-      type: "friend_accepted",
-      message: "Miguel Rodriguez accepted your friend request",
-      from: "Miguel Rodriguez",
-      timestamp: new Date(Date.now() - 30 * 60 * 1000), // 30 minutes ago
-      isRead: false,
-    },
-    {
-      id: 3,
-      type: "chat_invitation",
-      message: "Emma Wilson wants to start a 1:1 chat with you",
-      from: "Emma Wilson",
-      timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000), // 1 hour ago
-      isRead: false,
-    },
-    {
-      id: 4,
-      type: "room_invitation",
-      message: "Yuki Tanaka invited you to join 'Travel Stories' chat room",
-      from: "Yuki Tanaka",
-      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-      isRead: true,
-    },
-    {
-      id: 5,
-      type: "room_invitation",
-      message: "Chen Wei invited you to join 'Study Buddy' chat room",
-      from: "Chen Wei",
-      timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000), // 4 hours ago
-      isRead: true,
-    },
-  ]);
-
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const router = useRouter();
+  const {
+    notifications,
+    unreadCount,
+    markNotificationInStore,
+    markAllNotificationsInStore,
+  } = useNotificationStore(
+    useShallow((state) => ({
+      notifications: state.items,
+      unreadCount: state.unreadCount,
+      markNotificationInStore: state.markAsRead,
+      markAllNotificationsInStore: state.markAllAsRead,
+    })),
+  );
 
   // Close notifications dropdown when clicking outside
   useEffect(() => {
@@ -83,10 +51,15 @@ export default function Header() {
     };
   }, []);
 
-  const formatTimeAgo = (timestamp: Date) => {
+  const formatTimeAgo = (timestamp: string) => {
+    const date = new Date(timestamp);
+    if (Number.isNaN(date.getTime())) {
+      return "-";
+    }
+
     const now = new Date();
     const diffInMinutes = Math.floor(
-      (now.getTime() - timestamp.getTime()) / (1000 * 60)
+      (now.getTime() - date.getTime()) / (1000 * 60)
     );
 
     if (diffInMinutes < 1) return "Just now";
@@ -95,33 +68,25 @@ export default function Header() {
     return `${Math.floor(diffInMinutes / 1440)}d ago`;
   };
 
-  const getNotificationIcon = (type: Notification["type"]) => {
+  const getNotificationIcon = (type: NotificationItem["type"]) => {
     switch (type) {
       case "friend_request":
         return "👤";
-      case "friend_accepted":
+      case "friend_request_accept":
         return "✅";
+      case "friend_request_reject":
+        return "❌";
       case "chat_invitation":
         return "💬";
-      case "room_invitation":
-        return "🏠";
+      case "chat_message":
+        return "💭";
       default:
         return "📢";
     }
   };
 
-  const markAsRead = (notificationId: number) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === notificationId ? { ...n, isRead: true } : n))
-    );
-  };
-
-  const markAllAsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
-  };
-
   const handleNotificationAction = (
-    notification: Notification,
+    notification: NotificationItem,
     action: "accept" | "decline"
   ) => {
     // Mock notification actions
@@ -129,10 +94,8 @@ export default function Header() {
       alert(`Friend request ${action}ed!`);
     } else if (notification.type === "chat_invitation") {
       alert(`Chat invitation ${action}ed!`);
-    } else if (notification.type === "room_invitation") {
-      alert(`Room invitation ${action}ed!`);
     }
-    markAsRead(notification.id);
+    handleMarkAsRead(notification.id);
   };
 
   const { accessToken, hasHydrated } = useLoginStore(
@@ -143,11 +106,53 @@ export default function Header() {
   );
   const { mutate: triggerLogout, isPending: isLoggingOut } = useLogout();
   const isLoggedIn = Boolean(accessToken);
+  const { mutate: markNotificationRead } = useMarkNotificationRead();
+  const { mutate: markAllNotificationsRead, isPending: isMarkingAll } = useMarkAllNotificationsRead();
+  const { mutate: deleteNotificationMutation } = useDeleteNotification();
+  const { mutate: deleteAllNotificationsMutation } = useDeleteAllNotifications();
+  useNotificationsQuery({ enabled: hasHydrated && isLoggedIn });
+
+  const handleMarkAsRead = (notificationId: number) => {
+    markNotificationInStore(notificationId);
+    if (isLoggedIn) {
+      markNotificationRead(notificationId);
+    }
+  };
+
+  const handleMarkAllAsRead = () => {
+    markAllNotificationsInStore();
+    if (isLoggedIn) {
+      markAllNotificationsRead();
+    }
+  };
 
   const handleLogout = () => {
     if (!isLoggingOut) {
       triggerLogout();
     }
+  };
+
+  const handleViewSenderProfile = (senderId: number | null) => {
+    if (!senderId) {
+      alert("보낸 사람 정보를 확인할 수 없습니다.");
+      return;
+    }
+
+    setShowNotifications(false);
+    router.push(`/find?memberId=${senderId}`);
+  };
+
+  const handleDeleteNotification = (notificationId: number) => {
+    if (deletingId) {
+      return;
+    }
+
+    setDeletingId(notificationId);
+    deleteNotificationMutation(notificationId, {
+      onSettled: () => {
+        setDeletingId(null);
+      },
+    });
   };
 
   return (
@@ -199,7 +204,7 @@ export default function Header() {
             <div className="relative notifications-dropdown">
               <button
                 onClick={() => setShowNotifications(!showNotifications)}
-                className="relative text-gray-200 hover:text-emerald-400 transition-colors p-2 rounded-full hover:bg-gray-700/50"
+                className={`relative p-2 rounded-full transition-colors ${showNotifications ? "text-emerald-400 bg-gray-700/50" : "text-gray-200 hover:text-emerald-400 hover:bg-gray-700/50"}`}
                 title="Notifications"
               >
                 <svg
@@ -223,14 +228,39 @@ export default function Header() {
                     <h3 className="text-sm font-medium text-white">
                       Notifications
                     </h3>
-                    {unreadCount > 0 && (
+                    <div className="flex items-center gap-2">
+                      {unreadCount > 0 && (
+                        <button
+                          onClick={handleMarkAllAsRead}
+                          disabled={isMarkingAll}
+                          className="text-xs text-emerald-400 hover:text-emerald-300 disabled:opacity-60"
+                        >
+                          {isMarkingAll ? "Marking..." : "Mark all as read"}
+                        </button>
+                      )}
                       <button
-                        onClick={markAllAsRead}
-                        className="text-xs text-emerald-400 hover:text-emerald-300"
+                        onClick={() => {
+                          if (!notifications.length) {
+                            alert("삭제할 알림이 없습니다.");
+                            return;
+                          }
+                          const confirmed = window.confirm("전체 알림을 삭제하시겠습니까?");
+                          if (!confirmed) {
+                            return;
+                          }
+                          deleteAllNotificationsMutation();
+                          setShowNotifications(false);
+                        }}
+                        className={`flex h-6 w-6 items-center justify-center rounded text-sm ${notifications.length === 0
+                            ? "text-gray-500 cursor-not-allowed"
+                            : "text-gray-400 hover:bg-gray-700 hover:text-red-400"
+                          }`}
+                        aria-label="Delete all notifications"
+                        aria-disabled={notifications.length === 0}
                       >
-                        Mark all as read
+                        ×
                       </button>
-                    )}
+                    </div>
                   </div>
                   <div className="max-h-80 overflow-y-auto">
                     {notifications.length === 0 ? (
@@ -244,38 +274,58 @@ export default function Header() {
                       notifications.map((notification) => (
                         <div
                           key={notification.id}
-                          className={`p-3 border-b border-gray-700 hover:bg-gray-750 transition-colors ${!notification.isRead ? "bg-gray-750/50" : ""
-                            }`}
-                          onClick={() => markAsRead(notification.id)}
+                          className={`relative p-3 border-b border-gray-700 hover:bg-gray-750 transition-colors ${!notification.isRead ? "bg-gray-750/50" : ""}`}
                         >
+                          <button
+                            onClick={() => handleDeleteNotification(notification.id)}
+                            className="absolute top-1 right-1 flex h-8 w-8 items-center justify-center rounded-full text-gray-200 hover:bg-gray-700 hover:text-red-400 text-lg"
+                            aria-label="Delete notification"
+                            disabled={deletingId === notification.id}
+                          >
+                            ×
+                          </button>
                           <div className="flex items-start space-x-3">
                             <div className="text-lg">
                               {getNotificationIcon(notification.type)}
                             </div>
-                            <div className="flex-1 min-w-0">
+                            <div className="flex-1 min-w-0 pr-10">
                               <p className="text-sm text-white">
                                 {notification.message}
                               </p>
                               <p className="text-xs text-gray-400 mt-1">
-                                {formatTimeAgo(notification.timestamp)}
+                                {formatTimeAgo(notification.createdAt)}
                               </p>
-                              {!notification.isRead && (
-                                <div className="w-2 h-2 bg-emerald-500 rounded-full mt-1"></div>
-                              )}
+                              <div className="flex items-center gap-2 mt-1">
+                                {!notification.isRead && (
+                                  <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                                )}
+                                {!notification.isRead && (
+                                  <button
+                                    onClick={() => handleMarkAsRead(notification.id)}
+                                    className="text-emerald-400 text-xs hover:text-emerald-300"
+                                  >
+                                    Mark as read
+                                  </button>
+                                )}
+                                {notification.senderId ? (
+                                  <button
+                                    onClick={() => handleViewSenderProfile(notification.senderId)}
+                                    className="text-gray-300 text-xs hover:text-white"
+                                  >
+                                    View profile
+                                  </button>
+                                ) : null}
+                              </div>
 
                               {/* Action buttons for certain notification types */}
                               {(notification.type === "friend_request" ||
-                                notification.type === "chat_invitation" ||
-                                notification.type === "room_invitation") &&
+                                notification.type === "chat_invitation") &&
                                 !notification.isRead && (
                                   <div className="flex space-x-2 mt-2">
                                     <button
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        handleNotificationAction(
-                                          notification,
-                                          "accept"
-                                        );
+                                        handleNotificationAction(notification, "accept");
                                       }}
                                       className="bg-emerald-600 text-white px-3 py-1 rounded text-xs hover:bg-emerald-700 transition-colors"
                                     >
@@ -284,10 +334,7 @@ export default function Header() {
                                     <button
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        handleNotificationAction(
-                                          notification,
-                                          "decline"
-                                        );
+                                        handleNotificationAction(notification, "decline");
                                       }}
                                       className="bg-gray-600 text-white px-3 py-1 rounded text-xs hover:bg-gray-700 transition-colors"
                                     >
@@ -361,7 +408,7 @@ export default function Header() {
               <div className="py-2">
                 <button
                   onClick={() => setShowNotifications(!showNotifications)}
-                  className="flex items-center justify-between w-full text-gray-200 hover:text-emerald-400 transition-colors"
+                  className={`flex items-center justify-between w-full transition-colors ${showNotifications ? "text-emerald-400" : "text-gray-200 hover:text-emerald-400"}`}
                 >
                   <span className="flex items-center space-x-2">
                     <svg
@@ -389,7 +436,7 @@ export default function Header() {
                       </span>
                       {unreadCount > 0 && (
                         <button
-                          onClick={markAllAsRead}
+                          onClick={handleMarkAllAsRead}
                           className="text-xs text-emerald-400 hover:text-emerald-300"
                         >
                           Mark all read
@@ -399,21 +446,44 @@ export default function Header() {
                     {notifications.map((notification) => (
                       <div
                         key={notification.id}
-                        className={`p-2 border-b border-gray-700 last:border-b-0 ${!notification.isRead ? "bg-gray-700/50" : ""
+                        className={`relative p-2 border-b border-gray-700 last:border-b-0 ${!notification.isRead ? "bg-gray-700/50" : ""
                           }`}
-                        onClick={() => markAsRead(notification.id)}
                       >
+                        <button
+                          onClick={() => handleDeleteNotification(notification.id)}
+                          className="absolute top-1 right-1 flex h-8 w-8 items-center justify-center rounded-full text-gray-200 hover:bg-gray-700 hover:text-red-400 text-lg"
+                          aria-label="Delete notification"
+                          disabled={deletingId === notification.id}
+                        >
+                          ×
+                        </button>
                         <div className="flex items-start space-x-2">
                           <div className="text-sm">
                             {getNotificationIcon(notification.type)}
                           </div>
-                          <div className="flex-1 min-w-0">
+                          <div className="flex-1 min-w-0 pr-10">
                             <p className="text-xs text-white">
                               {notification.message}
                             </p>
                             <p className="text-xs text-gray-400 mt-1">
-                              {formatTimeAgo(notification.timestamp)}
+                              {formatTimeAgo(notification.createdAt)}
                             </p>
+                            {notification.senderId ? (
+                              <button
+                                onClick={() => handleViewSenderProfile(notification.senderId)}
+                                className="text-gray-300 text-xs mt-1 hover:text-white"
+                              >
+                                View profile
+                              </button>
+                            ) : null}
+                            {!notification.isRead && (
+                              <button
+                                onClick={() => handleMarkAsRead(notification.id)}
+                                className="text-emerald-400 text-xs mt-1 hover:text-emerald-300"
+                              >
+                                Mark as read
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>
