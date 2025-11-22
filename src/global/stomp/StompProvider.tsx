@@ -4,14 +4,13 @@ import type { IMessage, StompSubscription } from "@stomp/stompjs";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef } from "react";
 
-import { API_BASE_URL } from "@/global/consts";
 import { normaliseNotificationPayload } from "@/global/lib/notifications";
 import { useLoginStore } from "@/global/stores/useLoginStore";
 import { useNotificationStore } from "@/global/stores/useNotificationStore";
 import { connect, disconnect, getStompClient } from "./stompClient";
 
 const HEARTBEAT_INTERVAL_MS = 30_000;
-const HEARTBEAT_ENDPOINT = `${API_BASE_URL.replace(/\/$/, "")}/presence/heartbeat`;
+const HEARTBEAT_DESTINATION = "/app/presence/heartbeat";
 
 const StompProvider = ({ children }: { children: React.ReactNode }) => {
   const queryClient = useQueryClient();
@@ -19,7 +18,6 @@ const StompProvider = ({ children }: { children: React.ReactNode }) => {
   const roomSubscriptionRef = useRef<StompSubscription | null>(null);
   const notificationSubscriptionRef = useRef<StompSubscription | null>(null);
   const heartbeatIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const heartbeatAbortControllerRef = useRef<AbortController | null>(null);
   const prependNotification = useNotificationStore((state) => state.prependNotification);
   const resetNotifications = useNotificationStore((state) => state.reset);
 
@@ -40,39 +38,26 @@ const StompProvider = ({ children }: { children: React.ReactNode }) => {
       clearInterval(heartbeatIntervalRef.current);
       heartbeatIntervalRef.current = null;
     }
-
-    if (heartbeatAbortControllerRef.current) {
-      heartbeatAbortControllerRef.current.abort();
-      heartbeatAbortControllerRef.current = null;
-    }
   }, []);
 
-  const sendHeartbeat = useCallback(async () => {
+  const sendHeartbeat = useCallback(() => {
     if (!accessToken) {
       return;
     }
 
-    heartbeatAbortControllerRef.current?.abort();
-    const controller = new AbortController();
-    heartbeatAbortControllerRef.current = controller;
+    const client = getStompClient();
+
+    if (!client || !client.connected) {
+      return;
+    }
 
     try {
-      const response = await fetch(HEARTBEAT_ENDPOINT, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-        credentials: "include",
-        signal: controller.signal,
+      client.publish({
+        destination: HEARTBEAT_DESTINATION,
+        body: JSON.stringify({ timestamp: Date.now() }),
       });
-
-      if (!response.ok) {
-        console.warn("Presence heartbeat failed", response.status, response.statusText);
-      }
     } catch (error) {
-      if ((error as Error)?.name !== "AbortError") {
-        console.error("Presence heartbeat error", error);
-      }
+      console.error("Presence heartbeat send error", error);
     }
   }, [accessToken]);
 
