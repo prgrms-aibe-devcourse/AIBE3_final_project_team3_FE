@@ -9,6 +9,9 @@ export type UserJoinReqBody = components["schemas"]["SignUpReq"];
 // components.schemas.MemberSummaryResp를 직접 사용
 export type MemberSummaryResp = components["schemas"]["MemberSummaryResp"];
 
+// openapi.json의 MemberPresenceSummaryResp 스키마 기반 타입 정의
+export type MemberPresenceSummaryResp = components["schemas"]["MemberPresenceSummaryResp"];
+
 // Zustand 로그인 스토어의 상태 타입 정의 (프론트엔드 전용이므로 수동 정의 유지)
 export interface LoginState {
   member: MemberSummaryResp | null;

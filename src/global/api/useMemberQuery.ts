@@ -2,25 +2,48 @@ import apiClient from "@/global/backend/client";
 import type { paths } from "@/global/backend/schema";
 import { normaliseCountryValue } from "@/global/lib/countries";
 import { useLoginStore } from "@/global/stores/useLoginStore";
-import { MemberSummaryResp } from "@/global/types/auth.types";
+import { MemberPresenceSummaryResp } from "@/global/types/auth.types";
 import { MemberProfile, MemberProfileUpdateReq } from "@/global/types/member.types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-const fetchAllMembers = async (): Promise<MemberSummaryResp[]> => {
+const extractMembersPayload = (payload: unknown): MemberPresenceSummaryResp[] => {
+    if (!payload) {
+        return [];
+    }
+
+    if (Array.isArray(payload)) {
+        return payload as MemberPresenceSummaryResp[];
+    }
+
+    if (typeof payload === "object") {
+        const record = payload as Record<string, unknown>;
+        const candidates = [record.content, record.data, record.items];
+
+        for (const candidate of candidates) {
+            if (Array.isArray(candidate)) {
+                return candidate as MemberPresenceSummaryResp[];
+            }
+        }
+    }
+
+    return [];
+};
+
+const fetchAllMembers = async (): Promise<MemberPresenceSummaryResp[]> => {
     const { data: apiResponse, error } = await apiClient.GET("/api/v1/members");
 
     if (error) {
         throw new Error(JSON.stringify(error));
     }
 
-    const payload = (apiResponse ?? {}) as { data?: MemberSummaryResp[] };
-    return payload.data ?? [];
+    const payload = (apiResponse ?? {}) as { data?: unknown };
+    return extractMembersPayload(payload.data ?? apiResponse);
 };
 
 export const useMembersQuery = () => {
     const { accessToken } = useLoginStore();
 
-    return useQuery<MemberSummaryResp[], Error>({
+    return useQuery<MemberPresenceSummaryResp[], Error>({
         queryKey: ["members"],
         queryFn: fetchAllMembers,
         enabled: !!accessToken,
