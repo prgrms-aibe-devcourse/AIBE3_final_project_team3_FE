@@ -4,16 +4,22 @@ import type { IMessage, StompSubscription } from "@stomp/stompjs";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef } from "react";
 
+import { API_BASE_URL } from "@/global/consts";
 import { normaliseNotificationPayload } from "@/global/lib/notifications";
 import { useLoginStore } from "@/global/stores/useLoginStore";
 import { useNotificationStore } from "@/global/stores/useNotificationStore";
 import { connect, disconnect, getStompClient } from "./stompClient";
+
+const HEARTBEAT_INTERVAL_MS = 30_000;
+const HEARTBEAT_ENDPOINT = `${API_BASE_URL.replace(/\/$/, "")}/presence/heartbeat`;
 
 const StompProvider = ({ children }: { children: React.ReactNode }) => {
   const queryClient = useQueryClient();
   const { accessToken, member } = useLoginStore();
   const roomSubscriptionRef = useRef<StompSubscription | null>(null);
   const notificationSubscriptionRef = useRef<StompSubscription | null>(null);
+  const heartbeatIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const heartbeatAbortControllerRef = useRef<AbortController | null>(null);
   const prependNotification = useNotificationStore((state) => state.prependNotification);
   const resetNotifications = useNotificationStore((state) => state.reset);
 
@@ -28,6 +34,69 @@ const StompProvider = ({ children }: { children: React.ReactNode }) => {
       notificationSubscriptionRef.current = null;
     }
   }, []);
+
+  const cleanupHeartbeat = useCallback(() => {
+    if (heartbeatIntervalRef.current) {
+      clearInterval(heartbeatIntervalRef.current);
+      heartbeatIntervalRef.current = null;
+    }
+
+    if (heartbeatAbortControllerRef.current) {
+      heartbeatAbortControllerRef.current.abort();
+      heartbeatAbortControllerRef.current = null;
+    }
+  }, []);
+
+  const sendHeartbeat = useCallback(async () => {
+    if (!accessToken) {
+      return;
+    }
+
+    heartbeatAbortControllerRef.current?.abort();
+    const controller = new AbortController();
+    heartbeatAbortControllerRef.current = controller;
+
+    try {
+      const response = await fetch(HEARTBEAT_ENDPOINT, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        credentials: "include",
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        console.warn("Presence heartbeat failed", response.status, response.statusText);
+      }
+    } catch (error) {
+      if ((error as Error)?.name !== "AbortError") {
+        console.error("Presence heartbeat error", error);
+      }
+    }
+  }, [accessToken]);
+
+  useEffect(() => {
+    if (!accessToken) {
+      cleanupHeartbeat();
+      return;
+    }
+
+    // Immediately send the first heartbeat, then continue at the configured interval.
+    void sendHeartbeat();
+
+    if (heartbeatIntervalRef.current) {
+      clearInterval(heartbeatIntervalRef.current);
+    }
+
+    heartbeatIntervalRef.current = setInterval(() => {
+      void sendHeartbeat();
+    }, HEARTBEAT_INTERVAL_MS);
+
+    return () => {
+      cleanupHeartbeat();
+    };
+  }, [accessToken, cleanupHeartbeat, sendHeartbeat]);
 
   useEffect(() => {
     if (accessToken && member?.id) {
@@ -97,12 +166,13 @@ const StompProvider = ({ children }: { children: React.ReactNode }) => {
           console.log("User logged out, disconnecting STOMP client.");
           unsubscribeAll();
           resetNotifications();
+          cleanupHeartbeat();
           disconnect();
         }
       }
     );
     return unsub;
-  }, [resetNotifications, unsubscribeAll]);
+  }, [cleanupHeartbeat, resetNotifications, unsubscribeAll]);
 
   return <>{children}</>;
 };

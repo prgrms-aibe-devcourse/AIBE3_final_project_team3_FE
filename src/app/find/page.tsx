@@ -3,7 +3,7 @@
 import { useCreateDirectChat } from "@/global/api/useChatQuery";
 import { useMemberProfileQuery, useMembersQuery } from "@/global/api/useMemberQuery";
 import { useFriendshipActions } from "@/global/hooks/useFriendshipActions";
-import { MemberSummaryResp } from "@/global/types/auth.types";
+import { MemberPresenceSummaryResp } from "@/global/types/auth.types";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -50,7 +50,7 @@ const normaliseNumericId = (value: unknown): number | null => {
 
 export default function FindPage() {
   const { data: members, isLoading, error } = useMembersQuery();
-  const [selectedUser, setSelectedUser] = useState<MemberSummaryResp | null>(null);
+  const [selectedUser, setSelectedUser] = useState<MemberPresenceSummaryResp | null>(null);
   const searchParams = useSearchParams();
   const router = useRouter();
   const skipAutoSelectRef = useRef(false);
@@ -88,11 +88,11 @@ export default function FindPage() {
     status: friendshipActionStatus,
   } = useFriendshipActions();
   const { isSending, isAccepting, isRejecting, isDeleting } = friendshipActionStatus;
-  const viewUserPosts = (user: MemberSummaryResp) => {
+  const viewUserPosts = (user: MemberPresenceSummaryResp) => {
     alert(`${user.nickname}님의 게시글 보기 기능은 추후 제공될 예정입니다.`);
   };
 
-  const startGroupChat = (user: MemberSummaryResp) => {
+  const startGroupChat = (user: MemberPresenceSummaryResp) => {
     alert(`${user.nickname}님과 그룹 챗 기능은 추후 제공될 예정입니다.`);
   };
 
@@ -188,7 +188,7 @@ export default function FindPage() {
           : "NONE"
     : undefined;
 
-  const startChat = (user: MemberSummaryResp) => {
+  const startChat = (user: MemberPresenceSummaryResp) => {
     if (window.confirm(`${user.nickname}님과 채팅을 시작하시겠습니까?`)) {
       createChatMutation.mutate({ partnerId: user.id });
     }
