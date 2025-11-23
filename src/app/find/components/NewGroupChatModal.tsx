@@ -145,23 +145,18 @@ export default function NewGroupChatModal({
             >
               Room Topic
             </label>
-            <div className="relative">
-              <select
-                id="topic"
-                value={topic}
-                onChange={(e) => setTopic(e.target.value)}
-                className="w-full appearance-none bg-gray-700 border border-gray-600 rounded-lg pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              >
-                {topics.map((t) => (
-                  <option key={t.value} value={t.value}>
-                    {t.label}
-                  </option>
-                ))}
-              </select>
-              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-lg">
-                {topics.find((t) => t.value === topic)?.emoji}
-              </div>
-            </div>
+            <select
+              id="topic"
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
+              className="w-full appearance-none bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            >
+              {topics.map((t) => (
+                <option key={t.value} value={t.value}>
+                  {t.emoji} {t.label}
+                </option>
+              ))}
+            </select>
           </div>
           <div>
             <div className="flex items-center">

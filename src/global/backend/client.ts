@@ -47,37 +47,31 @@ const requestTokenReissue = async (): Promise<string | null> => {
   if (!tokenRefreshPromise) {
     const refreshPromise = (async () => {
       try {
-        console.log("Client Debug: Attempting token reissue..."); // Debug log
         const response = await fetch(`${API_BASE_URL}/api/v1/auth/reissue`, {
           method: "POST",
           credentials: "include",
         });
 
         if (!response.ok) {
-          console.error("Client Debug: Token reissue failed, response not ok:", response.status); // Debug log
           return null;
         }
 
         let newToken = extractTokenFromHeaders(response);
-        console.log("Client Debug: New token from headers:", newToken); // Debug log
 
         if (!newToken) {
           const payload = await response.json().catch(() => null);
           newToken = extractAccessToken(payload);
-          console.log("Client Debug: New token from payload:", newToken); // Debug log
         }
 
         if (newToken) {
           const { setAccessToken } = useLoginStore.getState();
           setAccessToken(newToken);
-          console.log("Client Debug: Access token successfully refreshed and set."); // Debug log
           return newToken;
         }
 
-        console.error("Client Debug: No new token found after reissue attempt."); // Debug log
         return null;
       } catch (error) {
-        console.error("Client Debug: Refresh token request failed", error); // Debug log
+        console.error("Refresh token request failed", error);
         return null;
       } finally {
         tokenRefreshPromise = null;
@@ -134,9 +128,6 @@ const buildRequest = (
 
   if (accessToken) {
     request.headers.set("Authorization", `Bearer ${accessToken}`);
-    console.log("Client Debug: Request with Access Token:", accessToken.substring(0, 10) + "..."); // Debug log
-  } else {
-    console.log("Client Debug: Request without Access Token."); // Debug log
   }
 
   const method = request.method?.toUpperCase?.() ?? "";
@@ -155,7 +146,6 @@ const buildRequest = (
 
 const customFetch: typeof fetch = async (input, init) => {
   const { accessToken, clearAccessToken } = useLoginStore.getState();
-  console.log("Client Debug: customFetch called. Current accessToken:", accessToken ? accessToken.substring(0, 10) + "..." : "null"); // Debug log
 
   const performFetch = async (token: string | null) => {
     const request = buildRequest(input, init, token);
@@ -166,30 +156,24 @@ const customFetch: typeof fetch = async (input, init) => {
 
   // 재발급 요청 자체에는 인터셉터를 다시 적용하지 않습니다.
   if (initialRequest.url.endsWith("/api/v1/auth/reissue")) {
-    console.log("Client Debug: Reissue request, skipping interceptor."); // Debug log
     return fetch(initialRequest);
   }
 
   let response = await fetch(initialRequest);
-  console.log("Client Debug: Initial response status:", response.status, "for URL:", initialRequest.url); // Debug log
 
   if (response.status !== 401) {
     return response;
   }
 
-  console.warn("Client Debug: Received 401 Unauthorized. Attempting token refresh."); // Debug log
   // 401이면 리프레시 토큰으로 재발급을 시도합니다.
   const refreshedToken = await requestTokenReissue();
 
   if (!refreshedToken) {
-    console.error("Client Debug: Token refresh failed. Clearing access token."); // Debug log
     clearAccessToken();
     return response;
   }
 
-  console.log("Client Debug: Token refreshed. Retrying original request."); // Debug log
   response = await performFetch(refreshedToken);
-  console.log("Client Debug: Retried request response status:", response.status); // Debug log
   return response;
 };
 
