@@ -3,6 +3,8 @@
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
 import ReactQueryProvider from "@/global/components/ReactQueryProvider";
+import StompProvider from "@/global/stomp/StompProvider";
+import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { usePathname } from "next/navigation";
 import "./globals.css";
@@ -25,17 +27,13 @@ export default function RootLayout({
         }`}
       >
         <ReactQueryProvider>
-          <Header />
-          <main
-            className={
-              isChatPage
-                ? "flex-1 bg-gradient-to-br from-gray-800 via-gray-700 to-gray-600"
-                : "min-h-screen pt-16 bg-gradient-to-br from-gray-800 via-gray-700 to-gray-600"
-            }
-          >
-            {children}
-          </main>
-          {isChatPage ? null : <Footer />}
+          <StompProvider>
+            <Header />
+            <main className="min-h-screen pt-16 bg-gradient-to-br from-gray-800 via-gray-700 to-gray-600">
+              {children}
+            </main>
+            <Footer />
+          </StompProvider>
         </ReactQueryProvider>
       </body>
     </html>
