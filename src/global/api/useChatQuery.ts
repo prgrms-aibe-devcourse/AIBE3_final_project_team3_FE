@@ -50,6 +50,12 @@ const fetchAiChatRooms = async (): Promise<AIChatRoomResp[]> => {
   return rooms || [];
 };
 
+const fetchPublicGroupChatRooms = async (): Promise<GroupChatRoomResp[]> => {
+  const response = await apiClient.GET("/api/v1/chats/rooms/group/public");
+  const rooms = await unwrap<GroupChatRoomResp[]>(response);
+  return rooms || [];
+};
+
 // --- Query Hooks ---
 
 export const useChatMessagesQuery = (
@@ -81,6 +87,15 @@ export const useGetGroupChatRoomsQuery = () => {
   return useQuery<GroupChatRoomResp[], Error>({
     queryKey: ["chatRooms", "group"],
     queryFn: fetchGroupChatRooms,
+    enabled: !!accessToken,
+  });
+};
+
+export const useGetPublicGroupChatRoomsQuery = () => {
+  const { accessToken } = useLoginStore();
+  return useQuery<GroupChatRoomResp[], Error>({
+    queryKey: ["chatRooms", "group", "public"],
+    queryFn: fetchPublicGroupChatRooms,
     enabled: !!accessToken,
   });
 };
@@ -137,11 +152,7 @@ export const useCreateDirectChat = () => {
 
 const createGroupChat = async (variables: CreateGroupChatReq): Promise<GroupChatRoomResp> => {
   const response = await apiClient.POST("/api/v1/chats/rooms/group", {
-    body: {
-      roomName: variables.roomName,
-      memberIds: variables.memberIds,
-      password: variables.password,
-    },
+    body: variables,
   });
 
   const unwrappedResponse = await unwrap<GroupChatRoomResp>(response);

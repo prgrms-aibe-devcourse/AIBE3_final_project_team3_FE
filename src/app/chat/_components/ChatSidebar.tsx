@@ -11,7 +11,7 @@ import {
   Plus,
 } from "lucide-react";
 import Link from "next/link";
-import NewGroupChatModal from "@/components/NewGroupChatModal";
+import NewGroupChatModal from "@/app/find/components/NewGroupChatModal";
 
 type ChatSidebarProps = {
   activeTab: "1v1" | "group" | "ai";

@@ -8,7 +8,8 @@ import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MessageSquare, Users, Bot, Plus } from "lucide-react";
-import NewGroupChatModal from "@/components/NewGroupChatModal";
+import NewGroupChatModal from "./components/NewGroupChatModal";
+import GroupRoomList from "./components/GroupRoomList";
 
 // A simple utility to generate a placeholder avatar
 const getAvatar = (name: string) => `https://i.pravatar.cc/150?u=${name}`;
@@ -524,6 +525,10 @@ export default function FindPage() {
           })}
         </div>
       );
+    }
+
+    if (activeTab === "group") {
+      return <GroupRoomList />;
     }
 
     return (

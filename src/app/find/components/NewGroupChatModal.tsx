@@ -56,6 +56,8 @@ export default function NewGroupChatModal({
 
     const newGroupChat: CreateGroupChatReq = {
       roomName: title,
+      description: description,
+      topic: topic,
       memberIds: [member.id], // Only current user for now, can add more later
       password: usePassword && password ? password : undefined,
     };
