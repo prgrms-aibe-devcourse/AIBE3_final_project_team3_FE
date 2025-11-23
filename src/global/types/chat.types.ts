@@ -3,6 +3,33 @@ export interface ChatRoomMember {
   nickname: string;
 }
 
+export interface CreateGroupChatReq {
+  roomName: string;
+  memberIds: number[];
+  password?: string; // Optional
+}
+
+export interface DirectChatRoomResp {
+  id: number;
+  user1: ChatRoomMember;
+  user2: ChatRoomMember;
+}
+
+export interface GroupChatRoomResp {
+  id: number;
+  name: string;
+  description: string;
+  topic: string;
+  members: ChatRoomMember[];
+}
+
+export interface AIChatRoomResp {
+  id: number;
+  name: string;
+  aiModelId: string;
+  aiPersona: string;
+}
+
 export interface ChatRoomResp {
   id: number;
   name: string;
@@ -23,3 +50,8 @@ export type CustomResponse<T> = {
   msg: string;
   data?: T;
 };
+
+export interface ChatRoomDataResp {
+  conversationType: "DIRECT" | "GROUP" | "AI";
+  messages: MessageResp[];
+}

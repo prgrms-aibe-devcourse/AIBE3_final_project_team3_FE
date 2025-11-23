@@ -1,23 +1,90 @@
 "use client";
 
 import ChatSidebar from "./_components/ChatSidebar";
-import { useChatStore } from "@/global/stores/useChatStore";
+import { ChatRoom, useChatStore } from "@/global/stores/useChatStore";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
+import { useGetDirectChatRoomsQuery, useGetGroupChatRoomsQuery, useGetAiChatRoomsQuery } from '@/global/api/useChatQuery';
+import { useLoginStore } from '@/global/stores/useLoginStore';
+import { DirectChatRoomResp, GroupChatRoomResp, AIChatRoomResp } from '@/global/types/chat.types';
 
 export default function ChatLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { activeTab, setActiveTab, rooms, selectedRoomId, setSelectedRoomId } =
-    useChatStore();
+  const { activeTab, setActiveTab, setSelectedRoomId, selectedRoomId } = useChatStore();
   const router = useRouter();
+  const member = useLoginStore((state) => state.member);
+  console.log("Layout Debug - Current member:", member);
+
+  const { data: directRoomsData } = useGetDirectChatRoomsQuery();
+  const { data: groupRoomsData } = useGetGroupChatRoomsQuery();
+  const { data: aiRoomsData } = useGetAiChatRoomsQuery();
+  console.log("Layout Debug - directRoomsData:", directRoomsData);
+
+  const rooms = useMemo(() => {
+    if (!member) {
+      console.log("Layout Debug - Member is null, returning empty rooms.");
+      return { "1v1": [], group: [], ai: [] };
+    }
+
+    const directRooms: ChatRoom[] = (directRoomsData || []).map((room: DirectChatRoomResp) => {
+      const partner = room.user1.id === member.memberId ? room.user2 : room.user1;
+      console.log("Layout Debug - Direct Room Transformation:", {
+        roomId: room.id,
+        user1Id: room.user1.id,
+        user2Id: room.user2.id,
+        currentMemberId: member.memberId,
+        partnerNickname: partner.nickname,
+      });
+      return {
+        id: `direct-${room.id}`,
+        name: partner.nickname,
+        avatar: partner.profileImageUrl || '/img/profile-fallback.png',
+        type: '1v1',
+        unreadCount: 0,
+        lastMessage: '대화를 시작해보세요.',
+        lastMessageTime: '',
+      };
+    });
+
+    const groupRooms: ChatRoom[] = (groupRoomsData || []).map((room: GroupChatRoomResp) => {
+      return {
+        id: `group-${room.id}`,
+        name: room.name,
+        avatar: '/img/group-chat-fallback.png',
+        type: 'group',
+        unreadCount: 0,
+        lastMessage: room.description || '그룹 채팅방입니다.',
+        lastMessageTime: '',
+      };
+    });
+
+    const aiRooms: ChatRoom[] = (aiRoomsData || []).map((room: AIChatRoomResp) => {
+      return {
+        id: `ai-${room.id}`,
+        name: room.name,
+        avatar: '/img/ai-chat-fallback.png',
+        type: 'ai',
+        unreadCount: 0,
+        lastMessage: room.aiPersona || 'AI 튜터와 대화해보세요.',
+        lastMessageTime: '',
+      };
+    });
+    console.log("Layout Debug - Transformed rooms:", { "1v1": directRooms, group: groupRooms, ai: aiRooms });
+    return {
+      "1v1": directRooms,
+      group: groupRooms,
+      ai: aiRooms,
+    };
+  }, [directRoomsData, groupRoomsData, aiRoomsData, member]);
 
   const handleSetSelectedRoom = (roomId: string | null) => {
     setSelectedRoomId(roomId);
     if (roomId) {
-      router.push(`/chat/${roomId}`);
+      const [type, actualId] = roomId.split('-');
+      router.push(`/chat/${type}/${actualId}`);
     } else {
       router.push('/chat');
     }
@@ -37,14 +104,15 @@ export default function ChatLayout({
   useEffect(() => {
     if (!selectedRoomId && rooms[activeTab].length > 0) {
       const firstRoomId = rooms[activeTab][0].id;
+      const [type, actualId] = firstRoomId.split('-'); // Split here
       setSelectedRoomId(firstRoomId);
-      router.replace(`/chat/${firstRoomId}`);
+      router.replace(`/chat/${type}/${actualId}`); // Use split parts
     }
   }, [activeTab, rooms, selectedRoomId, setSelectedRoomId, router]);
 
 
   return (
-    <div className="flex h-full bg-gray-900 text-white">
+    <div className="flex h-full bg-gray-900 text-white pt-16">
       <ChatSidebar
         activeTab={activeTab}
         setActiveTab={handleSetActiveTab}
