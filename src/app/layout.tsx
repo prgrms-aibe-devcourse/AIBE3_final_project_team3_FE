@@ -1,26 +1,31 @@
+"use client";
+
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
 import ReactQueryProvider from "@/global/components/ReactQueryProvider";
 import StompProvider from "@/global/stomp/StompProvider";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { usePathname } from "next/navigation";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
-
-export const metadata: Metadata = {
-  title: "English Chat Site",
-  description: "Learn English through AI-powered chat conversations",
-};
 
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
+  const isChatPage = pathname.startsWith("/chat");
+
   return (
-    <html lang="en">
-      <body className={`${inter.className} bg-gray-900`}>
+    <html lang="en" className={isChatPage ? "h-full" : ""}>
+      <body
+        className={`${inter.className} bg-gray-900 ${
+          isChatPage ? "h-full flex flex-col" : ""
+        }`}
+      >
         <ReactQueryProvider>
           <StompProvider>
             <Header />
