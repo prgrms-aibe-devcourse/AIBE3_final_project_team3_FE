@@ -51,6 +51,8 @@ export default function Header() {
     };
   }, []);
 
+  const { role } = useLoginStore();
+
   const formatTimeAgo = (timestamp: string) => {
     const date = new Date(timestamp);
     if (Number.isNaN(date.getTime())) {
@@ -196,12 +198,14 @@ export default function Header() {
             >
               My Page
             </Link>
-            <Link
+            {role === "ROLE_ADMIN" && (
+              <Link
               href="/admin/report-management"
               className="text-red-400 hover:text-red-300 transition-colors font-semibold"
             >
               Admin
             </Link>
+            )}
           </nav>
 
           {/* Auth Buttons */}
@@ -528,12 +532,14 @@ export default function Header() {
               >
                 My Page
               </Link>
-              <Link
+                {role === "ROLE_ADMIN" && (
+                <Link
                 href="/admin/report-management"
-                className="text-red-400 font-semibold hover:text-red-300 transition-colors py-2"
+                className="text-red-400 hover:text-red-300 transition-colors font-semibold"
               >
                 Admin
               </Link>
+              )}
               {hasHydrated && (isLoggedIn ? (
                 <button
                   onClick={handleLogout}

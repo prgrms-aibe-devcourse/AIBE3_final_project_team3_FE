@@ -16,9 +16,11 @@ export type MemberPresenceSummaryResp = components["schemas"]["MemberPresenceSum
 export interface LoginState {
   member: MemberSummaryResp | null;
   accessToken: string | null;
+  role: string | null;
   hasHydrated: boolean;
   setMember: (member: MemberSummaryResp | null) => void;
   setAccessToken: (token: string | null) => void;
+  setLogin: (token: string) => void;
   clearAccessToken: () => void;
   setHydrated: (value: boolean) => void;
 }
