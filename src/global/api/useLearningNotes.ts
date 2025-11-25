@@ -67,17 +67,13 @@ const fetchNotes = async (tag: string, filter: any) => {
   q.set("tag", mapTag(tag));
   q.set("learningFilter", mapFilter(filter));
 
-  console.log("📌 FETCH START");
 
   const resp = await client.GET(`/api/v1/learning-notes?${q.toString()}`, {});
-  console.log("📌 RAW RESP:", resp);
 
   const payload = await unwrap<any>(resp);
-  console.log("📌 UNWRAP RESULT:", payload);
 
   // 🚨 방어 코드 (가장 중요)
   if (!payload || typeof payload !== "object") {
-    console.error("❌ unwrap 결과가 null/undefined:", payload);
     return { content: [] };
   }
 
@@ -85,7 +81,6 @@ const fetchNotes = async (tag: string, filter: any) => {
   const page = payload;
 
   if (!page.content) {
-    console.error("❌ page.content 없음:", page);
     return { content: [] };
   }
 

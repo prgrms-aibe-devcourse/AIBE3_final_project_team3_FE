@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import AdminGuard from "../../AdminGuard";
 
 interface StudyNote {
   id: string;
@@ -25,6 +26,7 @@ export default function GameAddPage() {
   };
 
   return (
+    <AdminGuard>
     <main className="max-w-6xl mx-auto">
     <div className="bg-white rounded-lg border">
       <div className="p-4 border-b text-lg font-bold">문장 추가</div>
@@ -60,5 +62,6 @@ export default function GameAddPage() {
       )}
     </div>
     </main>
+    </AdminGuard>
   );
 }

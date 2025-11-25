@@ -147,9 +147,7 @@ export default function LearningNotesPage() {
   const { data, isLoading, isError } = useLearningNotes(activeTab, filter);
   const toggleMutation = useToggleFeedbackMark();
 
-  useEffect(() => {
-    console.log("📌 Final page data:", data);
-  }, [data]);
+  useEffect(() => {}, [data]);
 
   if (isLoading)
     return <div className="p-8 text-gray-700">로딩 중...</div>;

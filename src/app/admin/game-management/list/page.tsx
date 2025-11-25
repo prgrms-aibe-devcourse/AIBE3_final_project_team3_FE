@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import AdminGuard from "../../AdminGuard";
 
 interface GameItem {
   id: string;
@@ -38,6 +39,7 @@ export default function GameListPage() {
   };
 
   return (
+    <AdminGuard>
     <main className="max-w-6xl mx-auto">
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
 
@@ -101,5 +103,6 @@ export default function GameListPage() {
       )}
     </div>
     </main>
+    </AdminGuard>
   );
 }

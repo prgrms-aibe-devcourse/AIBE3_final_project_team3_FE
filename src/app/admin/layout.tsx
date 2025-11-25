@@ -3,6 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import AdminGuard from "./AdminGuard";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -12,6 +13,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const isGameAdd = pathname.startsWith('/admin/game-management/add');
 
   return (
+    <AdminGuard>
     <div className="min-h-screen bg-gray-50">
       {/* 공통 상단 Admin Navigation */}
       <div className="bg-white border-b px-8 py-4 shadow-sm flex items-center gap-6">
@@ -37,5 +39,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {children}
       </div>
     </div>
+    </AdminGuard>
   );
 }

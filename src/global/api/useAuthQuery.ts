@@ -62,12 +62,12 @@ export const useFetchMe = () => {
 // 로그인 훅
 export const useLogin = () => {
   const qc = useQueryClient();
-  const { setAccessToken, setMember } = useLoginStore();
+  const { setLogin, setMember } = useLoginStore();
   return useMutation({
     mutationKey: authQueryKeys.login().queryKey,
     mutationFn: login,
     onSuccess: (token) => {
-      setAccessToken(token); // Zustand 스토어에 토큰 저장
+      setLogin(token); // Zustand 스토어에 토큰 저장
       // 로그인 성공 후 내 정보 쿼리 무효화하여 최신 정보 가져오도록 유도
       qc.invalidateQueries({ queryKey: authQueryKeys.me().queryKey });
       // 또는 직접 내 정보 가져와서 저장 (옵션)
