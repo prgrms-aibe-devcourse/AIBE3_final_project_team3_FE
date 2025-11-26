@@ -14,7 +14,7 @@ export default function AdminGuard({ children }: { children: React.ReactNode }) 
     }
   }, [role]);
 
-  if (role !== "ROLE_ADMIN") return null;
+  if (!role || role !== "ROLE_ADMIN") return null;
 
   return <>{children}</>;
 }

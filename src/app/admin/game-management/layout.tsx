@@ -19,30 +19,6 @@ export default function GameManagementLayout({
           게임 문장 관리
         </h1>
 
-        {/* 상단 탭 */}
-        <div className="flex gap-6 mb-8 text-lg">
-          <Link
-            href="/admin/game-management/list"
-            className={
-              pathname.includes('/list')
-                ? 'text-blue-600 font-bold'
-                : 'text-gray-600 hover:text-gray-800'
-            }
-          >
-            등록된 문장
-          </Link>
-
-          <Link
-            href="/admin/game-management/add"
-            className={
-              pathname.includes('/add')
-                ? 'text-blue-600 font-bold'
-                : 'text-gray-600 hover:text-gray-800'
-            }
-          >
-            문장 추가
-          </Link>
-        </div>
 
         {/* 하위 페이지 영역 */}
         {children}
