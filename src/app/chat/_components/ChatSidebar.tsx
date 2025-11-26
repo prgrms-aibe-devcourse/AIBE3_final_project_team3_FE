@@ -14,8 +14,8 @@ import Link from "next/link";
 import NewGroupChatModal from "@/app/find/components/NewGroupChatModal";
 
 type ChatSidebarProps = {
-  activeTab: "1v1" | "group" | "ai";
-  setActiveTab: (tab: "1v1" | "group" | "ai") => void;
+  activeTab: "direct" | "group" | "ai";
+  setActiveTab: (tab: "direct" | "group" | "ai") => void;
   rooms: ChatRoom[];
   selectedRoomId: string | null;
   setSelectedRoomId: (roomId: string | null) => void;
@@ -33,7 +33,7 @@ export default function ChatSidebar({
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handlePlusClick = () => {
-    if (activeTab === "1v1") {
+    if (activeTab === "direct") {
       router.push("/find");
     } else if (activeTab === "group") {
       setIsDropdownOpen(!isDropdownOpen);
@@ -47,7 +47,7 @@ export default function ChatSidebar({
     label,
     Icon,
   }: {
-    tabName: "1v1" | "group" | "ai";
+    tabName: "direct" | "group" | "ai";
     label: string;
     Icon: React.ElementType;
   }) => (
@@ -138,7 +138,7 @@ export default function ChatSidebar({
                     <div className="w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center text-xl">
                       {room.avatar}
                     </div>
-                    {room.type === "1v1" && (
+                    {room.type === "direct" && (
                       <span className="absolute bottom-0 right-0 block h-3 w-3 rounded-full bg-green-500 border-2 border-gray-800"></span>
                     )}
                   </div>
@@ -170,7 +170,7 @@ export default function ChatSidebar({
 
         {/* Tabs */}
         <div className="flex-shrink-0 bg-gray-900 border-t border-gray-700 grid grid-cols-3">
-          <TabButton tabName="1v1" label="1:1 Chat" Icon={MessageSquare} />
+          <TabButton tabName="direct" label="1:1 Chat" Icon={MessageSquare} />
           <TabButton tabName="group" label="Group Chat" Icon={Users} />
           <TabButton tabName="ai" label="AI Chat" Icon={Bot} />
         </div>

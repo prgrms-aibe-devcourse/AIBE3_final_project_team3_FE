@@ -23,7 +23,7 @@ interface ChatRoom {
   name: string;
   participants: number;
   topic: string;
-  type: "1v1" | "group";
+  type: "" | "group";
   category?: string;
   isPrivate?: boolean;
   createdBy?: number;
@@ -33,7 +33,7 @@ export default function UserChatPage() {
   const [selectedRoom, setSelectedRoom] = useState<ChatRoom | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
-  const [activeTab, setActiveTab] = useState<"1v1" | "group">("1v1");
+  const [activeTab, setActiveTab] = useState<"" | "group">("");
   const [showCreateRoom, setShowCreateRoom] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [showParticipants, setShowParticipants] = useState(false);
@@ -113,7 +113,7 @@ export default function UserChatPage() {
     },
   ];
 
-  // Mock data for online users (for 1v1 chat)
+  // Mock data for online users (for  chat)
   const onlineUsers: User[] = [
     { id: 1, name: "Sarah", country: "USA", isOnline: true },
     { id: 2, name: "Yuki", country: "Japan", isOnline: true },
@@ -133,7 +133,7 @@ export default function UserChatPage() {
 
   // Mock participants for the current room
   const getRoomParticipants = (room: ChatRoom): User[] => {
-    if (room.type === "1v1") {
+    if (room.type === "") {
       return [{ id: 999, name: "You", country: "Korea", isOnline: true }];
     }
 
@@ -157,13 +157,13 @@ export default function UserChatPage() {
   };
 
   const startChat = (user: User) => {
-    // Create a 1v1 chat room
+    // Create a  chat room
     const chatRoom: ChatRoom = {
       id: Date.now(),
       name: `Chat with ${user.name}`,
       participants: 2,
-      topic: `1v1 conversation`,
-      type: "1v1",
+      topic: ` conversation`,
+      type: "",
     };
     setSelectedRoom(chatRoom);
     setMessages([
@@ -181,7 +181,7 @@ export default function UserChatPage() {
     setSelectedRoom(room);
     // Mock messages for the room
     const welcomeMessages =
-      room.type === "1v1"
+      room.type === ""
         ? [
             {
               id: 1,
@@ -352,9 +352,9 @@ export default function UserChatPage() {
         {/* Chat Type Tabs */}
         <div className="flex space-x-1 mb-6 bg-gray-700 p-1 rounded-lg w-fit">
           <button
-            onClick={() => setActiveTab("1v1")}
+            onClick={() => setActiveTab("")}
             className={`px-4 py-2 rounded-md transition-colors ${
-              activeTab === "1v1"
+              activeTab === ""
                 ? "bg-gray-800 text-emerald-400 shadow-sm"
                 : "text-gray-200 hover:text-white"
             }`}
@@ -373,7 +373,7 @@ export default function UserChatPage() {
           </button>
         </div>
 
-        {activeTab === "1v1" ? (
+        {activeTab === "" ? (
           /* 1:1 Chat Section */
           <div>
             <h2 className="text-lg font-semibold mb-4 text-white">
@@ -483,7 +483,7 @@ export default function UserChatPage() {
             </button>
             <div className="flex items-center space-x-3">
               {/* Profile image for 1:1 chat */}
-              {selectedRoom.type === "1v1" && (
+              {selectedRoom.type === "" && (
                 <div
                   onClick={() => handleShowUserProfile(1)}
                   className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-500 transition-colors"
@@ -500,12 +500,12 @@ export default function UserChatPage() {
                 <div className="flex items-center space-x-2">
                   <span
                     className={`text-xs px-2 py-1 rounded-full ${
-                      selectedRoom.type === "1v1"
+                      selectedRoom.type === ""
                         ? "bg-emerald-600 text-white"
                         : "bg-amber-600 text-white"
                     }`}
                   >
-                    {selectedRoom.type === "1v1" ? "1:1 Chat" : "Group Chat"}
+                    {selectedRoom.type === "" ? "1:1 Chat" : "Group Chat"}
                   </span>
                   {selectedRoom.type === "group" ? (
                     <div className="relative participants-dropdown">
@@ -599,7 +599,7 @@ export default function UserChatPage() {
           </div>
           
           {/* Report Button for 1:1 Chat */}
-          {selectedRoom.type === "1v1" && (
+          {selectedRoom.type === "" && (
             <button
               onClick={handleReportUser}
               className="text-red-400 hover:text-red-300 hover:bg-red-900/20 p-2 rounded-full transition-colors"
@@ -715,7 +715,7 @@ export default function UserChatPage() {
             onChange={(e) => setInputText(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder={`Type your message in ${
-              selectedRoom.type === "1v1" ? "private chat" : selectedRoom.name
+              selectedRoom.type === "" ? "private chat" : selectedRoom.name
             }...`}
             className="flex-1 border border-gray-600 bg-gray-800 text-white rounded-lg px-4 py-3 resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm placeholder-gray-400 overflow-hidden"
             rows={2}
@@ -776,7 +776,7 @@ export default function UserChatPage() {
                   className="w-full bg-emerald-600 text-white py-2 px-4 rounded-lg hover:bg-emerald-700 transition-colors flex items-center justify-center space-x-2"
                 >
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z" />
+                    <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2ha1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z" />
                   </svg>
                   <span>Add Friend</span>
                 </button>

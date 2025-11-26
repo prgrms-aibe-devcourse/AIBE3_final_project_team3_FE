@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import { useCreateGroupChat } from "@/global/api/useChatQuery";
 import { useLoginStore } from "@/global/stores/useLoginStore";
-import { CreateGroupChatReq } from "@/global/types/chat.types";
+import { useChatStore } from "@/global/stores/useChatStore";
+import { CreateGroupChatReq, ChatRoom } from "@/global/types/chat.types";
 
 type NewGroupChatModalProps = {
   isOpen: boolean;
@@ -22,6 +24,8 @@ export default function NewGroupChatModal({
   const [password, setPassword] = useState("");
 
   const modalRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+  const addRoom = useChatStore((state) => state.addRoom);
   const { mutate: createGroupChat, isLoading, isError, error } = useCreateGroupChat();
   const member = useLoginStore((state) => state.member);
 
@@ -63,8 +67,27 @@ export default function NewGroupChatModal({
     };
 
     createGroupChat(newGroupChat, {
-      onSuccess: () => {
+      onSuccess: (newRoomData) => {
         alert("그룹 채팅방이 성공적으로 생성되었습니다.");
+
+        // Create a new ChatRoom object for the store
+        const newRoomForStore: ChatRoom = {
+          id: `group-${newRoomData.id}`,
+          name: newRoomData.roomName,
+          avatar: '👥', // Default avatar, can be improved
+          type: 'group',
+          lastMessage: '새로운 채팅방이 생성되었습니다.',
+          lastMessageTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          unreadCount: 0,
+        };
+
+        // Add the new room to the global store
+        addRoom(newRoomForStore);
+
+        // Navigate to the new chat room
+        router.push(`/chat/group/${newRoomData.id}`);
+        
+        // Close modal and reset state
         onClose();
         setTitle("");
         setDescription("");

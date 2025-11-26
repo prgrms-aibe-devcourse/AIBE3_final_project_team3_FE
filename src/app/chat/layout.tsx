@@ -26,7 +26,7 @@ export default function ChatLayout({
   const rooms = useMemo(() => {
     if (!member) {
       console.log("Layout Debug - Member is null, returning empty rooms.");
-      return { "1v1": [], group: [], ai: [] };
+      return { direct: [], group: [], ai: [] };
     }
 
     const directRooms: ChatRoom[] = (directRoomsData || []).map((room: DirectChatRoomResp) => {
@@ -42,7 +42,7 @@ export default function ChatLayout({
         id: `direct-${room.id}`,
         name: partner.nickname,
         avatar: partner.profileImageUrl || '/img/profile-fallback.png',
-        type: '1v1',
+        type: 'direct',
         unreadCount: 0,
         lastMessage: '대화를 시작해보세요.',
         lastMessageTime: '',
@@ -72,9 +72,9 @@ export default function ChatLayout({
         lastMessageTime: '',
       };
     });
-    console.log("Layout Debug - Transformed rooms:", { "1v1": directRooms, group: groupRooms, ai: aiRooms });
+    console.log("Layout Debug - Transformed rooms:", { direct: directRooms, group: groupRooms, ai: aiRooms });
     return {
-      "1v1": directRooms,
+      direct: directRooms,
       group: groupRooms,
       ai: aiRooms,
     };
@@ -90,7 +90,7 @@ export default function ChatLayout({
     }
   };
 
-  const handleSetActiveTab = (tab: "1v1" | "group" | "ai") => {
+  const handleSetActiveTab = (tab: "direct" | "group" | "ai") => {
     setActiveTab(tab);
     const firstRoomInTab = rooms[tab][0];
     if (firstRoomInTab) {
@@ -112,16 +112,18 @@ export default function ChatLayout({
 
 
   return (
-    <div className="flex h-full bg-gray-900 text-white pt-16">
-      <ChatSidebar
-        activeTab={activeTab}
-        setActiveTab={handleSetActiveTab}
-        rooms={rooms[activeTab]}
-        selectedRoomId={selectedRoomId}
-        setSelectedRoomId={handleSetSelectedRoom}
-      />
-      <div className="flex-1 flex flex-col">
-        {children}
+    <div className="h-screen w-full lg:w-3/5 lg:mx-auto">
+      <div className="flex h-full bg-gray-900 text-white rounded-xl shadow-2xl overflow-hidden">
+        <ChatSidebar
+          activeTab={activeTab}
+          setActiveTab={handleSetActiveTab}
+          rooms={rooms[activeTab]}
+          selectedRoomId={selectedRoomId}
+          setSelectedRoomId={handleSetSelectedRoom}
+        />
+        <div className="flex-1 flex flex-col overflow-hidden min-h-0">
+          {children}
+        </div>
       </div>
     </div>
   );

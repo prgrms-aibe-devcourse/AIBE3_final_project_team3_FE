@@ -63,7 +63,7 @@ const normaliseNumericId = (value: unknown): number | null => {
   return null;
 };
 
-type ActiveTab = "1v1" | "group" | "ai";
+type ActiveTab = "" | "group" | "ai";
 
 export default function FindPage() {
   const { data: members, isLoading, error } = useMembersQuery();
@@ -75,7 +75,7 @@ export default function FindPage() {
     const raw = searchParams.get("memberId");
     return normaliseNumericId(raw);
   }, [searchParams]);
-  const [activeTab, setActiveTab] = useState<ActiveTab>("1v1");
+  const [activeTab, setActiveTab] = useState<ActiveTab>("");
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false); // Renamed for clarity
   // New state for AI modals
   const [isAISituationModalOpen, setIsAISituationModalOpen] = useState(false);
@@ -474,7 +474,7 @@ export default function FindPage() {
       );
     }
 
-    if (activeTab === "1v1") {
+    if (activeTab === "") {
       if (!members || members.length === 0) {
         return (
           <div className="text-center text-gray-400">
@@ -612,7 +612,7 @@ export default function FindPage() {
         <div className="border-b border-gray-700 mb-8">
           <div className="flex justify-between items-center">
             <div className="flex gap-2">
-              <TabButton tab="1v1" label="People" Icon={MessageSquare} />
+              <TabButton tab="" label="People" Icon={MessageSquare} />
               <TabButton tab="group" label="Groups" Icon={Users} />
               <TabButton tab="ai" label="AI Tutors" Icon={Bot} />
             </div>
