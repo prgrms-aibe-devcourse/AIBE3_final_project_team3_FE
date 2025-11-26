@@ -30,7 +30,16 @@ const extractMembersPayload = (payload: unknown): MemberPresenceSummaryResp[] =>
 };
 
 const fetchAllMembers = async (): Promise<MemberPresenceSummaryResp[]> => {
-    const { data: apiResponse, error } = await apiClient.GET("/api/v1/members");
+    const { data: apiResponse, error } = await apiClient.GET("/api/v1/members", {
+        params: {
+            query: {
+                pageable: {
+                    page: 0,
+                    size: 20,
+                },
+            },
+        },
+    });
 
     if (error) {
         throw new Error(JSON.stringify(error));
