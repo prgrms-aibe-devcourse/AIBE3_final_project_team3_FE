@@ -1,5 +1,6 @@
 import apiClient from "@/global/backend/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { unwrap } from "../backend/unwrap"; // 응답 처리 헬퍼
 
 // =========================
 // 📌 API 함수들
@@ -19,7 +20,8 @@ export async function createSentenceGame(data: {
   correctedContent: string;
 }) {
   const res = await apiClient.POST("/api/v1/admin/sentence-game", {body: data});
-  return res.data.data;
+
+  return unwrap(res);
 }
 
 // 3) 문장게임 목록 조회
@@ -27,13 +29,13 @@ export async function fetchSentenceGameList(page: number) {
   const res = await apiClient.GET("/api/v1/admin/sentence-game", {
     params: { page, size: 20 },
   });
-  return res.data.data;
+  return unwrap(res);
 }
 
 // 4) 문장게임 삭제
 export async function deleteSentenceGame(id: number) {
   const res = await apiClient.DELETE(`/api/v1/admin/sentence-game/${id}`);
-  return res.data;
+  return unwrap(res);
 }
 
 // =========================

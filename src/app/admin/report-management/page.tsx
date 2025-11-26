@@ -32,80 +32,94 @@ export default function ReportManagementPage() {
   const list = reports ?? [];
 
   return (
-    // <AdminGuard>
     <main className="max-w-6xl mx-auto p-8">
+      
       <h1 className="text-3xl font-bold mb-6">신고 관리</h1>
 
-      {/* 리스트 전체 박스는 항상 유지 */}
-      <div className="grid gap-4">
+      {/* ===== 감싸는 큰 박스 (문장게임과 동일) ===== */}
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
 
-        {/* 로딩 중 */}
+        {/* header */}
+        <div className="p-4 bg-gray-50 border-b text-lg font-bold">
+          신고 목록
+        </div>
+
+        {/* --- 로딩 --- */}
         {isLoading && (
-          <div className="p-10 text-center text-gray-500 border rounded-lg bg-white">
+          <div className="p-10 text-center text-gray-500">
             로딩 중입니다...
           </div>
         )}
 
-        {/* 데이터 없음 */}
+        {/* --- 데이터 없음 --- */}
         {!isLoading && list.length === 0 && (
-          <div className="p-10 text-center text-gray-500 border rounded-lg bg-white">
+          <div className="p-10 text-center text-gray-500">
             신고 내역이 없습니다.
           </div>
         )}
 
-        {/* 데이터 있음 */}
-        {!isLoading &&
-          list.length > 0 &&
-          list.map((report) => (
-            <div
-              key={report.id}
-              className="bg-white border rounded-lg p-4 shadow-sm"
-            >
-              <div className="flex justify-between">
-                <div>
-                  <div className="flex gap-2 mb-2">
-                    <span className="text-sm font-semibold">
-                      ID: {report.id}
-                    </span>
+        {/* --- 테이블 --- */}
+        {!isLoading && list.length > 0 && (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b">
+                <tr>
+                  <th className="px-4 py-3 text-left text-sm font-semibold">ID</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold">상태</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold">카테고리</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold">신고 내용</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold">신고일</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold">작업</th>
+                </tr>
+              </thead>
 
-                    <span
-                      className={`px-2 py-1 rounded text-xs ${
-                        statusColors[report.status]
-                      }`}
-                    >
-                      {report.status}
-                    </span>
+              <tbody className="divide-y">
+                {list.map((report) => (
+                  <tr key={report.id} className="hover:bg-gray-50">
+                    
+                    <td className="px-4 py-3 text-sm">{report.id}</td>
 
-                    <span
-                      className={`px-2 py-1 rounded text-xs ${
-                        categoryColors[report.category]
-                      }`}
-                    >
-                      {report.category}
-                    </span>
-                  </div>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <span className={`px-3 py-1 rounded text-xs font-semibold ${statusColors[report.status]}`}>
+                        {report.status}
+                      </span>
+                    </td>
 
-                  <p className="text-sm text-gray-700 mb-1">
-                    "{report.reportedMsgContent}"
-                  </p>
-                  <p className="text-xs text-gray-400">{report.createdAt}</p>
-                </div>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <span className={`px-3 py-1 rounded text-xs font-semibold ${categoryColors[report.category]}`}>
+                        {report.category}
+                      </span>
+                    </td>
 
-                <button
-                  onClick={() => {
-                    setSelected(report);
-                    setNewStatus(report.status);
-                  }}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                >
-                  상태 변경
-                </button>
-              </div>
-            </div>
-          ))}
+                    <td className="px-4 py-3 text-sm max-w-xs truncate">
+                      {report.reportedMsgContent}
+                    </td>
+
+                    <td className="px-4 py-3 text-sm text-gray-600">
+                      {report.createdAt?.slice(0, 10)}
+                    </td>
+
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <button
+                        onClick={() => {
+                          setSelected(report);
+                          setNewStatus(report.status);
+                        }}
+                        className="px-3 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200"
+                      >
+                        상태 변경
+                      </button>
+                    </td>
+
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
-      {/* 상세 패널 */}
+      {/* ======= 상세 패널 ======= */}
       {selected && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-end z-50">
           <div className="w-[420px] h-full bg-white shadow-xl p-6 overflow-y-auto">
@@ -114,35 +128,25 @@ export default function ReportManagementPage() {
               <button onClick={() => setSelected(null)}>✕</button>
             </div>
 
-            {/* 신고당한 유저 */}
+            {/* 신고 당한 유저 */}
             <div className="mb-4">
-              <label className="text-sm font-semibold block mb-2">
-                신고당한 유저
-              </label>
-              <div className="bg-gray-100 rounded-md p-3 text-sm text-gray-700">
+              <label className="text-sm font-semibold block mb-2">신고당한 유저</label>
+              <div className="bg-gray-100 rounded-md p-3 text-sm">
                 ID: {selected.targetMemberId}
               </div>
             </div>
 
-            {/* 신고 카테고리 */}
+            {/* 카테고리 */}
             <div className="mb-4">
-              <label className="text-sm font-semibold block mb-2">
-                신고 카테고리
-              </label>
-              <span
-                className={`px-3 py-1 rounded text-xs font-semibold ${
-                  categoryColors[selected.category]
-                }`}
-              >
+              <label className="text-sm font-semibold block mb-2">신고 카테고리</label>
+              <span className={`px-3 py-1 rounded text-xs font-semibold ${categoryColors[selected.category]}`}>
                 {selected.category}
               </span>
             </div>
 
-            {/* 신고 내용 */}
+            {/* 내용 */}
             <div className="mb-4">
-              <label className="text-sm font-semibold block mb-2">
-                신고 내용
-              </label>
+              <label className="text-sm font-semibold block mb-2">신고 내용</label>
               <textarea
                 readOnly
                 className="w-full bg-red-50 border border-red-200 rounded-md p-2 text-sm"
@@ -152,9 +156,7 @@ export default function ReportManagementPage() {
 
             {/* 상태 변경 */}
             <div className="mb-6">
-              <label className="text-sm font-semibold block mb-2">
-                상태 변경
-              </label>
+              <label className="text-sm font-semibold block mb-2">상태 변경</label>
               <select
                 value={newStatus}
                 onChange={(e) => setNewStatus(e.target.value as ReportStatus)}
@@ -180,11 +182,7 @@ export default function ReportManagementPage() {
                 onClick={() =>
                   statusMutation.mutate(
                     { id: selected.id, status: newStatus },
-                    {
-                      onSuccess: () => {
-                        setSelected(null);
-                      },
-                    }
+                    { onSuccess: () => setSelected(null) }
                   )
                 }
                 className="px-4 py-2 bg-blue-600 text-white rounded-md"
@@ -196,6 +194,5 @@ export default function ReportManagementPage() {
         </div>
       )}
     </main>
-    // </AdminGuard>
   );
 }
