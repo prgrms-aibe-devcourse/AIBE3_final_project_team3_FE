@@ -65,15 +65,25 @@ const normaliseNumericId = (value: unknown): number | null => {
 
 type ActiveTab = "1v1" | "group" | "ai";
 type MemberListItem = MemberPresenceSummaryResp & { name?: string | null };
+const DEFAULT_PAGE_SIZE = 15;
 
 export default function FindPage() {
   const [showOnlineOnly, setShowOnlineOnly] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageIndex = Math.max(currentPage - 1, 0);
   const {
-    data: members,
+    data: memberPage,
     isLoading,
     error,
     isFetching,
-  } = useMembersQuery({ onlineOnly: showOnlineOnly });
+  } = useMembersQuery({ onlineOnly: showOnlineOnly, page: pageIndex, size: DEFAULT_PAGE_SIZE });
+  const members = useMemo(() => memberPage?.items ?? [], [memberPage]);
+  const hasMemberData = Boolean(memberPage);
+  const isInitialLoading = isLoading && !hasMemberData;
+  const isRefetching = isFetching && hasMemberData;
+  const displayedPageNumber = isRefetching
+    ? currentPage
+    : (memberPage?.pageIndex ?? pageIndex) + 1;
   const [selectedUser, setSelectedUser] = useState<MemberListItem | null>(null);
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -119,7 +129,6 @@ export default function FindPage() {
   };
 
   const handleSelectAIScenario = (scenario: AIScenario) => {
-    console.log("Selected AI Scenario:", scenario);
     // TODO: Implement logic to create AI chat room with this scenario
     alert(`AI 채팅방 생성 요청: ${selectedAICategory?.title} - ${scenario.title}`);
     setIsAIScenarioModalOpen(false); // Close second modal
@@ -139,7 +148,7 @@ export default function FindPage() {
       return;
     }
 
-    if (!requestedMemberId || !members) {
+    if (!requestedMemberId || members.length === 0) {
       return;
     }
 
@@ -465,12 +474,16 @@ export default function FindPage() {
   };
 
   const renderContent = () => {
-    const isMembersLoading = isLoading || isFetching;
+    const totalPages = memberPage?.totalPages ?? null;
+    const isFirstPage = memberPage?.isFirst ?? currentPage <= 1;
+    const isLastPage = memberPage?.isLast ?? (typeof totalPages === "number" ? currentPage >= totalPages : members.length < DEFAULT_PAGE_SIZE);
+    const canGoPrev = !isFirstPage && !isInitialLoading;
+    const canGoNext = !isLastPage && !isInitialLoading;
 
-    if (isMembersLoading) {
+    if (isInitialLoading) {
       return (
         <div className="text-center text-white">
-          <p>Loading...</p>
+          <p>{currentPage > 1 ? "다음 페이지를 불러오는 중입니다..." : "Loading..."}</p>
         </div>
       );
     }
@@ -490,7 +503,10 @@ export default function FindPage() {
             <input
               type="checkbox"
               checked={showOnlineOnly}
-              onChange={(event) => setShowOnlineOnly(event.target.checked)}
+              onChange={(event) => {
+                setShowOnlineOnly(event.target.checked);
+                setCurrentPage(1);
+              }}
               className="h-4 w-4 rounded border-gray-500 bg-gray-700 text-emerald-500 focus:ring-emerald-500"
             />
             온라인 멤버만 보기
@@ -590,6 +606,29 @@ export default function FindPage() {
               );
             })}
           </div>
+          <div className="flex items-center justify-between mt-6">
+            <button
+              type="button"
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              disabled={!canGoPrev}
+              className="px-4 py-2 rounded bg-gray-700 text-white disabled:bg-gray-600/60 disabled:text-gray-400"
+            >
+              이전
+            </button>
+            <div className="text-sm text-gray-300">
+              페이지 {displayedPageNumber}
+              {typeof totalPages === "number" && totalPages > 0 ? ` / ${totalPages}` : ""}
+              {isRefetching ? <span className="ml-2 text-xs text-gray-400">업데이트 중...</span> : null}
+            </div>
+            <button
+              type="button"
+              onClick={() => setCurrentPage((prev) => prev + 1)}
+              disabled={!canGoNext}
+              className="px-4 py-2 rounded bg-gray-700 text-white disabled:bg-gray-600/60 disabled:text-gray-400"
+            >
+              다음
+            </button>
+          </div>
         </>
       );
     }
@@ -617,8 +656,8 @@ export default function FindPage() {
     <button
       onClick={() => setActiveTab(tab)}
       className={`flex items-center gap-2 px-4 py-2 rounded-t-lg transition-colors ${activeTab === tab
-          ? "bg-gray-800 text-emerald-400"
-          : "text-gray-400 hover:bg-gray-700/50 hover:text-white"
+        ? "bg-gray-800 text-emerald-400"
+        : "text-gray-400 hover:bg-gray-700/50 hover:text-white"
         }`}
     >
       <Icon size={18} />
