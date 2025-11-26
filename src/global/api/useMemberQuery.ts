@@ -1,5 +1,6 @@
 import apiClient from "@/global/backend/client";
 import type { paths } from "@/global/backend/schema";
+import { API_BASE_URL } from "@/global/consts";
 import { normaliseCountryValue } from "@/global/lib/countries";
 import { useLoginStore } from "@/global/stores/useLoginStore";
 import { MemberPresenceSummaryResp } from "@/global/types/auth.types";
@@ -29,32 +30,67 @@ const extractMembersPayload = (payload: unknown): MemberPresenceSummaryResp[] =>
     return [];
 };
 
-const fetchAllMembers = async (): Promise<MemberPresenceSummaryResp[]> => {
-    const { data: apiResponse, error } = await apiClient.GET("/api/v1/members", {
-        params: {
-            query: {
-                pageable: {
-                    page: 0,
-                    size: 20,
-                },
-            },
+type MemberQueryOptions = {
+    page?: number;
+    size?: number;
+    onlineOnly?: boolean;
+};
+
+const normalisePageParam = (value: unknown, fallback: number): number => {
+    if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
+        return Math.trunc(value);
+    }
+
+    if (typeof value === "string" && value.trim().length > 0) {
+        const parsed = Number.parseInt(value, 10);
+        if (!Number.isNaN(parsed) && parsed >= 0) {
+            return parsed;
+        }
+    }
+
+    return fallback;
+};
+
+const fetchMembers = async (options?: MemberQueryOptions): Promise<MemberPresenceSummaryResp[]> => {
+    const { accessToken } = useLoginStore.getState();
+    const page = normalisePageParam(options?.page, 0);
+    const size = normalisePageParam(options?.size, 20);
+    const path = options?.onlineOnly ? "/api/v1/members/online" : "/api/v1/members";
+    const url = new URL(path, API_BASE_URL);
+    url.searchParams.set("page", String(page));
+    url.searchParams.set("size", String(size));
+
+    const response = await fetch(url.toString(), {
+        method: "GET",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
         },
     });
 
-    if (error) {
-        throw new Error(JSON.stringify(error));
+    if (!response.ok) {
+        throw new Error(`Failed to fetch members: ${response.status}`);
     }
 
+    const apiResponse = await response.json();
     const payload = (apiResponse ?? {}) as { data?: unknown };
     return extractMembersPayload(payload.data ?? apiResponse);
 };
 
-export const useMembersQuery = () => {
+export const useMembersQuery = (options?: MemberQueryOptions) => {
     const { accessToken } = useLoginStore();
+    const normalisedOptions: Required<Pick<MemberQueryOptions, "page" | "size">> & {
+        onlineOnly: boolean;
+    } = {
+        page: normalisePageParam(options?.page, 0),
+        size: normalisePageParam(options?.size, 20),
+        onlineOnly: Boolean(options?.onlineOnly),
+    };
 
     return useQuery<MemberPresenceSummaryResp[], Error>({
-        queryKey: ["members"],
-        queryFn: fetchAllMembers,
+        queryKey: ["members", normalisedOptions],
+        queryFn: () => fetchMembers(normalisedOptions),
         enabled: !!accessToken,
         staleTime: 1000 * 60 * 5,
         refetchOnWindowFocus: false,
