@@ -34,6 +34,7 @@ export default function GameAddPage() {
   };
 
   return (
+    <AdminGuard>
     <main className="max-w-6xl mx-auto">
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
 
@@ -126,5 +127,6 @@ export default function GameAddPage() {
 
       </div>
     </main>
+    </AdminGuard>
   );
 }
