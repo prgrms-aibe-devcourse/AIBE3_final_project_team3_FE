@@ -19,7 +19,7 @@ const StompProvider = ({ children }: { children: React.ReactNode }) => {
     if (member && typeof (member as Record<string, unknown>).memberId === "number") {
       return (member as Record<string, unknown>).memberId as number;
     }
-    return member?.id ?? null;
+    return member?.memberid ?? null;
   })();
   const [isStompConnected, setIsStompConnected] = useState(false);
   const roomSubscriptionRef = useRef<StompSubscription | null>(null);

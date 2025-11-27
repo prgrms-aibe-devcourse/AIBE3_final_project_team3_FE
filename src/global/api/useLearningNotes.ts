@@ -1,7 +1,3 @@
-// ==========================================
-//   useLearningNotes.ts (완전체)
-// ==========================================
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import client from "@/global/backend/client";
 import { unwrap } from "@/global/backend/unwrap";
@@ -59,76 +55,65 @@ const mapTag = (tag: string) => {
 };
 
 // ==========================================
-//    Fetch Notes
+//    API - Fetch Notes (페이지네이션 추가)
 // ==========================================
 
-const fetchNotes = async (tag: string, filter: any) => {
+const fetchNotes = async (tag: string, filter: string, page: number) => {
   const q = new URLSearchParams();
   q.set("tag", mapTag(tag));
   q.set("learningFilter", mapFilter(filter));
-
+  q.set("page", String(page));    
+  q.set("size", "20");          
 
   const resp = await client.GET(`/api/v1/learning-notes?${q.toString()}`, {});
-
   const payload = await unwrap<any>(resp);
 
-  // 🚨 방어 코드 (가장 중요)
-  if (!payload || typeof payload !== "object") {
-    return { content: [] };
-  }
+  if (!payload || typeof payload !== "object") return { content: [] };
+  if (!payload.content) return { content: [] };
 
-  // unwrap(payload) = {content: [...], pageable: {...}}
-  const page = payload;
-
-  if (!page.content) {
-    return { content: [] };
-  }
-
-  const content: FlattenFeedbackNote[] = page.content.map((item: any) => ({
+  const content: FlattenFeedbackNote[] = payload.content.map((item: any) => ({
     note: item.note,
     feedback: item.feedback,
   }));
 
-  return {
-    ...page,
-    content,
-  };
+  return { ...payload, content };
 };
+
+// ==========================================
+//   Hook
+// ==========================================
+
+export const useLearningNotes = (
+  tag: "Grammar" | "Vocabulary" | "Translation",
+  filter: "all" | "completed" | "incomplete",
+  page: number
+) =>
+  useQuery({
+    queryKey: ["learningNotes", tag, filter, page],
+    queryFn: () => fetchNotes(tag, filter, page),
+    refetchOnWindowFocus: false,
+    staleTime: 30000,
+    placeholderData: (prev) => prev,
+  });
 
 // ==========================================
 //   Mark Toggle
 // ==========================================
 
-const patchMark = async (feedbackId: number, mark: boolean) => {
-  const resp = await client.PATCH(
-    `/api/v1/learning-notes/feedbacks/${feedbackId}/mark/${
-      mark ? "learned" : "unlearned"
-    }`,
-    {}
-  );
-
-  await unwrap<void>(resp);
-  return true;
-};
-
-export const useLearningNotes = (
-  tag: "Grammar" | "Vocabulary" | "Translation",
-  filter: "all" | "completed" | "incomplete"
-) =>
-  useQuery({
-    queryKey: ["learningNotes", tag, filter],
-    queryFn: () => fetchNotes(tag, filter),
-    staleTime: 60000,
-    refetchOnWindowFocus: false,
-    placeholderData: (prev) => prev,
-  });
-
 export const useToggleFeedbackMark = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ feedbackId, mark }: { feedbackId: number; mark: boolean }) =>
-      patchMark(feedbackId, mark),
+      client
+        .PATCH(
+          `/api/v1/learning-notes/feedbacks/${feedbackId}/mark/${
+            mark ? "learned" : "unlearned"
+          }`,
+          {}
+        )
+        .then(() => true),
+
     onSuccess: () =>
-      qc.invalidateQueries({ queryKey: ["learningNotes"] }),
+      qc.invalidateQueries({ queryKey: ["learningNotes"] }), // 전체 리스트 갱신
   });
 };

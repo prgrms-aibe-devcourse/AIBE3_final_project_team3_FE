@@ -68,8 +68,9 @@ export const useChatMessagesQuery = (
     queryKey: ["chatMessages", roomId, chatRoomType],
     queryFn: () => fetchChatMessages(roomId, chatRoomType),
     enabled: !!accessToken && !!roomId && !!chatRoomType,
-    staleTime: 1000 * 60, // 1 minute
+    staleTime: 0, // Always fetch fresh data when entering a chat room
     refetchOnWindowFocus: false,
+    refetchOnMount: true, // Always refetch when component mounts
   });
 };
 
@@ -136,9 +137,9 @@ export const useCreateDirectChat = () => {
 
   return useMutation<ChatRoomResp, Error, CreateDirectChatVariables>({
     mutationFn: createDirectChat,
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["chatRooms"] });
-      
+    onSuccess: async (data) => {
+      await queryClient.invalidateQueries({ queryKey: ["chatRooms", "direct"] });
+
       if (data && data.id) {
         router.push(`/chat/direct/${data.id}`);
       }
@@ -169,11 +170,11 @@ export const useCreateGroupChat = () => {
 
   return useMutation<GroupChatRoomResp, Error, CreateGroupChatReq>({
     mutationFn: createGroupChat,
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["chatRooms", "group"] }); // Invalidate group chat rooms
+    onSuccess: async (data) => {
+      await queryClient.invalidateQueries({ queryKey: ["chatRooms", "group"] });
 
       if (data && data.id) {
-        router.push(`/chat/group/${data.id}`); // Navigate to the new group chat
+        router.push(`/chat/group/${data.id}`);
       }
     },
     onError: (error) => {
@@ -213,13 +214,14 @@ export const useJoinGroupChat = () => {
 
   return useMutation<GroupChatRoomResp, Error, JoinGroupChatVariables>({
     mutationFn: joinGroupChat,
-    onSuccess: (data) => {
-      // Invalidate both "my rooms" and "public rooms" queries
-      queryClient.invalidateQueries({ queryKey: ["chatRooms", "group"] });
-      queryClient.invalidateQueries({ queryKey: ["chatRooms", "group", "public"] });
+    onSuccess: async (data) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["chatRooms", "group"] }),
+        queryClient.invalidateQueries({ queryKey: ["chatRooms", "group", "public"] })
+      ]);
 
       if (data && data.id) {
-        router.push(`/chat/group/${data.id}`); // Navigate to the joined group chat
+        router.push(`/chat/group/${data.id}`);
       }
     },
     onError: (error) => {

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { mockAiRooms, mockGroupRooms, mockUsers } from '@/app/chat/_lib/mock-data';
 
-export type ChatRoomType = '1v1' | 'group' | 'ai';
+export type ChatRoomType = 'direct' | 'group' | 'ai';
 
 export interface ChatRoom {
   id: string;
@@ -34,14 +34,14 @@ interface ChatState {
 export const useChatStore = create<ChatState>((set) => ({
   activeTab: 'ai',
   rooms: {
-    '1v1': mockUsers.map((user) => ({
+    direct: mockUsers.map((user) => ({
       id: user.id,
       name: user.name,
       avatar: user.avatar,
       lastMessage: 'See you tomorrow!',
       lastMessageTime: '10:42 PM',
       unreadCount: 0,
-      type: '1v1',
+      type: 'direct',
     })),
     group: mockGroupRooms,
     ai: mockAiRooms,
@@ -49,7 +49,7 @@ export const useChatStore = create<ChatState>((set) => ({
   selectedRoomId: mockAiRooms[0]?.id || null,
   setActiveTab: (tab) => set((state) => {
     const newRooms = state.rooms[tab];
-    return { 
+    return {
       activeTab: tab,
       selectedRoomId: newRooms.length > 0 ? newRooms[0].id : null
     };

@@ -20,19 +20,17 @@ export default function RootLayout({
   const isChatPage = pathname.startsWith("/chat");
 
   return (
-    <html lang="en" className={isChatPage ? "h-full" : ""}>
-      <body
-        className={`${inter.className} bg-gray-900 ${
-          isChatPage ? "h-full flex flex-col" : ""
-        }`}
-      >
+    <html lang="en" className="h-full bg-gray-900">
+      <body className={`${inter.className} h-full`}>
         <ReactQueryProvider>
           <StompProvider>
-            <Header />
-            <main className="min-h-screen pt-16 bg-gradient-to-br from-gray-800 via-gray-700 to-gray-600">
-              {children}
-            </main>
-            <Footer />
+            <div className="flex flex-col h-full">
+              <Header />
+              <main className="flex-1 bg-gradient-to-br from-gray-800 via-gray-700 to-gray-600 pt-16">
+                {children}
+              </main>
+              <Footer />
+            </div>
           </StompProvider>
         </ReactQueryProvider>
       </body>

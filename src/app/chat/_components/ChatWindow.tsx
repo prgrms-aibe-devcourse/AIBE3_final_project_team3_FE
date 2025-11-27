@@ -1,99 +1,83 @@
 "use client";
 
-import { useRef, useEffect, useState } from "react";
-import { useChatMessagesQuery } from "@/global/api/useChatQuery";
-import { useLoginStore } from "@/global/stores/useLoginStore";
+import { useRef, useEffect, FormEvent, useLayoutEffect } from "react";
 import { MessageResp } from "@/global/types/chat.types";
-import MessageInput from "./MessageInput";
-import { MoreVertical, Phone, Video, Loader2 } from "lucide-react";
-import { useChatStore } from "@/global/stores/useChatStore";
-import { getStompClient, connect } from "@/global/stomp/stompClient";
-import type { IMessage } from "@stomp/stompjs";
+import { Loader2, MoreVertical, Phone, Video } from "lucide-react";
+import { MemberSummaryResp } from "@/global/types/auth.types";
 
-export default function ChatWindow() {
+// Define props for the component
+interface ChatWindowProps {
+  messages: MessageResp[];
+  member: MemberSummaryResp | null;
+  onSendMessage: (text: string) => void;
+  isLoading: boolean;
+  error: Error | null;
+  roomDetails: {
+    id: number;
+    name: string;
+    type: string;
+    avatar?: string;
+    members?: any[]; // Simplified for now
+  } | null;
+  subscriberCount?: number;
+  totalMemberCount?: number;
+}
+
+export default function ChatWindow({
+  messages,
+  member,
+  onSendMessage,
+  isLoading,
+  error,
+  roomDetails,
+  subscriberCount = 0,
+  totalMemberCount = 0,
+}: ChatWindowProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { selectedRoomId, rooms } = useChatStore();
-  const member = useLoginStore((state) => state.member);
-  const { accessToken } = useLoginStore();
+  const messageContainerRef = useRef<HTMLDivElement>(null);
+  const shouldScrollRef = useRef(true);
 
-  const selectedRoom = selectedRoomId ? rooms[selectedRoomId.split('-')[0] as '1v1' | 'group' | 'ai']?.find(room => room.id === selectedRoomId) : null;
-
-  const roomId = selectedRoom ? Number(selectedRoom.id.split('-')[1]) : 0;
-
-  // Convert frontend type to backend type
-  const chatRoomType = selectedRoom?.type === '1v1' ? 'DIRECT' :
-                       selectedRoom?.type === 'group' ? 'GROUP' :
-                       selectedRoom?.type === 'ai' ? 'AI' : '';
-
-  const { data: chatData, isLoading, error } = useChatMessagesQuery(roomId, chatRoomType);
-
-  // State to manage messages locally
-  const [messages, setMessages] = useState<MessageResp[]>([]);
-
-  // Update messages when API data is loaded
-  useEffect(() => {
-    if (chatData?.messages) {
-      setMessages(chatData.messages);
+  // On initial load or when room changes, scroll to bottom.
+  useLayoutEffect(() => {
+    if (messageContainerRef.current) {
+      messageContainerRef.current.scrollTop = messageContainerRef.current.scrollHeight;
+      shouldScrollRef.current = true;
     }
-  }, [chatData]);
+  }, [roomDetails?.id]);
 
+  // After messages update, scroll to bottom only if we were already at the bottom.
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const container = messageContainerRef.current;
+    if (container && shouldScrollRef.current) {
+      container.scrollTop = container.scrollHeight;
+    }
   }, [messages]);
 
-  // WebSocket subscription for real-time messages
-  useEffect(() => {
-    if (!roomId || !member || !chatRoomType || !accessToken) return;
-
-    let subscription: any;
-
-    connect(accessToken, () => {
-      const client = getStompClient();
-      const destination = `/topic/${chatRoomType.toUpperCase()}/rooms/${roomId}`;
-      subscription = client.subscribe(
-        destination,
-        (message: IMessage) => {
-          const receivedMessage: MessageResp = JSON.parse(message.body);
-          setMessages((prevMessages) => [...prevMessages, receivedMessage]);
-        }
-      );
-      console.log(`Subscribed to ${destination}`);
-    });
-
-    return () => {
-      if (subscription) {
-        subscription.unsubscribe();
-        console.log(`Unsubscribed from /topic/${chatRoomType.toUpperCase()}/rooms/${roomId}`);
-      }
-    };
-  }, [roomId, member, chatRoomType, accessToken]);
-
-  const handleSendMessage = (text: string) => {
-    if (text.trim() === "" || !member) {
-      return;
-    }
-
-    const client = getStompClient();
-
-    if (client.connected) {
-      client.publish({
-        destination: "/app/chats/sendMessage",
-        body: JSON.stringify({
-          roomId: roomId,
-          content: text,
-          messageType: "TEXT",
-          chatRoomType: chatRoomType, // Already in uppercase format (DIRECT, GROUP, AI)
-        }),
-      });
-    } else {
-      console.error("Client is not connected.");
-      alert("웹소켓 연결이 활성화되지 않았습니다. 페이지를 새로고침 해주세요.");
+  const handleScroll = () => {
+    const container = messageContainerRef.current;
+    if (container) {
+      const threshold = 50; // pixels from bottom
+      const position = container.scrollTop + container.clientHeight;
+      const height = container.scrollHeight;
+      shouldScrollRef.current = position >= height - threshold;
     }
   };
 
-  if (!selectedRoom) {
+  const handleFormSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    const form = e.target as HTMLFormElement;
+    const input = form.elements.namedItem("messageInput") as HTMLInputElement;
+    const text = input.value;
+    if (text.trim()) {
+      shouldScrollRef.current = true; // Always scroll when we send a message
+      onSendMessage(text);
+      form.reset();
+    }
+  };
+
+  if (!roomDetails) {
     return (
-      <main className="flex-1 flex items-center justify-center text-center bg-gray-850">
+      <main className="flex-1 flex items-center justify-center text-center bg-gray-850 h-full">
         <div>
           <div className="text-3xl mb-4">💬</div>
           <h2 className="text-2xl font-semibold text-gray-300">
@@ -108,40 +92,37 @@ export default function ChatWindow() {
   }
 
   return (
-    <main className="flex-1 flex flex-col bg-gray-850">
+    <main className="flex flex-col bg-gray-850 overflow-hidden h-full">
       {/* Chat Header */}
       <header className="flex items-center justify-between p-4 border-b border-gray-700 flex-shrink-0">
         <div className="flex items-center">
           <div className="relative">
             <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-lg">
-              {selectedRoom.avatar}
+              {roomDetails.avatar}
             </div>
-            {selectedRoom.type === "1v1" && (
+            {roomDetails.type === "direct" && (
               <span className="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full bg-green-500 border-2 border-gray-850"></span>
             )}
           </div>
           <div className="ml-4">
-            <h2 className="font-semibold text-white">{selectedRoom.name}</h2>
+            <h2 className="font-semibold text-white">{roomDetails.name}</h2>
             <p className="text-xs text-gray-400">
-              {selectedRoom.type === "1v1" ? "온라인" : `${(selectedRoom as any).members?.length || 0}명`}
+              {roomDetails.type === "direct"
+                ? (subscriberCount === 2 ? "온라인" : "오프라인")
+                : `${subscriberCount}명 접속 중 / ${totalMemberCount}명`
+              }
             </p>
           </div>
         </div>
         <div className="flex items-center space-x-4">
-          <button className="text-gray-400 hover:text-white">
-            <Video size={20} />
-          </button>
-          <button className="text-gray-400 hover:text-white">
-            <Phone size={20} />
-          </button>
-          <button className="text-gray-400 hover:text-white">
-            <MoreVertical size={20} />
-          </button>
+          <button className="text-gray-400 hover:text-white"><Video size={20} /></button>
+          <button className="text-gray-400 hover:text-white"><Phone size={20} /></button>
+          <button className="text-gray-400 hover:text-white"><MoreVertical size={20} /></button>
         </div>
       </header>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-6">
+      <div ref={messageContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto p-6 space-y-4">
         {isLoading ? (
           <div className="flex justify-center items-center h-full">
             <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
@@ -149,33 +130,26 @@ export default function ChatWindow() {
         ) : error ? (
           <div className="text-center text-red-400">메시지를 불러오는 중 오류가 발생했습니다.</div>
         ) : (
-          messages.map((msg: MessageResp, index) => {
-            const isUser = msg.senderId === member?.id;
-            const prevMsg = index > 0 ? messages[index - 1] : null;
-            const showSender = !prevMsg || prevMsg.senderId !== msg.senderId;
-
+          messages.map((msg) => {
+            const isUser = msg.senderId === member?.memberId;
             return (
-              <div
-                key={msg.id}
-                className={`flex items-start gap-3 ${isUser ? "justify-end" : "justify-start"}`}
-              >
-                {!isUser && showSender && (
-                  <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-sm flex-shrink-0">
-                    {/* Placeholder for partner avatar */}
-                  </div>
+              <div key={msg.id} className={`flex items-end gap-2 ${isUser ? "justify-end" : "justify-start"}`}>
+                {!isUser && (
+                  <div className="w-8 h-8 rounded-full bg-gray-600 flex-shrink-0" />
                 )}
-                {!isUser && !showSender && <div className="w-8 flex-shrink-0" />}
-
-                <div className={`flex flex-col max-w-md ${isUser ? "items-end" : "items-start"}`}>
-                  {showSender && !isUser && (
-                    <p className="text-xs text-gray-400 mb-1">{msg.sender}</p>
-                  )}
-                  <div className={`px-4 py-2 rounded-xl ${isUser ? "bg-emerald-600 text-white rounded-br-none" : "bg-gray-700 text-gray-200 rounded-bl-none"}`}>
+                <div className={`flex items-end gap-2 ${isUser ? "flex-row-reverse" : "flex-row"}`}>
+                  <div className={`max-w-md p-3 rounded-lg ${isUser ? "bg-emerald-600 text-white" : "bg-gray-700 text-gray-200"}`}>
+                    {!isUser && <p className="text-xs font-semibold pb-1">{msg.sender}</p>}
                     <p className="text-sm">{msg.content}</p>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </p>
+                  <div className="flex flex-col items-center space-y-1">
+                    {msg.unreadCount > 0 && (
+                      <p className="text-xs text-yellow-400 font-semibold">
+                        {msg.unreadCount}
+                      </p>
+                    )}
+                    <p className="text-xs text-gray-500">{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                  </div>
                 </div>
               </div>
             );
@@ -185,7 +159,23 @@ export default function ChatWindow() {
       </div>
 
       {/* Message Input */}
-      <MessageInput onSendMessage={handleSendMessage} />
+      <div className="p-4 bg-gray-800 border-t border-gray-700">
+        <form onSubmit={handleFormSubmit} className="flex gap-2">
+          <input
+            name="messageInput"
+            type="text"
+            placeholder="Type a message..."
+            autoComplete="off"
+            className="flex-1 p-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          />
+          <button
+            type="submit"
+            className="px-4 py-2 bg-emerald-600 text-white font-semibold rounded-lg hover:bg-emerald-700"
+          >
+            Send
+          </button>
+        </form>
+      </div>
     </main>
   );
 }

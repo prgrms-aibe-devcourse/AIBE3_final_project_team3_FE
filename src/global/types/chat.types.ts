@@ -50,7 +50,9 @@ export type MessageResp = {
   sender: string;
   content: string;
   createdAt: string; // ISO 8601 형식의 문자열
-  messageType: "TALK" | "IMAGE" | "FILE" | "SYSTEM"; // 백엔드 ChatMessage.MessageType enum 값에 따라
+  messageType: "TEXT" | "IMAGE" | "FILE" | "SYSTEM"; // 백엔드 ChatMessage.MessageType enum 값에 따라
+  sequence: number;
+  unreadCount: number;
 };
 
 export type CustomResponse<T> = {
@@ -61,4 +63,14 @@ export type CustomResponse<T> = {
 export interface ChatRoomDataResp {
   chatRoomType: "DIRECT" | "GROUP" | "AI";
   messages: MessageResp[];
+}
+
+export interface ReadStatusUpdateEvent {
+  readerId: number;
+  readSequence: number;
+}
+
+export interface SubscriberCountUpdateResp {
+  subscriberCount: number;
+  totalMemberCount: number;
 }

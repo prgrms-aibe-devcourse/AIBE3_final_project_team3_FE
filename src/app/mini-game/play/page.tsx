@@ -2,15 +2,10 @@
 
 import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-
-const DUMMY_QUESTIONS = [
-  { id: 1, originalContent: "I goed to school.", correctedContent: "I went to school." },
-  { id: 2, originalContent: "She don't like apples.", correctedContent: "She doesn't like apples." },
-  { id: 3, originalContent: "He go to work every day.", correctedContent: "He goes to work every day." },
-  { id: 4, originalContent: "They was happy.", correctedContent: "They were happy." },
-  { id: 5, originalContent: "It have two legs.", correctedContent: "It has two legs." },
-  { id: 6, originalContent: "We is ready.", correctedContent: "We are ready." },
-];
+import {
+  useStartGameQuery,
+  useSubmitAnswerMutation,
+} from "@/global/api/useSentenceGameQuery";
 
 export default function MiniGamePlayPage() {
   const searchParams = useSearchParams();
@@ -18,39 +13,53 @@ export default function MiniGamePlayPage() {
 
   const count = Number(searchParams.get("count") ?? 1);
 
-  const [questions, setQuestions] = useState<any[]>([]);
+  // 🔥 게임 문제 로드
+  const { data, isLoading } = useStartGameQuery(count);
+
+  // API에서 받은 문제들
+  const questions = data?.questions ?? [];
+
   const [current, setCurrent] = useState(0);
   const [input, setInput] = useState("");
   const [showAnswer, setShowAnswer] = useState(false);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
-
   const [correctCount, setCorrectCount] = useState(0);
-  const [isFinished, setIsFinished] = useState(false); // 🔥 게임 종료 여부
+  const [isFinished, setIsFinished] = useState(false);
 
-  useEffect(() => {
-    const shuffled = [...DUMMY_QUESTIONS].sort(() => Math.random() - 0.5);
-    setQuestions(shuffled.slice(0, count));
-  }, [count]);
+  // 🔥 정답 제출 API 훅
+  const submitMutation = useSubmitAnswerMutation();
+
+  if (isLoading) return <div className="p-10">Loading...</div>;
+  if (!questions.length)
+    return <div className="p-10">문제를 불러올 수 없습니다.</div>;
+
+  const q = questions[current];
 
   const submitAnswer = () => {
-    const correct =
-      input.trim().toLowerCase() ===
-      questions[current].correctedContent.toLowerCase();
+    submitMutation.mutate(
+      {
+        sentenceGameId: q.id,
+        userAnswer: input.trim(),
+      },
+      {
+        onSuccess: (resp) => {
+          const answerCorrect = resp.correct;
 
-    if (correct) setCorrectCount((prev) => prev + 1);
+          if (answerCorrect) setCorrectCount((prev) => prev + 1);
 
-    setIsCorrect(correct);
-    setShowAnswer(true);
+          setIsCorrect(answerCorrect);
+          setShowAnswer(true);
+        },
+      }
+    );
   };
 
   const goNext = () => {
-    // 🔥 마지막 문제일 경우 → 종료 상태로 전환
     if (current + 1 === questions.length) {
       setIsFinished(true);
       return;
     }
-
-    setCurrent(current + 1);
+    setCurrent((prev) => prev + 1);
     setInput("");
     setShowAnswer(false);
     setIsCorrect(null);
@@ -60,19 +69,13 @@ export default function MiniGamePlayPage() {
     router.push(`/mini-game?count=${count}`);
   };
 
-  if (questions.length === 0) return <div>Loading...</div>;
-  const q = questions[current];
-
   return (
     <div className="min-h-screen p-10 bg-gray-100">
       <div className="max-w-xl mx-auto bg-white shadow-md rounded-xl p-6">
-
         {/* 🔥 게임 종료 화면 */}
         {isFinished ? (
           <div className="text-center space-y-6">
-            <h2 className="text-2xl font-bold text-indigo-700">
-              🎉 게임 완료!
-            </h2>
+            <h2 className="text-2xl font-bold text-indigo-700">🎉 게임 완료!</h2>
             <p className="text-lg font-semibold text-gray-800">
               총 {questions.length}문제 중 {correctCount}문제 정답!
             </p>
@@ -95,7 +98,7 @@ export default function MiniGamePlayPage() {
           </div>
         ) : (
           <>
-            {/* 🔥 문제 진행 화면 */}
+            {/* 🔥 문제 화면 */}
             <h2 className="text-xl font-bold mb-4">
               문제 {current + 1} / {questions.length}
             </h2>
@@ -138,7 +141,7 @@ export default function MiniGamePlayPage() {
 
                 <p className="text-gray-800">
                   <span className="font-semibold">정답: </span>
-                  {q.correctedContent}
+                  {submitMutation.data?.correctedContent}
                 </p>
 
                 <button

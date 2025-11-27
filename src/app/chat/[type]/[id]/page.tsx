@@ -1,192 +1,206 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams } from "next/navigation";
-import { useChatMessagesQuery, useLeaveChatRoom } from "@/global/api/useChatQuery";
-import { getStompClient, connect, disconnect } from "@/global/stomp/stompClient";
+import { useChatMessagesQuery, useGetDirectChatRoomsQuery, useGetGroupChatRoomsQuery, useGetAiChatRoomsQuery } from "@/global/api/useChatQuery";
+import { getStompClient, connect } from "@/global/stomp/stompClient";
 import { useLoginStore } from "@/global/stores/useLoginStore";
-import { MessageResp } from "@/global/types/chat.types";
+import { MessageResp, DirectChatRoomResp, GroupChatRoomResp, AIChatRoomResp, ReadStatusUpdateEvent, SubscriberCountUpdateResp } from "@/global/types/chat.types";
 import type { IMessage } from "@stomp/stompjs";
+import ChatWindow from "../../_components/ChatWindow"; // Import the new component
 
 export default function ChatRoomPage() {
   const params = useParams();
   const chatRoomType = params.type as string;
   const roomId = Number(params.id);
+
   const member = useLoginStore((state) => state.member);
+  const { accessToken } = useLoginStore.getState();
 
-  const { data, isLoading, error } = useChatMessagesQuery(roomId, chatRoomType);
+  // Fetch room lists directly
+  const { data: directRoomsData } = useGetDirectChatRoomsQuery();
+  const { data: groupRoomsData } = useGetGroupChatRoomsQuery();
+  const { data: aiRoomsData } = useGetAiChatRoomsQuery();
+
+  const { data, isLoading, error, dataUpdatedAt } = useChatMessagesQuery(roomId, chatRoomType);
   const [messages, setMessages] = useState<MessageResp[]>([]);
-  const [newMessage, setNewMessage] = useState("");
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isNotificationOn, setIsNotificationOn] = useState(true);
+  const [lastLoadedTimestamp, setLastLoadedTimestamp] = useState<number>(0);
+  const [subscriberCount, setSubscriberCount] = useState<number>(0);
+  const [totalMemberCount, setTotalMemberCount] = useState<number>(0);
 
-  const leaveChatRoomMutation = useLeaveChatRoom();
+  // Find room details from API data
+  const roomDetails = useMemo(() => {
+    if (!member) return null;
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+    if (chatRoomType === 'direct' && directRoomsData) {
+      const room = directRoomsData.find((r: DirectChatRoomResp) => r.id === roomId);
+      if (room) {
+        const partner = room.user1.id === member.memberId ? room.user2 : room.user1;
+        return {
+          id: roomId,
+          name: partner.nickname,
+          type: chatRoomType,
+          avatar: '👤',
+          members: [room.user1, room.user2],
+        };
+      }
+    } else if (chatRoomType === 'group' && groupRoomsData) {
+      const room = groupRoomsData.find((r: GroupChatRoomResp) => r.id === roomId);
+      if (room) {
+        return {
+          id: roomId,
+          name: room.name,
+          type: chatRoomType,
+          avatar: '👥',
+          members: room.members,
+        };
+      }
+    } else if (chatRoomType === 'ai' && aiRoomsData) {
+      const room = aiRoomsData.find((r: AIChatRoomResp) => r.id === roomId);
+      if (room) {
+        return {
+          id: roomId,
+          name: room.name,
+          type: chatRoomType,
+          avatar: '🤖',
+          members: [],
+        };
+      }
+    }
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+    return null;
+  }, [chatRoomType, roomId, directRoomsData, groupRoomsData, aiRoomsData, member]);
 
+  // Reset when room changes
   useEffect(() => {
-    if (data?.messages) {
+    console.log(`[Data] Room changed, resetting messages for roomId=${roomId}`);
+    setMessages([]);
+    setLastLoadedTimestamp(0);
+  }, [roomId, chatRoomType]);
+
+  // Load messages from API when data is actually updated (not from cache)
+  useEffect(() => {
+    if (data?.messages && dataUpdatedAt > lastLoadedTimestamp) {
+      console.log(`[Data] Loaded ${data.messages.length} messages from API (timestamp=${dataUpdatedAt}, last=${lastLoadedTimestamp})`);
       setMessages(data.messages);
+      setLastLoadedTimestamp(dataUpdatedAt);
     }
-  }, [data]);
+  }, [data, dataUpdatedAt, lastLoadedTimestamp]);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    if (!roomId || !member || !chatRoomType || !accessToken) return;
 
-  useEffect(() => {
-    if (!roomId || !member || !chatRoomType) return;
+    console.log(`[WebSocket Setup] Starting for roomId=${roomId}, memberId=${member.memberId}, type=${chatRoomType}`);
 
-    const { accessToken } = useLoginStore.getState();
-    if (!accessToken) {
-      console.error("Access token is not available. Cannot connect to STOMP.");
-      return;
-    }
+    let subscription: any = null;
+    let isCleanedUp = false;
 
-    let subscription: any;
-
-    connect(accessToken, () => {
+    const setupSubscription = () => {
       const client = getStompClient();
       const destination = `/topic/${chatRoomType}/rooms/${roomId}`;
+      console.log(`[WebSocket] Subscribing to: ${destination}`);
+
+      // 이미 cleanup되었으면 구독하지 않음
+      if (isCleanedUp) {
+        console.log(`[WebSocket] Component unmounted, skipping subscription`);
+        return;
+      }
+
       subscription = client.subscribe(
         destination,
         (message: IMessage) => {
-          const receivedMessage: MessageResp = JSON.parse(message.body);
-          setMessages((prevMessages) => [...prevMessages, receivedMessage]);
+          const payload = JSON.parse(message.body);
+
+          // 구독자 수 업데이트 이벤트 처리
+          if (payload.subscriberCount !== undefined && payload.totalMemberCount !== undefined) {
+            const countEvent = payload as SubscriberCountUpdateResp;
+            console.log(`[WebSocket] Received subscriber count event:`, countEvent);
+            setSubscriberCount(countEvent.subscriberCount);
+            setTotalMemberCount(countEvent.totalMemberCount);
+          }
+          // 읽음 이벤트 처리
+          else if (payload.readerId !== undefined && payload.readSequence !== undefined) {
+            const readEvent = payload as ReadStatusUpdateEvent;
+            console.log(`[WebSocket] Received read event:`, readEvent);
+
+            setMessages((prevMessages) =>
+              prevMessages.map((msg) => {
+                // 본인이 읽은 경우: 아무 변경 없음
+                if (readEvent.readerId === member.memberId) {
+                  return msg;
+                }
+
+                // 다른 사람이 읽은 경우: 모든 메시지의 unreadCount를 감소 (본인이 보낸 것뿐만 아니라)
+                // 이유: 그룹채팅에서 다른 사람들의 메시지도 unreadCount를 보여줘야 함
+                if (msg.sequence <= readEvent.readSequence && msg.unreadCount > 0) {
+                  return { ...msg, unreadCount: Math.max(0, msg.unreadCount - 1) };
+                }
+                return msg;
+              })
+            );
+          } else {
+            // 일반 메시지 처리
+            const receivedMessage = payload as MessageResp;
+            console.log(`[WebSocket] Received message:`, receivedMessage);
+            setMessages((prevMessages) => [...prevMessages, receivedMessage]);
+          }
         }
       );
-      console.log(`Subscribed to ${destination}`);
-    });
+      console.log(`[WebSocket] Subscription created for room ${roomId}, subscriptionId=${subscription?.id}`);
+    };
+
+    connect(accessToken, setupSubscription);
 
     return () => {
+      console.log(`[WebSocket Cleanup] Starting cleanup for roomId=${roomId}, memberId=${member.memberId}`);
+      isCleanedUp = true;
       if (subscription) {
+        console.log(`[WebSocket Cleanup] Unsubscribing from room ${roomId}, subscriptionId=${subscription.id}`);
         subscription.unsubscribe();
-        console.log(`Unsubscribed from /topic/${chatRoomType}/rooms/${roomId}`);
+        subscription = null;
+        console.log(`[WebSocket Cleanup] Unsubscribed successfully from room ${roomId}`);
+      } else {
+        console.log(`[WebSocket Cleanup] No subscription to unsubscribe from room ${roomId}`);
       }
-      disconnect();
     };
-  }, [roomId, member, chatRoomType]);
+  }, [roomId, member, chatRoomType, accessToken]);
 
-  const handleSendMessage = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (newMessage.trim() === "" || !member) {
+  const handleSendMessage = (text: string) => {
+    if (text.trim() === "" || !member) {
       return;
     }
 
     const client = getStompClient();
 
     if (client.connected) {
+      const messagePayload = {
+        roomId: roomId,
+        content: text,
+        messageType: "TEXT",
+        chatRoomType: chatRoomType.toUpperCase(),
+      };
+      console.log(`[WebSocket] Sending message:`, messagePayload);
       client.publish({
         destination: "/app/chats/sendMessage",
-        body: JSON.stringify({
-          roomId: roomId,
-          content: newMessage,
-          messageType: "TEXT",
-          chatRoomType: chatRoomType.toUpperCase(),
-        }),
+        body: JSON.stringify(messagePayload),
       });
-      setNewMessage("");
     } else {
       console.error("Client is not connected.");
       alert("웹소켓 연결이 활성화되지 않았습니다. 페이지를 새로고침 해주세요.");
     }
   };
 
-  const handleLeaveChatRoom = () => {
-    if (window.confirm("정말로 이 채팅방을 나가시겠습니까?")) {
-      leaveChatRoomMutation.mutate({ roomId, chatRoomType });
-    }
-  };
-
-  if (isLoading || !member) {
-    return <div className="text-center text-white p-8">Loading Chat Room...</div>;
-  }
-  if (error) return <div className="text-center text-red-400 p-8">Error: {error.message}</div>;
-
+  // The page now only handles logic and passes everything to the ChatWindow component
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)]">
-      <div className="bg-gray-800 p-4 border-b border-gray-700 flex justify-between items-center">
-        <h1 className="text-xl font-bold text-white">Chat Room #{roomId} ({chatRoomType})</h1>
-        <div className="relative">
-          <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-white">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-            </svg>
-          </button>
-          {isMenuOpen && (
-            <div className="absolute right-0 mt-2 w-48 bg-gray-700 rounded-md shadow-lg z-10">
-              <ul className="py-1 text-white">
-                <li>
-                  <button onClick={() => setIsNotificationOn(!isNotificationOn)} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-600 flex items-center">
-                    <span className="mr-2 text-xl">{isNotificationOn ? '🔔' : '🔕'}</span>
-                    알림
-                  </button>
-                </li>
-                <li><a href="#" className="block px-4 py-2 text-sm hover:bg-gray-600">사진/동영상</a></li>
-                <li><a href="#" className="block px-4 py-2 text-sm hover:bg-gray-600">파일</a></li>
-                <li><a href="#" className="block px-4 py-2 text-sm hover:bg-gray-600">채팅방 인원</a></li>
-                <li><a href="#" className="block px-4 py-2 text-sm hover:bg-gray-600">차단하기</a></li>
-                <li><a href="#" className="block px-4 py-2 text-sm hover:bg-gray-600">신고하기</a></li>
-                <li>
-                  <button onClick={handleLeaveChatRoom} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-600 text-red-400">
-                    채팅방 나가기
-                  </button>
-                </li>
-              </ul>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((msg, index) => (
-          <div
-            key={msg.id}
-            className={`flex items-end gap-2 ${
-              msg.senderId === member?.memberId ? "justify-end" : "justify-start"
-            }`}
-          >
-            {msg.senderId !== member?.memberId && (
-              <div className="w-8 h-8 rounded-full bg-gray-600 flex-shrink-0"></div>
-            )}
-            <div
-              className={`max-w-md p-3 rounded-lg ${
-                msg.senderId === member?.memberId
-                  ? "bg-emerald-600 text-white"
-                  : "bg-gray-700 text-gray-200"
-              }`}
-            >
-              <p className="text-sm">{msg.content}</p>
-              <p className="text-xs opacity-70 mt-1 text-right">{new Date(msg.createdAt).toLocaleTimeString()}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="p-4 bg-gray-800 border-t border-gray-700">
-        <form onSubmit={handleSendMessage} className="flex gap-2">
-          <input
-            type="text"
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="Type a message..."
-            className="flex-1 p-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-          />
-          <button
-            type="submit"
-            className="px-4 py-2 bg-emerald-600 text-white font-semibold rounded-lg hover:bg-emerald-700 disabled:bg-gray-500"
-            disabled={!newMessage.trim()}
-          >
-            Send
-          </button>
-        </form>
-      </div>
-    </div>
+    <ChatWindow
+      messages={messages}
+      member={member}
+      onSendMessage={handleSendMessage}
+      isLoading={isLoading}
+      error={error}
+      roomDetails={roomDetails ? { ...roomDetails, id: roomId, type: chatRoomType } : null}
+      subscriberCount={subscriberCount}
+      totalMemberCount={totalMemberCount}
+    />
   );
 }
-
