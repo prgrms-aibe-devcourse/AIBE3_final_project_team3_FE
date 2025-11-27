@@ -5,7 +5,7 @@ import { normaliseCountryValue } from "@/global/lib/countries";
 import { useLoginStore } from "@/global/stores/useLoginStore";
 import { MemberPresenceSummaryResp } from "@/global/types/auth.types";
 import { FriendDetail, FriendSummary, MemberProfile, MemberProfileUpdateReq } from "@/global/types/member.types";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 type PaginatedListPage<T> = {
     items: T[];
@@ -265,17 +265,16 @@ export const useMembersQuery = (options?: MemberQueryOptions) => {
 
 export const useFriendsQuery = (options?: MemberQueryOptions) => {
     const { accessToken } = useLoginStore();
-    const normalisedOptions: Required<Pick<MemberQueryOptions, "page" | "size">> = {
-        page: normalisePageParam(options?.page, 0),
-        size: Math.max(normaliseInteger(options?.size, 20) ?? 20, 1),
-    };
+    const page = normalisePageParam(options?.page, 0);
+    const size = Math.max(normaliseInteger(options?.size, 20) ?? 20, 1);
 
     return useQuery<FriendListPage, Error>({
-        queryKey: ["friends", normalisedOptions],
-        queryFn: () => fetchFriends(normalisedOptions),
+        queryKey: ["friends", page, size],
+        queryFn: () => fetchFriends({ page, size }),
         enabled: !!accessToken,
         staleTime: 1000 * 60 * 5,
         refetchOnWindowFocus: false,
+        placeholderData: keepPreviousData,
     });
 };
 

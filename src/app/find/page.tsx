@@ -110,9 +110,17 @@ export default function FindPage() {
   const hasFriendData = Boolean(friendPageData);
   const isFriendInitialLoading = isFriendLoading && !hasFriendData;
   const isFriendRefetching = isFriendFetching && hasFriendData;
-  const displayedFriendPageNumber = isFriendRefetching
-    ? friendPage
-    : (friendPageData?.pageIndex ?? friendPageIndex) + 1;
+  const displayedFriendPageNumber = friendPage;
+  const friendPageSize = friendPageData?.pageSize || DEFAULT_PAGE_SIZE;
+  const friendHasPrevPage = friendPage > 1;
+  const friendHasNextPage = (() => {
+    if (typeof friendPageData?.isLast === "boolean") {
+      return !friendPageData.isLast;
+    }
+    return friendMembers.length >= friendPageSize;
+  })();
+  const canFriendGoPrev = friendHasPrevPage && !isFriendInitialLoading;
+  const canFriendGoNext = friendHasNextPage && !isFriendInitialLoading;
   const [selectedUser, setSelectedUser] = useState<MemberListItem | null>(null);
   const [selectedSource, setSelectedSource] = useState<"members" | "friends" | null>(null);
   const searchParams = useSearchParams();
@@ -751,16 +759,10 @@ export default function FindPage() {
   };
 
   const renderFriendsContent = () => {
-    const totalPages = friendPageData?.totalPages ?? null;
-    const isFirstPage = friendPageData?.isFirst ?? friendPage <= 1;
-    const isLastPage = friendPageData?.isLast ?? (typeof totalPages === "number" ? friendPage >= totalPages : friendMembers.length < DEFAULT_PAGE_SIZE);
-    const canGoPrev = !isFirstPage && !isFriendInitialLoading;
-    const canGoNext = !isLastPage && !isFriendInitialLoading;
-
     if (isFriendInitialLoading) {
       return (
         <div className="text-center text-white">
-          <p>{friendPage > 1 ? "다음 페이지를 불러오는 중입니다..." : "친구 목록을 불러오는 중입니다..."}</p>
+          <p>친구 목록을 불러오는 중입니다...</p>
         </div>
       );
     }
@@ -788,20 +790,19 @@ export default function FindPage() {
           <button
             type="button"
             onClick={() => setFriendPage((prev) => Math.max(prev - 1, 1))}
-            disabled={!canGoPrev}
+            disabled={!canFriendGoPrev}
             className="px-4 py-2 rounded bg-gray-700 text-white disabled:bg-gray-600/60 disabled:text-gray-400"
           >
             이전
           </button>
           <div className="text-sm text-gray-300">
             페이지 {displayedFriendPageNumber}
-            {typeof totalPages === "number" && totalPages > 0 ? ` / ${totalPages}` : ""}
             {isFriendRefetching ? <span className="ml-2 text-xs text-gray-400">업데이트 중...</span> : null}
           </div>
           <button
             type="button"
             onClick={() => setFriendPage((prev) => prev + 1)}
-            disabled={!canGoNext}
+            disabled={!canFriendGoNext}
             className="px-4 py-2 rounded bg-gray-700 text-white disabled:bg-gray-600/60 disabled:text-gray-400"
           >
             다음
