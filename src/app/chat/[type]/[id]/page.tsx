@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { useChatMessagesQuery, useGetDirectChatRoomsQuery, useGetGroupChatRoomsQuery, useGetAiChatRoomsQuery } from "@/global/api/useChatQuery";
 import { getStompClient, connect } from "@/global/stomp/stompClient";
 import { useLoginStore } from "@/global/stores/useLoginStore";
-import { MessageResp, DirectChatRoomResp, GroupChatRoomResp, AIChatRoomResp, ReadStatusUpdateEvent } from "@/global/types/chat.types";
+import { MessageResp, DirectChatRoomResp, GroupChatRoomResp, AIChatRoomResp, ReadStatusUpdateEvent, SubscriberCountUpdateResp } from "@/global/types/chat.types";
 import type { IMessage } from "@stomp/stompjs";
 import ChatWindow from "../../_components/ChatWindow"; // Import the new component
 
@@ -25,6 +25,8 @@ export default function ChatRoomPage() {
   const { data, isLoading, error, dataUpdatedAt } = useChatMessagesQuery(roomId, chatRoomType);
   const [messages, setMessages] = useState<MessageResp[]>([]);
   const [lastLoadedTimestamp, setLastLoadedTimestamp] = useState<number>(0);
+  const [subscriberCount, setSubscriberCount] = useState<number>(0);
+  const [totalMemberCount, setTotalMemberCount] = useState<number>(0);
 
   // Find room details from API data
   const roomDetails = useMemo(() => {
@@ -109,8 +111,15 @@ export default function ChatRoomPage() {
         (message: IMessage) => {
           const payload = JSON.parse(message.body);
 
+          // 구독자 수 업데이트 이벤트 처리
+          if (payload.subscriberCount !== undefined && payload.totalMemberCount !== undefined) {
+            const countEvent = payload as SubscriberCountUpdateResp;
+            console.log(`[WebSocket] Received subscriber count event:`, countEvent);
+            setSubscriberCount(countEvent.subscriberCount);
+            setTotalMemberCount(countEvent.totalMemberCount);
+          }
           // 읽음 이벤트 처리
-          if (payload.eventType === "READ") {
+          else if (payload.readerId !== undefined && payload.readSequence !== undefined) {
             const readEvent = payload as ReadStatusUpdateEvent;
             console.log(`[WebSocket] Received read event:`, readEvent);
 
@@ -190,6 +199,8 @@ export default function ChatRoomPage() {
       isLoading={isLoading}
       error={error}
       roomDetails={roomDetails ? { ...roomDetails, id: roomId, type: chatRoomType } : null}
+      subscriberCount={subscriberCount}
+      totalMemberCount={totalMemberCount}
     />
   );
 }

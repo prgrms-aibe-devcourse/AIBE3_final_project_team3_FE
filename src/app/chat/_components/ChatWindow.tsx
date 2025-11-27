@@ -19,6 +19,8 @@ interface ChatWindowProps {
     avatar?: string;
     members?: any[]; // Simplified for now
   } | null;
+  subscriberCount?: number;
+  totalMemberCount?: number;
 }
 
 export default function ChatWindow({
@@ -28,6 +30,8 @@ export default function ChatWindow({
   isLoading,
   error,
   roomDetails,
+  subscriberCount = 0,
+  totalMemberCount = 0,
 }: ChatWindowProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageContainerRef = useRef<HTMLDivElement>(null);
@@ -88,7 +92,7 @@ export default function ChatWindow({
   }
 
   return (
-    <main className="flex flex-col bg-gray-850 h-full overflow-hidden">
+    <main className="flex flex-col bg-gray-850 overflow-hidden h-full">
       {/* Chat Header */}
       <header className="flex items-center justify-between p-4 border-b border-gray-700 flex-shrink-0">
         <div className="flex items-center">
@@ -103,7 +107,10 @@ export default function ChatWindow({
           <div className="ml-4">
             <h2 className="font-semibold text-white">{roomDetails.name}</h2>
             <p className="text-xs text-gray-400">
-              {roomDetails.type === "direct" ? "온라인" : `${roomDetails.members?.length || 0}명`}
+              {roomDetails.type === "direct"
+                ? (subscriberCount === 2 ? "온라인" : "오프라인")
+                : `${subscriberCount}명 접속 중 / ${totalMemberCount}명`
+              }
             </p>
           </div>
         </div>

@@ -68,5 +68,9 @@ export interface ChatRoomDataResp {
 export interface ReadStatusUpdateEvent {
   readerId: number;
   readSequence: number;
-  eventType: "READ";
+}
+
+export interface SubscriberCountUpdateResp {
+  subscriberCount: number;
+  totalMemberCount: number;
 }
