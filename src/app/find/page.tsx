@@ -26,6 +26,19 @@ const getPresenceMeta = (isOnline?: boolean) => ({
   label: isOnline ? "Online" : "Offline",
 });
 
+const formatFriendSince = (value: string): string => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("ko-KR", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  }).format(date);
+};
+
 type FriendshipState = "FRIEND" | "REQUEST_SENT" | "REQUEST_RECEIVED" | "NONE";
 
 const FRIENDSHIP_STATUS_LABELS: Record<FriendshipState, string> = {
@@ -344,6 +357,9 @@ export default function FindPage() {
   const modalPresence = getPresenceMeta(resolveIsOnline(selectedUser));
   const isFriendDetailPending = isFriendSelection && (isFriendDetailLoading || isFriendDetailFetching);
   const friendDetailErrorMessage = isFriendSelection && selectedFriendDetailError ? selectedFriendDetailError.message : null;
+  const friendSinceDisplay = isFriendSelection && selectedFriendDetail?.createdAt
+    ? formatFriendSince(selectedFriendDetail.createdAt)
+    : null;
   const isProfilePending = Boolean(selectedUser) && (isProfileLoading || isProfileFetching);
   const hasIncomingFriendRequest = Boolean(
     opponentPendingRequestId ??
@@ -897,6 +913,11 @@ export default function FindPage() {
                       <div className="mt-3 flex flex-wrap items-center gap-2">
                         {renderFriendshipStatus()}
                       </div>
+                      {friendSinceDisplay && (
+                        <p className="mt-2 text-xs text-gray-300">
+                          친구가 된 날짜: <span className="text-white">{friendSinceDisplay}</span>
+                        </p>
+                      )}
                       {isFriendDetailPending && (
                         <p className="mt-2 text-xs text-gray-300">친구 상세 정보를 불러오는 중입니다...</p>
                       )}
