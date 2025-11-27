@@ -1,51 +1,188 @@
 import apiClient from "@/global/backend/client";
 import type { paths } from "@/global/backend/schema";
+import { API_BASE_URL } from "@/global/consts";
 import { normaliseCountryValue } from "@/global/lib/countries";
 import { useLoginStore } from "@/global/stores/useLoginStore";
 import { MemberPresenceSummaryResp } from "@/global/types/auth.types";
 import { MemberProfile, MemberProfileUpdateReq } from "@/global/types/member.types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-const extractMembersPayload = (payload: unknown): MemberPresenceSummaryResp[] => {
-    if (!payload) {
-        return [];
+type MemberListPage = {
+    items: MemberPresenceSummaryResp[];
+    totalPages: number | null;
+    totalElements: number | null;
+    pageIndex: number;
+    pageSize: number;
+    isFirst: boolean;
+    isLast: boolean;
+};
+
+const EMPTY_MEMBER_LIST_PAGE: MemberListPage = {
+    items: [],
+    totalPages: null,
+    totalElements: null,
+    pageIndex: 0,
+    pageSize: 0,
+    isFirst: true,
+    isLast: true,
+};
+
+const normaliseInteger = (value: unknown, fallback: number | null): number | null => {
+    if (typeof value === "number" && Number.isFinite(value)) {
+        return Math.trunc(value);
     }
 
-    if (Array.isArray(payload)) {
-        return payload as MemberPresenceSummaryResp[];
+    if (typeof value === "string" && value.trim().length > 0) {
+        const parsed = Number.parseInt(value, 10);
+        if (!Number.isNaN(parsed)) {
+            return parsed;
+        }
     }
 
-    if (typeof payload === "object") {
-        const record = payload as Record<string, unknown>;
-        const candidates = [record.content, record.data, record.items];
+    return fallback;
+};
 
-        for (const candidate of candidates) {
-            if (Array.isArray(candidate)) {
-                return candidate as MemberPresenceSummaryResp[];
-            }
+const toBooleanOr = (value: unknown, fallback: boolean): boolean => {
+    if (typeof value === "boolean") {
+        return value;
+    }
+    return fallback;
+};
+
+const asRecord = (value: unknown): Record<string, unknown> | null => {
+    if (value && typeof value === "object" && !Array.isArray(value)) {
+        return value as Record<string, unknown>;
+    }
+    return null;
+};
+
+const extractMemberArray = (record: Record<string, unknown>): MemberPresenceSummaryResp[] => {
+    const candidates = [record.content, record.data, record.items];
+
+    for (const candidate of candidates) {
+        if (Array.isArray(candidate)) {
+            return candidate as MemberPresenceSummaryResp[];
         }
     }
 
     return [];
 };
 
-const fetchAllMembers = async (): Promise<MemberPresenceSummaryResp[]> => {
-    const { data: apiResponse, error } = await apiClient.GET("/api/v1/members");
-
-    if (error) {
-        throw new Error(JSON.stringify(error));
+const extractMembersPayload = (payload: unknown): MemberListPage => {
+    if (!payload) {
+        return EMPTY_MEMBER_LIST_PAGE;
     }
 
-    const payload = (apiResponse ?? {}) as { data?: unknown };
-    return extractMembersPayload(payload.data ?? apiResponse);
+    const root = asRecord(payload);
+    const dataNode = root?.data && asRecord(root.data) ? (root.data as Record<string, unknown>) : root;
+
+    if (!dataNode) {
+        return EMPTY_MEMBER_LIST_PAGE;
+    }
+
+    const pageableNode = asRecord(dataNode.pageable);
+    const items = extractMemberArray(dataNode);
+    const sizeCandidate = dataNode.size ?? pageableNode?.pageSize;
+    const directPageCandidate = normaliseInteger(
+        dataNode.page ?? dataNode.pageNumber ?? pageableNode?.page ?? pageableNode?.pageNumber,
+        null,
+    );
+    const zeroIndexedCandidate =
+        normaliseInteger(dataNode.number, null) ?? normaliseInteger(pageableNode?.pageNumber, null);
+    const pageCandidate = directPageCandidate ?? zeroIndexedCandidate;
+
+    const size = normaliseInteger(sizeCandidate, items.length) ?? items.length;
+    const page = Math.max(pageCandidate ?? 0, 0);
+    const totalPages = normaliseInteger(dataNode.totalPages, null);
+    const totalElements = normaliseInteger(dataNode.totalElements, null);
+    const isFirst = toBooleanOr(dataNode.first, page <= 0);
+    const inferredLast = (() => {
+        if (typeof dataNode.last === "boolean") {
+            return dataNode.last;
+        }
+
+        if (typeof totalPages === "number" && totalPages > 0) {
+            return page >= totalPages - 1;
+        }
+
+        if (size > 0) {
+            return items.length < size;
+        }
+
+        return items.length === 0;
+    })();
+
+    return {
+        items,
+        totalPages,
+        totalElements,
+        pageIndex: page,
+        pageSize: size,
+        isFirst,
+        isLast: inferredLast,
+    };
 };
 
-export const useMembersQuery = () => {
-    const { accessToken } = useLoginStore();
+type MemberQueryOptions = {
+    page?: number;
+    size?: number;
+    onlineOnly?: boolean;
+};
 
-    return useQuery<MemberPresenceSummaryResp[], Error>({
-        queryKey: ["members"],
-        queryFn: fetchAllMembers,
+const normalisePageParam = (value: unknown, fallback: number): number => {
+    if (typeof value === "number" && Number.isFinite(value)) {
+        return Math.max(Math.trunc(value), 0);
+    }
+
+    if (typeof value === "string" && value.trim().length > 0) {
+        const parsed = Number.parseInt(value, 10);
+        if (!Number.isNaN(parsed)) {
+            return Math.max(parsed, 0);
+        }
+    }
+
+    return Math.max(fallback, 0);
+};
+
+const fetchMembers = async (options?: MemberQueryOptions): Promise<MemberListPage> => {
+    const { accessToken } = useLoginStore.getState();
+    const page = normalisePageParam(options?.page, 0);
+    const size = Math.max(normaliseInteger(options?.size, 20) ?? 20, 1);
+    const path = options?.onlineOnly ? "/api/v1/members/online" : "/api/v1/members";
+    const url = new URL(path, API_BASE_URL);
+    url.searchParams.set("page", String(page));
+    url.searchParams.set("size", String(size));
+
+    const response = await fetch(url.toString(), {
+        method: "GET",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+    });
+
+    if (!response.ok) {
+        throw new Error(`Failed to fetch members: ${response.status}`);
+    }
+
+    const apiResponse = await response.json();
+    return extractMembersPayload(apiResponse);
+};
+
+export const useMembersQuery = (options?: MemberQueryOptions) => {
+    const { accessToken } = useLoginStore();
+    const normalisedOptions: Required<Pick<MemberQueryOptions, "page" | "size">> & {
+        onlineOnly: boolean;
+    } = {
+        page: normalisePageParam(options?.page, 0),
+        size: Math.max(normaliseInteger(options?.size, 20) ?? 20, 1),
+        onlineOnly: Boolean(options?.onlineOnly),
+    };
+
+    return useQuery<MemberListPage, Error>({
+        queryKey: ["members", normalisedOptions],
+        queryFn: () => fetchMembers(normalisedOptions),
         enabled: !!accessToken,
         staleTime: 1000 * 60 * 5,
         refetchOnWindowFocus: false,

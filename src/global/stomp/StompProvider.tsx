@@ -48,10 +48,6 @@ const StompProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const sendHeartbeat = useCallback(() => {
-    if (!accessToken) {
-      return;
-    }
-
     const client = getStompClient();
 
     if (!client || !client.connected) {
@@ -66,10 +62,10 @@ const StompProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (error) {
       console.error("Presence heartbeat send error", error);
     }
-  }, [accessToken]);
+  }, []);
 
   useEffect(() => {
-    if (!accessToken) {
+    if (!isStompConnected) {
       cleanupHeartbeat();
       return;
     }
@@ -88,7 +84,7 @@ const StompProvider = ({ children }: { children: React.ReactNode }) => {
     return () => {
       cleanupHeartbeat();
     };
-  }, [accessToken, cleanupHeartbeat, sendHeartbeat]);
+  }, [cleanupHeartbeat, isStompConnected, sendHeartbeat]);
 
   useEffect(() => {
     if (!accessToken) {

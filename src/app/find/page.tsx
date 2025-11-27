@@ -4,15 +4,15 @@ import { useCreateDirectChat } from "@/global/api/useChatQuery";
 import { useMemberProfileQuery, useMembersQuery } from "@/global/api/useMemberQuery";
 import { useFriendshipActions } from "@/global/hooks/useFriendshipActions";
 import { MemberPresenceSummaryResp } from "@/global/types/auth.types";
+import { Bot, MessageSquare, Plus, Users } from "lucide-react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { MessageSquare, Users, Bot, Plus } from "lucide-react";
-import NewGroupChatModal from "./components/NewGroupChatModal";
 import GroupRoomList from "./components/GroupRoomList";
+import NewGroupChatModal from "./components/NewGroupChatModal";
 // Import new AI modal components and types
-import AISituationModal from "./components/AISituationModal";
 import AIScenarioModal from "./components/AIScenarioModal";
+import AISituationModal from "./components/AISituationModal";
 import { AICategory, AIScenario } from "./constants/aiSituations";
 
 
@@ -63,11 +63,28 @@ const normaliseNumericId = (value: unknown): number | null => {
   return null;
 };
 
-type ActiveTab = "" | "group" | "ai";
+type ActiveTab = "1v1" | "group" | "ai";
+type MemberListItem = MemberPresenceSummaryResp & { name?: string | null };
+const DEFAULT_PAGE_SIZE = 15;
 
 export default function FindPage() {
-  const { data: members, isLoading, error } = useMembersQuery();
-  const [selectedUser, setSelectedUser] = useState<MemberPresenceSummaryResp | null>(null);
+  const [showOnlineOnly, setShowOnlineOnly] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageIndex = Math.max(currentPage - 1, 0);
+  const {
+    data: memberPage,
+    isLoading,
+    error,
+    isFetching,
+  } = useMembersQuery({ onlineOnly: showOnlineOnly, page: pageIndex, size: DEFAULT_PAGE_SIZE });
+  const members = useMemo(() => memberPage?.items ?? [], [memberPage]);
+  const hasMemberData = Boolean(memberPage);
+  const isInitialLoading = isLoading && !hasMemberData;
+  const isRefetching = isFetching && hasMemberData;
+  const displayedPageNumber = isRefetching
+    ? currentPage
+    : (memberPage?.pageIndex ?? pageIndex) + 1;
+  const [selectedUser, setSelectedUser] = useState<MemberListItem | null>(null);
   const searchParams = useSearchParams();
   const router = useRouter();
   const skipAutoSelectRef = useRef(false);
@@ -112,7 +129,6 @@ export default function FindPage() {
   };
 
   const handleSelectAIScenario = (scenario: AIScenario) => {
-    console.log("Selected AI Scenario:", scenario);
     // TODO: Implement logic to create AI chat room with this scenario
     alert(`AI 채팅방 생성 요청: ${selectedAICategory?.title} - ${scenario.title}`);
     setIsAIScenarioModalOpen(false); // Close second modal
@@ -132,7 +148,7 @@ export default function FindPage() {
       return;
     }
 
-    if (!requestedMemberId || !members) {
+    if (!requestedMemberId || members.length === 0) {
       return;
     }
 
@@ -458,10 +474,16 @@ export default function FindPage() {
   };
 
   const renderContent = () => {
-    if (isLoading) {
+    const totalPages = memberPage?.totalPages ?? null;
+    const isFirstPage = memberPage?.isFirst ?? currentPage <= 1;
+    const isLastPage = memberPage?.isLast ?? (typeof totalPages === "number" ? currentPage >= totalPages : members.length < DEFAULT_PAGE_SIZE);
+    const canGoPrev = !isFirstPage && !isInitialLoading;
+    const canGoNext = !isLastPage && !isInitialLoading;
+
+    if (isInitialLoading) {
       return (
         <div className="text-center text-white">
-          <p>Loading...</p>
+          <p>{currentPage > 1 ? "다음 페이지를 불러오는 중입니다..." : "Loading..."}</p>
         </div>
       );
     }
@@ -474,94 +496,140 @@ export default function FindPage() {
       );
     }
 
-    if (activeTab === "") {
+    if (activeTab === "1v1") {
+      const renderOnlineFilter = (
+        <div className="flex justify-end mb-4">
+          <label className="flex items-center gap-2 text-sm text-gray-300">
+            <input
+              type="checkbox"
+              checked={showOnlineOnly}
+              onChange={(event) => {
+                setShowOnlineOnly(event.target.checked);
+                setCurrentPage(1);
+              }}
+              className="h-4 w-4 rounded border-gray-500 bg-gray-700 text-emerald-500 focus:ring-emerald-500"
+            />
+            온라인 멤버만 보기
+          </label>
+        </div>
+      );
+
       if (!members || members.length === 0) {
         return (
-          <div className="text-center text-gray-400">
-            <p>No users found.</p>
-          </div>
+          <>
+            {renderOnlineFilter}
+            <div className="text-center text-gray-400">
+              <p>{showOnlineOnly ? "현재 온라인인 사용자가 없습니다." : "등록된 사용자를 찾을 수 없습니다."}</p>
+            </div>
+          </>
         );
       }
 
       return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {members.map((user) => {
-            const presence = getPresenceMeta(user.isOnline);
+        <>
+          {renderOnlineFilter}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {members.map((user) => {
+              const presence = getPresenceMeta(user.isOnline);
 
-            return (
-              <div
-                key={user.id}
-                className="bg-gray-800 border border-gray-600 rounded-lg p-6 hover:border-emerald-500 transition-all duration-300 cursor-pointer"
-                onClick={() => setSelectedUser(user)}
-              >
-                <div className="flex items-center mb-4">
-                  <div className="relative w-16 h-16">
-                    <Image
-                      src={getAvatar(user.nickname)}
-                      alt={user.name || "사용자 아바타"}
-                      width={64}
-                      height={64}
-                      unoptimized
-                      className="rounded-full object-cover w-16 h-16"
-                    />
-                    <div className={`absolute -bottom-1 -right-1 w-5 h-5 border-2 border-gray-800 rounded-full ${presence.badgeClass}`}></div>
+              return (
+                <div
+                  key={user.id}
+                  className="bg-gray-800 border border-gray-600 rounded-lg p-6 hover:border-emerald-500 transition-all duration-300 cursor-pointer"
+                  onClick={() => setSelectedUser(user)}
+                >
+                  <div className="flex items-center mb-4">
+                    <div className="relative w-16 h-16">
+                      <Image
+                        src={getAvatar(user.nickname)}
+                        alt={user.nickname || "사용자 아바타"}
+                        width={64}
+                        height={64}
+                        unoptimized
+                        className="rounded-full object-cover w-16 h-16"
+                      />
+                      <div className={`absolute -bottom-1 -right-1 w-5 h-5 border-2 border-gray-800 rounded-full ${presence.badgeClass}`}></div>
+                    </div>
+                    <div className="ml-4">
+                      <h3 className="text-lg font-semibold text-white">
+                        {user.nickname}
+                      </h3>
+                      <p className={`${presence.textClass} text-sm flex items-center`}>
+                        <span className={`w-2 h-2 rounded-full mr-2 ${presence.badgeClass}`}></span>
+                        {presence.label}
+                      </p>
+                      <p className="text-gray-400 text-sm">{user.country}</p>
+                    </div>
                   </div>
-                  <div className="ml-4">
-                    <h3 className="text-lg font-semibold text-white">
-                      {user.nickname}
-                    </h3>
-                    <p className={`${presence.textClass} text-sm flex items-center`}>
-                      <span className={`w-2 h-2 rounded-full mr-2 ${presence.badgeClass}`}></span>
-                      {presence.label}
-                    </p>
-                    <p className="text-gray-400 text-sm">{user.country}</p>
-                  </div>
-                </div>
 
-                <p className="text-gray-300 text-sm mb-3 line-clamp-2">
-                  {user.description}
-                </p>
-
-                <div className="mb-3">
-                  <p className="text-xs font-semibold text-gray-400 mb-1">
-                    INTERESTS
+                  <p className="text-gray-300 text-sm mb-3 line-clamp-2">
+                    {user.description}
                   </p>
-                  <div className="flex flex-wrap gap-1">
-                    {user.interests.slice(0, 3).map((interest, index) => (
-                      <span
-                        key={index}
-                        className="px-2 py-1 bg-emerald-600 text-white text-xs rounded-full"
-                      >
-                        {interest.trim()}
-                      </span>
-                    ))}
+
+                  <div className="mb-3">
+                    <p className="text-xs font-semibold text-gray-400 mb-1">
+                      INTERESTS
+                    </p>
+                    <div className="flex flex-wrap gap-1">
+                      {user.interests.slice(0, 3).map((interest, index) => (
+                        <span
+                          key={index}
+                          className="px-2 py-1 bg-emerald-600 text-white text-xs rounded-full"
+                        >
+                          {interest.trim()}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        startChat(user);
+                      }}
+                      className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors"
+                    >
+                      Start Chat
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        viewUserPosts(user);
+                      }}
+                      className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors"
+                    >
+                      게시글 보러가기
+                    </button>
                   </div>
                 </div>
-
-                <div className="flex gap-2">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      startChat(user);
-                    }}
-                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors"
-                  >
-                    Start Chat
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      viewUserPosts(user);
-                    }}
-                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors"
-                  >
-                    게시글 보러가기
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+          <div className="flex items-center justify-between mt-6">
+            <button
+              type="button"
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              disabled={!canGoPrev}
+              className="px-4 py-2 rounded bg-gray-700 text-white disabled:bg-gray-600/60 disabled:text-gray-400"
+            >
+              이전
+            </button>
+            <div className="text-sm text-gray-300">
+              페이지 {displayedPageNumber}
+              {typeof totalPages === "number" && totalPages > 0 ? ` / ${totalPages}` : ""}
+              {isRefetching ? <span className="ml-2 text-xs text-gray-400">업데이트 중...</span> : null}
+            </div>
+            <button
+              type="button"
+              onClick={() => setCurrentPage((prev) => prev + 1)}
+              disabled={!canGoNext}
+              className="px-4 py-2 rounded bg-gray-700 text-white disabled:bg-gray-600/60 disabled:text-gray-400"
+            >
+              다음
+            </button>
+          </div>
+        </>
       );
     }
 
@@ -587,13 +655,12 @@ export default function FindPage() {
   }) => (
     <button
       onClick={() => setActiveTab(tab)}
-      className={`flex items-center gap-2 px-4 py-2 rounded-t-lg transition-colors ${
-        activeTab === tab
-          ? "bg-gray-800 text-emerald-400"
-          : "text-gray-400 hover:bg-gray-700/50 hover:text-white"
-      }`}
+      className={`flex items-center gap-2 px-4 py-2 rounded-t-lg transition-colors ${activeTab === tab
+        ? "bg-gray-800 text-emerald-400"
+        : "text-gray-400 hover:bg-gray-700/50 hover:text-white"
+        }`}
     >
-    <Icon size={18} />
+      <Icon size={18} />
       <span className="font-medium">{label}</span>
     </button>
   );
@@ -629,102 +696,102 @@ export default function FindPage() {
 
         {renderContent()}
 
-      {/* User Profile Modal */}
-      {selectedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-start mb-6">
-                <div className="flex items-center">
-                  <div className="relative w-20 h-20">
-                    <Image
-                      src={getAvatar(modalNickname || selectedUser.nickname)}
-                      alt={modalDisplayName || selectedUser.nickname || "회원 아바타"}
-                      width={80}
-                      height={80}
-                      unoptimized
-                      className="rounded-full object-cover w-20 h-20"
-                    />
-                    <div className={`absolute -bottom-1 -right-1 w-6 h-6 border-2 border-gray-800 rounded-full ${modalPresence.badgeClass}`}></div>
+        {/* User Profile Modal */}
+        {selectedUser && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6">
+                <div className="flex justify-between items-start mb-6">
+                  <div className="flex items-center">
+                    <div className="relative w-20 h-20">
+                      <Image
+                        src={getAvatar(modalNickname || selectedUser.nickname)}
+                        alt={modalDisplayName || selectedUser.nickname || "회원 아바타"}
+                        width={80}
+                        height={80}
+                        unoptimized
+                        className="rounded-full object-cover w-20 h-20"
+                      />
+                      <div className={`absolute -bottom-1 -right-1 w-6 h-6 border-2 border-gray-800 rounded-full ${modalPresence.badgeClass}`}></div>
+                    </div>
+                    <div className="ml-4">
+                      <h2 className="text-2xl font-bold text-white">{modalDisplayName}</h2>
+                      <p className={`${modalPresence.textClass} flex items-center`}>
+                        <span className={`w-2 h-2 rounded-full mr-2 ${modalPresence.badgeClass}`}></span>
+                        {modalPresence.label}
+                      </p>
+                      <p className="text-gray-400">{modalCountryDisplay}</p>
+                      <p className="text-gray-400 text-sm">{modalEnglishLevelDisplay}</p>
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
+                        {renderFriendshipStatus()}
+                      </div>
+                    </div>
                   </div>
-                  <div className="ml-4">
-                    <h2 className="text-2xl font-bold text-white">{modalDisplayName}</h2>
-                    <p className={`${modalPresence.textClass} flex items-center`}>
-                      <span className={`w-2 h-2 rounded-full mr-2 ${modalPresence.badgeClass}`}></span>
-                      {modalPresence.label}
-                    </p>
-                    <p className="text-gray-400">{modalCountryDisplay}</p>
-                    <p className="text-gray-400 text-sm">{modalEnglishLevelDisplay}</p>
-                    <div className="mt-3 flex flex-wrap items-center gap-2">
-                      {renderFriendshipStatus()}
+                  <button
+                    onClick={() => {
+                      skipAutoSelectRef.current = true;
+                      setSelectedUser(null);
+                      const params = new URLSearchParams(searchParams.toString());
+                      if (params.has("memberId")) {
+                        params.delete("memberId");
+                        router.replace(`?${params.toString()}`, { scroll: false });
+                      }
+                    }}
+                    className="text-gray-400 hover:text-white text-2xl"
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-lg font-semibold text-white mb-2">
+                      About
+                    </h3>
+                    <p className="text-gray-300">{modalDescriptionDisplay}</p>
+                  </div>
+
+                  <div>
+                    <h3 className="text-lg font-semibold text-white mb-2">
+                      Interests
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {modalInterests.map((interest, index) => (
+                        <span
+                          key={index}
+                          className="px-3 py-1 bg-emerald-600 text-white rounded-full text-sm"
+                        >
+                          {interest}
+                        </span>
+                      ))}
+                      {modalInterests.length === 0 && (
+                        <span className="text-sm text-gray-400">등록된 관심사가 없습니다.</span>
+                      )}
                     </div>
                   </div>
                 </div>
-                <button
-                  onClick={() => {
-                    skipAutoSelectRef.current = true;
-                    setSelectedUser(null);
-                    const params = new URLSearchParams(searchParams.toString());
-                    if (params.has("memberId")) {
-                      params.delete("memberId");
-                      router.replace(`?${params.toString()}`, { scroll: false });
-                    }
-                  }}
-                  className="text-gray-400 hover:text-white text-2xl"
-                >
-                  ×
-                </button>
-              </div>
 
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-lg font-semibold text-white mb-2">
-                    About
-                  </h3>
-                  <p className="text-gray-300">{modalDescriptionDisplay}</p>
-                </div>
-
-                <div>
-                  <h3 className="text-lg font-semibold text-white mb-2">
-                    Interests
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {modalInterests.map((interest, index) => (
-                      <span
-                        key={index}
-                        className="px-3 py-1 bg-emerald-600 text-white rounded-full text-sm"
-                      >
-                        {interest}
-                      </span>
-                    ))}
-                    {modalInterests.length === 0 && (
-                      <span className="text-sm text-gray-400">등록된 관심사가 없습니다.</span>
-                    )}
+                <div className="mt-8 space-y-4">
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => startChat(selectedUser)}
+                      className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-3 rounded font-medium transition-colors"
+                    >
+                      1:1 대화하기
+                    </button>
+                    <button
+                      onClick={() => startGroupChat(selectedUser)}
+                      className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-4 py-3 rounded font-medium transition-colors"
+                    >
+                      그룹챗 시작하기
+                    </button>
                   </div>
+                  {renderFriendshipActions()}
                 </div>
-              </div>
-
-              <div className="mt-8 space-y-4">
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => startChat(selectedUser)}
-                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-3 rounded font-medium transition-colors"
-                  >
-                    1:1 대화하기
-                  </button>
-                  <button
-                    onClick={() => startGroupChat(selectedUser)}
-                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-4 py-3 rounded font-medium transition-colors"
-                  >
-                    그룹챗 시작하기
-                  </button>
-                </div>
-                {renderFriendshipActions()}
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
       </div>
 
       <NewGroupChatModal
