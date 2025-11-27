@@ -1,6 +1,7 @@
 import { components } from "@/global/backend/schema";
 
 export type MemberProfileUpdateReq = components["schemas"]["MemberInfoModifyReq"];
+export type FriendSummary = components["schemas"]["FriendSummaryResp"];
 
 export type MemberProfile = MemberProfileUpdateReq & {
   memberId?: number;

@@ -1,10 +1,11 @@
 "use client";
 
 import { useCreateDirectChat } from "@/global/api/useChatQuery";
-import { useMemberProfileQuery, useMembersQuery } from "@/global/api/useMemberQuery";
+import { useFriendsQuery, useMemberProfileQuery, useMembersQuery } from "@/global/api/useMemberQuery";
 import { useFriendshipActions } from "@/global/hooks/useFriendshipActions";
 import { MemberPresenceSummaryResp } from "@/global/types/auth.types";
-import { Bot, MessageSquare, Plus, Users } from "lucide-react";
+import { FriendSummary } from "@/global/types/member.types";
+import { Bot, MessageSquare, Plus, UserRoundCheck, Users } from "lucide-react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -63,8 +64,8 @@ const normaliseNumericId = (value: unknown): number | null => {
   return null;
 };
 
-type ActiveTab = "1v1" | "group" | "ai";
-type MemberListItem = MemberPresenceSummaryResp & { name?: string | null };
+type ActiveTab = "1v1" | "friends" | "group" | "ai";
+type MemberListItem = (MemberPresenceSummaryResp | FriendSummary) & { name?: string | null };
 const DEFAULT_PAGE_SIZE = 15;
 
 export default function FindPage() {
@@ -84,6 +85,21 @@ export default function FindPage() {
   const displayedPageNumber = isRefetching
     ? currentPage
     : (memberPage?.pageIndex ?? pageIndex) + 1;
+  const [friendPage, setFriendPage] = useState(1);
+  const friendPageIndex = Math.max(friendPage - 1, 0);
+  const {
+    data: friendPageData,
+    isLoading: isFriendLoading,
+    isFetching: isFriendFetching,
+    error: friendError,
+  } = useFriendsQuery({ page: friendPageIndex, size: DEFAULT_PAGE_SIZE });
+  const friendMembers = useMemo(() => friendPageData?.items ?? [], [friendPageData]);
+  const hasFriendData = Boolean(friendPageData);
+  const isFriendInitialLoading = isFriendLoading && !hasFriendData;
+  const isFriendRefetching = isFriendFetching && hasFriendData;
+  const displayedFriendPageNumber = isFriendRefetching
+    ? friendPage
+    : (friendPageData?.pageIndex ?? friendPageIndex) + 1;
   const [selectedUser, setSelectedUser] = useState<MemberListItem | null>(null);
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -102,7 +118,7 @@ export default function FindPage() {
 
   useEffect(() => {
     const tab = searchParams.get("tab");
-    if (tab === "group" || tab === "ai") {
+    if (tab === "group" || tab === "ai" || tab === "friends") {
       setActiveTab(tab);
     }
   }, [searchParams]);
@@ -148,7 +164,7 @@ export default function FindPage() {
       return;
     }
 
-    if (!requestedMemberId || members.length === 0) {
+    if (!requestedMemberId) {
       return;
     }
 
@@ -157,11 +173,19 @@ export default function FindPage() {
       return;
     }
 
-    const matched = members.find((user) => normaliseNumericId(user.id) === requestedMemberId);
-    if (matched) {
-      setSelectedUser(matched);
+    const candidateLists = [members, friendMembers];
+    for (const list of candidateLists) {
+      if (!list || list.length === 0) {
+        continue;
+      }
+
+      const matched = list.find((user) => normaliseNumericId(user.id) === requestedMemberId);
+      if (matched) {
+        setSelectedUser(matched);
+        break;
+      }
     }
-  }, [requestedMemberId, members, selectedUser]);
+  }, [requestedMemberId, members, friendMembers, selectedUser]);
   const createChatMutation = useCreateDirectChat();
   const {
     sendFriendRequest: mutateSendFriendRequest,
@@ -171,11 +195,11 @@ export default function FindPage() {
     status: friendshipActionStatus,
   } = useFriendshipActions();
   const { isSending, isAccepting, isRejecting, isDeleting } = friendshipActionStatus;
-  const viewUserPosts = (user: MemberPresenceSummaryResp) => {
+  const viewUserPosts = (user: MemberListItem) => {
     alert(`${user.nickname}님의 게시글 보기 기능은 추후 제공될 예정입니다.`);
   };
 
-  const startGroupChat = (user: MemberPresenceSummaryResp) => {
+  const startGroupChat = (user: MemberListItem) => {
     alert(`${user.nickname}님과 그룹 챗 기능은 추후 제공될 예정입니다.`);
   };
 
@@ -253,7 +277,15 @@ export default function FindPage() {
   const modalCountryDisplay = modalCountry || "-";
   const modalEnglishLevelDisplay = modalEnglishLevel || "-";
   const modalDescriptionDisplay = modalDescription || "소개 정보가 아직 없습니다.";
-  const modalPresence = getPresenceMeta(selectedUser?.isOnline);
+  const resolveIsOnline = (user?: MemberListItem | null) => {
+    if (!user) {
+      return undefined;
+    }
+
+    return "isOnline" in user ? (user as MemberPresenceSummaryResp).isOnline : undefined;
+  };
+
+  const modalPresence = getPresenceMeta(resolveIsOnline(selectedUser));
   const isProfilePending = Boolean(selectedUser) && (isProfileLoading || isProfileFetching);
   const hasIncomingFriendRequest = Boolean(
     opponentPendingRequestId ??
@@ -272,7 +304,7 @@ export default function FindPage() {
           : "NONE"
     : undefined;
 
-  const startChat = (user: MemberPresenceSummaryResp) => {
+  const startChat = (user: MemberListItem) => {
     if (window.confirm(`${user.nickname}님과 채팅을 시작하시겠습니까?`)) {
       createChatMutation.mutate({ partnerId: user.id });
     }
@@ -473,7 +505,93 @@ export default function FindPage() {
     return null;
   };
 
-  const renderContent = () => {
+  const renderMemberGrid = (list: MemberListItem[]) => (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {list.map((user) => {
+        const presence = getPresenceMeta(resolveIsOnline(user));
+        const interests = Array.isArray(user.interests) ? user.interests : [];
+        const description = user.description ?? "소개 정보가 아직 없습니다.";
+
+        return (
+          <div
+            key={user.id}
+            className="bg-gray-800 border border-gray-600 rounded-lg p-6 hover:border-emerald-500 transition-all duration-300 cursor-pointer"
+            onClick={() => setSelectedUser(user)}
+          >
+            <div className="flex items-center mb-4">
+              <div className="relative w-16 h-16">
+                <Image
+                  src={getAvatar(user.nickname)}
+                  alt={user.nickname || "사용자 아바타"}
+                  width={64}
+                  height={64}
+                  unoptimized
+                  className="rounded-full object-cover w-16 h-16"
+                />
+                <div className={`absolute -bottom-1 -right-1 w-5 h-5 border-2 border-gray-800 rounded-full ${presence.badgeClass}`}></div>
+              </div>
+              <div className="ml-4">
+                <h3 className="text-lg font-semibold text-white">
+                  {user.nickname}
+                </h3>
+                <p className={`${presence.textClass} text-sm flex items-center`}>
+                  <span className={`w-2 h-2 rounded-full mr-2 ${presence.badgeClass}`}></span>
+                  {presence.label}
+                </p>
+                <p className="text-gray-400 text-sm">{user.country}</p>
+              </div>
+            </div>
+
+            <p className="text-gray-300 text-sm mb-3 line-clamp-2">
+              {description}
+            </p>
+
+            <div className="mb-3">
+              <p className="text-xs font-semibold text-gray-400 mb-1">
+                INTERESTS
+              </p>
+              <div className="flex flex-wrap gap-1">
+                {interests.slice(0, 3).map((interest, index) => (
+                  <span
+                    key={`${user.id}-interest-${index}`}
+                    className="px-2 py-1 bg-emerald-600 text-white text-xs rounded-full"
+                  >
+                    {interest.trim()}
+                  </span>
+                ))}
+                {interests.length === 0 && (
+                  <span className="text-xs text-gray-400">등록된 관심사가 없습니다.</span>
+                )}
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  startChat(user);
+                }}
+                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors"
+              >
+                Start Chat
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  viewUserPosts(user);
+                }}
+                className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors"
+              >
+                게시글 보러가기
+              </button>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  const renderPeopleContent = () => {
     const totalPages = memberPage?.totalPages ?? null;
     const isFirstPage = memberPage?.isFirst ?? currentPage <= 1;
     const isLastPage = memberPage?.isLast ?? (typeof totalPages === "number" ? currentPage >= totalPages : members.length < DEFAULT_PAGE_SIZE);
@@ -496,152 +614,144 @@ export default function FindPage() {
       );
     }
 
-    if (activeTab === "1v1") {
-      const renderOnlineFilter = (
-        <div className="flex justify-end mb-4">
-          <label className="flex items-center gap-2 text-sm text-gray-300">
-            <input
-              type="checkbox"
-              checked={showOnlineOnly}
-              onChange={(event) => {
-                setShowOnlineOnly(event.target.checked);
-                setCurrentPage(1);
-              }}
-              className="h-4 w-4 rounded border-gray-500 bg-gray-700 text-emerald-500 focus:ring-emerald-500"
-            />
-            온라인 멤버만 보기
-          </label>
-        </div>
-      );
+    const renderOnlineFilter = (
+      <div className="flex justify-end mb-4">
+        <label className="flex items-center gap-2 text-sm text-gray-300">
+          <input
+            type="checkbox"
+            checked={showOnlineOnly}
+            onChange={(event) => {
+              setShowOnlineOnly(event.target.checked);
+              setCurrentPage(1);
+            }}
+            className="h-4 w-4 rounded border-gray-500 bg-gray-700 text-emerald-500 focus:ring-emerald-500"
+          />
+          온라인 멤버만 보기
+        </label>
+      </div>
+    );
 
-      if (!members || members.length === 0) {
-        return (
-          <>
-            {renderOnlineFilter}
-            <div className="text-center text-gray-400">
-              <p>{showOnlineOnly ? "현재 온라인인 사용자가 없습니다." : "등록된 사용자를 찾을 수 없습니다."}</p>
-            </div>
-          </>
-        );
-      }
-
+    if (!members || members.length === 0) {
       return (
         <>
           {renderOnlineFilter}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {members.map((user) => {
-              const presence = getPresenceMeta(user.isOnline);
-
-              return (
-                <div
-                  key={user.id}
-                  className="bg-gray-800 border border-gray-600 rounded-lg p-6 hover:border-emerald-500 transition-all duration-300 cursor-pointer"
-                  onClick={() => setSelectedUser(user)}
-                >
-                  <div className="flex items-center mb-4">
-                    <div className="relative w-16 h-16">
-                      <Image
-                        src={getAvatar(user.nickname)}
-                        alt={user.nickname || "사용자 아바타"}
-                        width={64}
-                        height={64}
-                        unoptimized
-                        className="rounded-full object-cover w-16 h-16"
-                      />
-                      <div className={`absolute -bottom-1 -right-1 w-5 h-5 border-2 border-gray-800 rounded-full ${presence.badgeClass}`}></div>
-                    </div>
-                    <div className="ml-4">
-                      <h3 className="text-lg font-semibold text-white">
-                        {user.nickname}
-                      </h3>
-                      <p className={`${presence.textClass} text-sm flex items-center`}>
-                        <span className={`w-2 h-2 rounded-full mr-2 ${presence.badgeClass}`}></span>
-                        {presence.label}
-                      </p>
-                      <p className="text-gray-400 text-sm">{user.country}</p>
-                    </div>
-                  </div>
-
-                  <p className="text-gray-300 text-sm mb-3 line-clamp-2">
-                    {user.description}
-                  </p>
-
-                  <div className="mb-3">
-                    <p className="text-xs font-semibold text-gray-400 mb-1">
-                      INTERESTS
-                    </p>
-                    <div className="flex flex-wrap gap-1">
-                      {user.interests.slice(0, 3).map((interest, index) => (
-                        <span
-                          key={index}
-                          className="px-2 py-1 bg-emerald-600 text-white text-xs rounded-full"
-                        >
-                          {interest.trim()}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        startChat(user);
-                      }}
-                      className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors"
-                    >
-                      Start Chat
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        viewUserPosts(user);
-                      }}
-                      className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors"
-                    >
-                      게시글 보러가기
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          <div className="flex items-center justify-between mt-6">
-            <button
-              type="button"
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              disabled={!canGoPrev}
-              className="px-4 py-2 rounded bg-gray-700 text-white disabled:bg-gray-600/60 disabled:text-gray-400"
-            >
-              이전
-            </button>
-            <div className="text-sm text-gray-300">
-              페이지 {displayedPageNumber}
-              {typeof totalPages === "number" && totalPages > 0 ? ` / ${totalPages}` : ""}
-              {isRefetching ? <span className="ml-2 text-xs text-gray-400">업데이트 중...</span> : null}
-            </div>
-            <button
-              type="button"
-              onClick={() => setCurrentPage((prev) => prev + 1)}
-              disabled={!canGoNext}
-              className="px-4 py-2 rounded bg-gray-700 text-white disabled:bg-gray-600/60 disabled:text-gray-400"
-            >
-              다음
-            </button>
+          <div className="text-center text-gray-400">
+            <p>{showOnlineOnly ? "현재 온라인인 사용자가 없습니다." : "등록된 사용자를 찾을 수 없습니다."}</p>
           </div>
         </>
       );
+    }
+
+    return (
+      <>
+        {renderOnlineFilter}
+        {renderMemberGrid(members)}
+        <div className="flex items-center justify-between mt-6">
+          <button
+            type="button"
+            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+            disabled={!canGoPrev}
+            className="px-4 py-2 rounded bg-gray-700 text-white disabled:bg-gray-600/60 disabled:text-gray-400"
+          >
+            이전
+          </button>
+          <div className="text-sm text-gray-300">
+            페이지 {displayedPageNumber}
+            {typeof totalPages === "number" && totalPages > 0 ? ` / ${totalPages}` : ""}
+            {isRefetching ? <span className="ml-2 text-xs text-gray-400">업데이트 중...</span> : null}
+          </div>
+          <button
+            type="button"
+            onClick={() => setCurrentPage((prev) => prev + 1)}
+            disabled={!canGoNext}
+            className="px-4 py-2 rounded bg-gray-700 text-white disabled:bg-gray-600/60 disabled:text-gray-400"
+          >
+            다음
+          </button>
+        </div>
+      </>
+    );
+  };
+
+  const renderFriendsContent = () => {
+    const totalPages = friendPageData?.totalPages ?? null;
+    const isFirstPage = friendPageData?.isFirst ?? friendPage <= 1;
+    const isLastPage = friendPageData?.isLast ?? (typeof totalPages === "number" ? friendPage >= totalPages : friendMembers.length < DEFAULT_PAGE_SIZE);
+    const canGoPrev = !isFirstPage && !isFriendInitialLoading;
+    const canGoNext = !isLastPage && !isFriendInitialLoading;
+
+    if (isFriendInitialLoading) {
+      return (
+        <div className="text-center text-white">
+          <p>{friendPage > 1 ? "다음 페이지를 불러오는 중입니다..." : "친구 목록을 불러오는 중입니다..."}</p>
+        </div>
+      );
+    }
+
+    if (friendError) {
+      return (
+        <div className="text-center text-red-400">
+          <p>Error loading friends: {friendError.message}</p>
+        </div>
+      );
+    }
+
+    if (!friendMembers || friendMembers.length === 0) {
+      return (
+        <div className="text-center text-gray-400">
+          <p>등록된 친구가 없습니다. 새로운 친구를 추가해 보세요.</p>
+        </div>
+      );
+    }
+
+    return (
+      <>
+        {renderMemberGrid(friendMembers)}
+        <div className="flex items-center justify-between mt-6">
+          <button
+            type="button"
+            onClick={() => setFriendPage((prev) => Math.max(prev - 1, 1))}
+            disabled={!canGoPrev}
+            className="px-4 py-2 rounded bg-gray-700 text-white disabled:bg-gray-600/60 disabled:text-gray-400"
+          >
+            이전
+          </button>
+          <div className="text-sm text-gray-300">
+            페이지 {displayedFriendPageNumber}
+            {typeof totalPages === "number" && totalPages > 0 ? ` / ${totalPages}` : ""}
+            {isFriendRefetching ? <span className="ml-2 text-xs text-gray-400">업데이트 중...</span> : null}
+          </div>
+          <button
+            type="button"
+            onClick={() => setFriendPage((prev) => prev + 1)}
+            disabled={!canGoNext}
+            className="px-4 py-2 rounded bg-gray-700 text-white disabled:bg-gray-600/60 disabled:text-gray-400"
+          >
+            다음
+          </button>
+        </div>
+      </>
+    );
+  };
+
+  const renderContent = () => {
+    if (activeTab === "friends") {
+      return renderFriendsContent();
     }
 
     if (activeTab === "group") {
       return <GroupRoomList />;
     }
 
-    return (
-      <div className="text-center text-gray-400 mt-10">
-        <p className="text-xl">Content for {activeTab} tab is coming soon!</p>
-      </div>
-    );
+    if (activeTab === "ai") {
+      return (
+        <div className="text-center text-gray-400 mt-10">
+          <p className="text-xl">Content for {activeTab} tab is coming soon!</p>
+        </div>
+      );
+    }
+
+    return renderPeopleContent();
   };
 
   const TabButton = ({
@@ -680,6 +790,7 @@ export default function FindPage() {
           <div className="flex justify-between items-center">
             <div className="flex gap-2">
               <TabButton tab="1v1" label="People" Icon={MessageSquare} />
+              <TabButton tab="friends" label="Friends" Icon={UserRoundCheck} />
               <TabButton tab="group" label="Groups" Icon={Users} />
               <TabButton tab="ai" label="AI Tutors" Icon={Bot} />
             </div>
