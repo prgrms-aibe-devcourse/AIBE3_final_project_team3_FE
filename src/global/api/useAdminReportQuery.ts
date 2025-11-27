@@ -7,12 +7,10 @@ import type { AdminReport, ReportStatus } from "@/global/types/report.types";
 // GET 신고 목록
 // =======================
 export const fetchReportList = async (page: number) => {
-  const pageToSend = page + 1;
-
   const res = await apiClient.GET("/api/v1/admin/reports", {
     params: {
       query: {
-        page: pageToSend,
+        page,
         size: 20
       }
     },
@@ -49,7 +47,9 @@ export const useReportStatusMutation = () => {
       patchReportStatus(id, status),
 
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["reportList"] });
+      qc.invalidateQueries({
+        predicate: (q) => q.queryKey[0] === "reportList"
+      });
     },
   });
 };
