@@ -1,7 +1,7 @@
 "use client";
 
 import { useCreateDirectChat } from "@/global/api/useChatQuery";
-import { useFriendsQuery, useMemberProfileQuery, useMembersQuery } from "@/global/api/useMemberQuery";
+import { useFriendDetailQuery, useFriendsQuery, useMemberProfileQuery, useMembersQuery } from "@/global/api/useMemberQuery";
 import { useFriendshipActions } from "@/global/hooks/useFriendshipActions";
 import { MemberPresenceSummaryResp } from "@/global/types/auth.types";
 import { FriendSummary } from "@/global/types/member.types";
@@ -101,6 +101,7 @@ export default function FindPage() {
     ? friendPage
     : (friendPageData?.pageIndex ?? friendPageIndex) + 1;
   const [selectedUser, setSelectedUser] = useState<MemberListItem | null>(null);
+  const [selectedSource, setSelectedSource] = useState<"members" | "friends" | null>(null);
   const searchParams = useSearchParams();
   const router = useRouter();
   const skipAutoSelectRef = useRef(false);
@@ -173,14 +174,19 @@ export default function FindPage() {
       return;
     }
 
-    const candidateLists = [members, friendMembers];
-    for (const list of candidateLists) {
+    const candidateLists: Array<{ source: "members" | "friends"; list: MemberListItem[] }> = [
+      { source: "members", list: members },
+      { source: "friends", list: friendMembers },
+    ];
+
+    for (const { source, list } of candidateLists) {
       if (!list || list.length === 0) {
         continue;
       }
 
       const matched = list.find((user) => normaliseNumericId(user.id) === requestedMemberId);
       if (matched) {
+        setSelectedSource(source);
         setSelectedUser(matched);
         break;
       }
@@ -211,6 +217,35 @@ export default function FindPage() {
     return normaliseNumericId((selectedUser as { id?: number | string }).id);
   }, [selectedUser]);
 
+  const isFriendSelection = selectedSource === "friends";
+
+  const selectedFriendMemberId = useMemo(() => {
+    if (!isFriendSelection || !selectedUser) {
+      return null;
+    }
+
+    const candidateIds = [
+      (selectedUser as { memberId?: number | string }).memberId,
+      (selectedUser as { id?: number | string }).id,
+    ];
+
+    for (const candidate of candidateIds) {
+      const normalised = normaliseNumericId(candidate);
+      if (normalised != null) {
+        return normalised;
+      }
+    }
+
+    return null;
+  }, [isFriendSelection, selectedUser]);
+
+  const {
+    data: selectedFriendDetail,
+    isLoading: isFriendDetailLoading,
+    isFetching: isFriendDetailFetching,
+    error: selectedFriendDetailError,
+  } = useFriendDetailQuery(selectedFriendMemberId ?? undefined);
+
   const {
     data: selectedProfile,
     isLoading: isProfileLoading,
@@ -219,16 +254,22 @@ export default function FindPage() {
   } = useMemberProfileQuery(selectedUserId ?? undefined);
 
   const selectedProfileMemberId = useMemo(() => {
+    const friendDetailId = normaliseNumericId(selectedFriendDetail?.memberId);
+    if (friendDetailId != null) {
+      return friendDetailId;
+    }
+
     if (selectedProfile) {
       return (
         normaliseNumericId(selectedProfile.memberId) ??
         normaliseNumericId(selectedProfile.id) ??
-        selectedUserId
+        selectedUserId ??
+        selectedFriendMemberId
       );
     }
 
-    return selectedUserId;
-  }, [selectedProfile, selectedUserId]);
+    return selectedUserId ?? selectedFriendMemberId;
+  }, [selectedFriendDetail, selectedProfile, selectedUserId, selectedFriendMemberId]);
 
   const opponentPendingRequestId = useMemo(
     () =>
@@ -258,18 +299,29 @@ export default function FindPage() {
       .filter((item) => item.length > 0);
   };
 
-  const modalNickname = selectedProfile?.nickname ?? selectedUser?.nickname ?? "";
+  const modalNickname = selectedFriendDetail?.nickname ?? selectedProfile?.nickname ?? selectedUser?.nickname ?? "";
   const modalName = selectedProfile?.name ?? selectedUser?.name ?? "";
   const modalCountry =
+    selectedFriendDetail?.country ??
     selectedProfile?.countryName ??
     selectedProfile?.country ??
     selectedUser?.country ??
     "";
-  const modalEnglishLevel = selectedProfile?.englishLevel ?? selectedUser?.englishLevel ?? "";
-  const modalDescription = selectedProfile?.description ?? selectedUser?.description ?? "";
-  const modalInterests = selectedProfile
-    ? normaliseInterests(selectedProfile.interests)
-    : normaliseInterests(selectedUser?.interests);
+  const modalEnglishLevel =
+    selectedFriendDetail?.englishLevel ??
+    selectedProfile?.englishLevel ??
+    selectedUser?.englishLevel ??
+    "";
+  const modalDescription =
+    selectedFriendDetail?.description ??
+    selectedProfile?.description ??
+    selectedUser?.description ??
+    "";
+  const modalInterests = selectedFriendDetail
+    ? normaliseInterests(selectedFriendDetail.interests)
+    : selectedProfile
+      ? normaliseInterests(selectedProfile.interests)
+      : normaliseInterests(selectedUser?.interests);
   const modalDisplayName =
     (modalName ? `${modalNickname} (${modalName})` : modalNickname) ||
     selectedUser?.nickname ||
@@ -277,6 +329,10 @@ export default function FindPage() {
   const modalCountryDisplay = modalCountry || "-";
   const modalEnglishLevelDisplay = modalEnglishLevel || "-";
   const modalDescriptionDisplay = modalDescription || "소개 정보가 아직 없습니다.";
+  const modalAvatarSrc =
+    selectedFriendDetail?.profileImageUrl && selectedFriendDetail.profileImageUrl.length > 0
+      ? selectedFriendDetail.profileImageUrl
+      : getAvatar(modalNickname || selectedUser?.nickname || "member");
   const resolveIsOnline = (user?: MemberListItem | null) => {
     if (!user) {
       return undefined;
@@ -286,6 +342,8 @@ export default function FindPage() {
   };
 
   const modalPresence = getPresenceMeta(resolveIsOnline(selectedUser));
+  const isFriendDetailPending = isFriendSelection && (isFriendDetailLoading || isFriendDetailFetching);
+  const friendDetailErrorMessage = isFriendSelection && selectedFriendDetailError ? selectedFriendDetailError.message : null;
   const isProfilePending = Boolean(selectedUser) && (isProfileLoading || isProfileFetching);
   const hasIncomingFriendRequest = Boolean(
     opponentPendingRequestId ??
@@ -505,7 +563,7 @@ export default function FindPage() {
     return null;
   };
 
-  const renderMemberGrid = (list: MemberListItem[]) => (
+  const renderMemberGrid = (list: MemberListItem[], source: "members" | "friends") => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {list.map((user) => {
         const presence = getPresenceMeta(resolveIsOnline(user));
@@ -516,7 +574,10 @@ export default function FindPage() {
           <div
             key={user.id}
             className="bg-gray-800 border border-gray-600 rounded-lg p-6 hover:border-emerald-500 transition-all duration-300 cursor-pointer"
-            onClick={() => setSelectedUser(user)}
+            onClick={() => {
+              setSelectedSource(source);
+              setSelectedUser(user);
+            }}
           >
             <div className="flex items-center mb-4">
               <div className="relative w-16 h-16">
@@ -645,7 +706,7 @@ export default function FindPage() {
     return (
       <>
         {renderOnlineFilter}
-        {renderMemberGrid(members)}
+        {renderMemberGrid(members, "members")}
         <div className="flex items-center justify-between mt-6">
           <button
             type="button"
@@ -706,7 +767,7 @@ export default function FindPage() {
 
     return (
       <>
-        {renderMemberGrid(friendMembers)}
+        {renderMemberGrid(friendMembers, "friends")}
         <div className="flex items-center justify-between mt-6">
           <button
             type="button"
@@ -816,7 +877,7 @@ export default function FindPage() {
                   <div className="flex items-center">
                     <div className="relative w-20 h-20">
                       <Image
-                        src={getAvatar(modalNickname || selectedUser.nickname)}
+                        src={modalAvatarSrc}
                         alt={modalDisplayName || selectedUser.nickname || "회원 아바타"}
                         width={80}
                         height={80}
@@ -836,12 +897,22 @@ export default function FindPage() {
                       <div className="mt-3 flex flex-wrap items-center gap-2">
                         {renderFriendshipStatus()}
                       </div>
+                      {isFriendDetailPending && (
+                        <p className="mt-2 text-xs text-gray-300">친구 상세 정보를 불러오는 중입니다...</p>
+                      )}
+                      {friendDetailErrorMessage && (
+                        <p className="mt-2 text-xs text-red-400">
+                          친구 상세 정보를 불러오지 못했습니다.
+                          {friendDetailErrorMessage ? ` (${friendDetailErrorMessage})` : ""}
+                        </p>
+                      )}
                     </div>
                   </div>
                   <button
                     onClick={() => {
                       skipAutoSelectRef.current = true;
                       setSelectedUser(null);
+                      setSelectedSource(null);
                       const params = new URLSearchParams(searchParams.toString());
                       if (params.has("memberId")) {
                         params.delete("memberId");
