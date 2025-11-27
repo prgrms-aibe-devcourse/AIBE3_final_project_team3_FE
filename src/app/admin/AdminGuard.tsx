@@ -1,20 +1,23 @@
 "use client";
 
-import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useLoginStore } from "@/global/stores/useLoginStore";
 
 export default function AdminGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const { role } = useLoginStore();
+  const { role, hasHydrated } = useLoginStore();
 
-  useEffect(() => {
-    if (role !== "ROLE_ADMIN") {
-      router.replace("/");
-    }
-  }, [role]);
+  // 1) hydration 끝날 때까지 화면 숨기기
+  if (!hasHydrated) {
+    return <div className="min-h-screen" />;
+  }
 
-  if (!role || role !== "ROLE_ADMIN") return null;
+  // 2) 관리자 아니면 홈으로 보냄
+  if (role !== "ROLE_ADMIN") {
+    router.replace("/");
+    return null;
+  }
 
+  // 3) 최종적으로 children 렌더링
   return <>{children}</>;
 }

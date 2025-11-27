@@ -109,6 +109,5 @@ export default function GameListPage() {
         </div>
       </main>
       </AdminGuard> 
-
   );
 }
