@@ -33,8 +33,10 @@ export default function GameListPage() {
   const pageNumbers = Array.from({ length: totalPages }, (_, i) => i);
 
   return (
-    <main className="max-w-6xl mx-auto">
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+     <AdminGuard>
+      <main className="max-w-6xl mx-auto">
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+
 
         {/* Header */}
         <div className="p-4 bg-gray-50 border-b text-lg font-bold">
@@ -104,8 +106,9 @@ export default function GameListPage() {
             </button>
           ))}
         </div>
+        </div>
+      </main>
+      </AdminGuard> 
 
-      </div>
-    </main>
   );
 }
