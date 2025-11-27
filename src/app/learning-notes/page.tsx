@@ -12,6 +12,7 @@ import {
 // ========================================================
 // Tag Normalizer
 // ========================================================
+
 function normalizeTag(tag: string) {
   const t = tag.toUpperCase();
   if (t.includes("GRAMMAR")) return "Grammar";
@@ -23,6 +24,7 @@ function normalizeTag(tag: string) {
 // ========================================================
 // NoteCard Component
 // ========================================================
+
 function NoteCard({
   note,
   isCompleted,
@@ -58,20 +60,16 @@ function NoteCard({
               {tag}
             </span>
 
-            {/* 오류 */}
+            {/* 문제 */}
             <p className="text-sm mb-1">
               <span className="text-gray-600">오류: </span>
-              <span className="text-red-600 font-medium">
-                {fb.problem}
-              </span>
+              <span className="text-red-600 font-medium">{fb.problem}</span>
             </p>
 
             {/* 수정 */}
             <p className="text-sm mb-1">
               <span className="text-gray-600">수정: </span>
-              <span className="text-green-600 font-medium">
-                {fb.correction}
-              </span>
+              <span className="text-green-600 font-medium">{fb.correction}</span>
             </p>
 
             {/* 설명 */}
@@ -86,7 +84,6 @@ function NoteCard({
 
         {/* ---------- Right Buttons ---------- */}
         <div className="flex flex-col justify-center items-center gap-2 ml-4 mt-6">
-          {/* 완료 버튼 */}
           <button
             onClick={() => onToggleCompletion(fb.id, fb.marked)}
             className={`w-10 h-10 rounded-lg flex items-center justify-center ${
@@ -98,7 +95,6 @@ function NoteCard({
             {isCompleted ? "✓" : "○"}
           </button>
 
-          {/* 펼치기 버튼 */}
           <button
             onClick={() => setIsExpanded(!isExpanded)}
             className="w-10 h-10 rounded-lg flex items-center justify-center text-gray-500 hover:bg-gray-100"
@@ -108,7 +104,6 @@ function NoteCard({
         </div>
       </div>
 
-      {/* ---------- Expanded Section ---------- */}
       {isExpanded && (
         <div className="mt-4 border-t border-gray-300 bg-gray-50 p-4 rounded-md">
           <p className="text-gray-600">
@@ -118,9 +113,7 @@ function NoteCard({
 
           <p className="mt-2">
             <span className="font-semibold text-green-700">수정됨: </span>
-            <span className="text-green-600">
-              {note.note.correctedContent}
-            </span>
+            <span className="text-green-600">{note.note.correctedContent}</span>
           </p>
         </div>
       )}
@@ -128,26 +121,32 @@ function NoteCard({
   );
 }
 
-
 // ========================================================
 // PAGE COMPONENT
-// 상단 UI (Learning Notes 타이틀 + 부제 + 미니게임 버튼) 추가해줌
 // ========================================================
+
 export default function LearningNotesPage() {
   const router = useRouter();
 
-  const [activeTab, setActiveTab] = useState<
-    "Grammar" | "Vocabulary" | "Translation"
-  >("Grammar");
+  const [activeTab, setActiveTab] =
+    useState<"Grammar" | "Vocabulary" | "Translation">("Grammar");
 
-  const [filter, setFilter] = useState<"all" | "completed" | "incomplete">(
-    "all"
+  const [filter, setFilter] =
+    useState<"all" | "completed" | "incomplete">("all");
+
+  const [page, setPage] = useState(0);
+
+  const { data, isLoading, isError } = useLearningNotes(
+    activeTab,
+    filter,
+    page
   );
 
-  const { data, isLoading, isError } = useLearningNotes(activeTab, filter);
   const toggleMutation = useToggleFeedbackMark();
 
-  useEffect(() => {}, [data]);
+  useEffect(() => {
+    setPage(0);
+  }, [activeTab, filter]);
 
   if (isLoading)
     return <div className="p-8 text-gray-700">로딩 중...</div>;
@@ -157,6 +156,11 @@ export default function LearningNotesPage() {
 
   const notes: FlattenFeedbackNote[] = data?.content ?? [];
 
+  const totalPages = data?.totalPages ?? 0;
+  const currentPage = data?.number ?? 0;
+
+  const pageNumbers = Array.from({ length: totalPages }, (_, i) => i);
+
   const onToggle = (id: number, marked: boolean) => {
     toggleMutation.mutate({ feedbackId: id, mark: !marked });
   };
@@ -164,11 +168,10 @@ export default function LearningNotesPage() {
   return (
     <div className="p-8 min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="max-w-4xl mx-auto">
-
-        {/* ⭐⭐⭐⭐⭐ 여기 전체 블록이 새로 추가된 부분 ⭐⭐⭐⭐⭐ */}
         <h1 className="text-4xl font-bold text-gray-900 mb-2">
           Learning Notes
         </h1>
+
         <p className="text-gray-600 mb-4">
           AI 피드백을 받은 학습 노트들을 정리해보세요
         </p>
@@ -182,6 +185,7 @@ export default function LearningNotesPage() {
           </button>
         </div>
 
+        {/* 탭 */}
         <div className="flex justify-between mb-6">
           <div className="flex gap-3">
             {["Grammar", "Vocabulary", "Translation"].map((t) => (
@@ -200,24 +204,27 @@ export default function LearningNotesPage() {
           </div>
 
           <div className="flex gap-3">
-            {[{ key: "all", label: "전체" }, { key: "completed", label: "완료" }, { key: "incomplete", label: "미완료" }].map(
-              (f) => (
-                <button
-                  key={f.key}
-                  onClick={() => setFilter(f.key as any)}
-                  className={`px-4 py-2 rounded-md ${
-                    filter === f.key
-                      ? "bg-green-600 text-white"
-                      : "bg-white text-gray-700"
-                  }`}
-                >
-                  {f.label}
-                </button>
-              )
-            )}
+            {[
+              { key: "all", label: "전체" },
+              { key: "completed", label: "완료" },
+              { key: "incomplete", label: "미완료" },
+            ].map((f) => (
+              <button
+                key={f.key}
+                onClick={() => setFilter(f.key as any)}
+                className={`px-4 py-2 rounded-md ${
+                  filter === f.key
+                    ? "bg-green-600 text-white"
+                    : "bg-white text-gray-700"
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
           </div>
         </div>
 
+        {/* 카드 리스트 */}
         <div className="space-y-4">
           {notes.length === 0 ? (
             <div className="p-6 bg-white border rounded-md text-gray-600">
@@ -233,6 +240,23 @@ export default function LearningNotesPage() {
               />
             ))
           )}
+        </div>
+
+        {/* 페이지네이션 */}
+        <div className="flex justify-center gap-2 mt-6">
+          {pageNumbers.map((p) => (
+            <button
+              key={p}
+              onClick={() => setPage(p)}
+              className={`px-3 py-1 rounded text-sm ${
+                p === currentPage
+                  ? "bg-indigo-600 text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              {p + 1}
+            </button>
+          ))}
         </div>
       </div>
     </div>
