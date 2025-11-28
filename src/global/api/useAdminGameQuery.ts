@@ -59,8 +59,12 @@ export function useSentenceGameNoteQuery(page: number) {
 
 // 문장 등록 훅
 export function useSentenceGameCreateMutation() {
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: createSentenceGame,
+    onSuccess: () => {
+      qc.invalidateQueries(["sentenceGameList"]); 
+    },
   });
 }
 
