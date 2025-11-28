@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useParams } from "next/navigation";
 import { useChatMessagesQuery, useGetDirectChatRoomsQuery, useGetGroupChatRoomsQuery, useGetAiChatRoomsQuery } from "@/global/api/useChatQuery";
+import { useQueryClient } from "@tanstack/react-query";
 import { getStompClient, connect } from "@/global/stomp/stompClient";
 import { useLoginStore } from "@/global/stores/useLoginStore";
 import { MessageResp, DirectChatRoomResp, GroupChatRoomResp, AIChatRoomResp, ReadStatusUpdateEvent, SubscriberCountUpdateResp, UnreadCountUpdateEvent } from "@/global/types/chat.types";
@@ -16,6 +17,7 @@ export default function ChatRoomPage() {
 
   const member = useLoginStore((state) => state.member);
   const { accessToken } = useLoginStore.getState();
+  const queryClient = useQueryClient();
 
   // Fetch room lists directly
   const { data: directRoomsData } = useGetDirectChatRoomsQuery();
@@ -33,6 +35,15 @@ export default function ChatRoomPage() {
   const [messages, setMessages] = useState<MessageResp[]>([]);
   const [subscriberCount, setSubscriberCount] = useState<number>(0);
   const [totalMemberCount, setTotalMemberCount] = useState<number>(0);
+
+  // When message data is successfully loaded, it means markAsReadOnEnter was called on the backend.
+  // We can now invalidate the room list query to update the unread count badge.
+  useEffect(() => {
+    if (data) {
+      console.log('[Query Invalidation] Messages loaded, invalidating chatRooms query to update unread count.');
+      queryClient.invalidateQueries({ queryKey: ['chatRooms', chatRoomType] });
+    }
+  }, [data, chatRoomType, queryClient]);
 
   // Find room details from API data
   const roomDetails = useMemo(() => {

@@ -16,6 +16,7 @@ export interface DirectChatRoomResp {
   id: number;
   user1: ChatRoomMember;
   user2: ChatRoomMember;
+  unreadCount: number;
 }
 
 export interface GroupChatRoomResp {
@@ -28,6 +29,7 @@ export interface GroupChatRoomResp {
   createdAt: string;
   ownerId: number;
   members: ChatRoomMember[];
+  unreadCount: number;
 }
 
 export interface JoinGroupChatReq {

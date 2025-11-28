@@ -44,7 +44,7 @@ export default function ChatLayout({
         // TODO: Backend should provide profileImageUrl in the DirectChatRoomResp > ChatRoomMember type.
         avatar: (partner as any).profileImageUrl,
         type: 'direct',
-        unreadCount: 0,
+        unreadCount: room.unreadCount,
         lastMessage: '대화를 시작해보세요.',
         lastMessageTime: '',
       };
@@ -56,7 +56,7 @@ export default function ChatLayout({
         name: room.name,
         avatar: '/img/group-chat-fallback.png',
         type: 'group',
-        unreadCount: 0,
+        unreadCount: room.unreadCount,
         lastMessage: room.description || '그룹 채팅방입니다.',
         lastMessageTime: '',
       };
