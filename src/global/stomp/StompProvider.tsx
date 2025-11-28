@@ -1,7 +1,6 @@
 "use client";
 
 import type { IMessage, StompSubscription } from "@stomp/stompjs";
-import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { normaliseNotificationPayload } from "@/global/lib/notifications";
@@ -13,13 +12,21 @@ const HEARTBEAT_INTERVAL_MS = 30_000;
 const HEARTBEAT_DESTINATION = "/app/presence/heartbeat";
 
 const StompProvider = ({ children }: { children: React.ReactNode }) => {
-  const queryClient = useQueryClient();
   const { accessToken, member } = useLoginStore();
   const memberIdentifier = (() => {
-    if (member && typeof (member as Record<string, unknown>).memberId === "number") {
-      return (member as Record<string, unknown>).memberId as number;
+    if (!member) {
+      return null;
     }
-    return member?.memberid ?? null;
+
+    if (typeof (member as { memberId?: unknown }).memberId === "number") {
+      return (member as { memberId?: number }).memberId ?? null;
+    }
+
+    if (typeof member.id === "number") {
+      return member.id;
+    }
+
+    return null;
   })();
   const [isStompConnected, setIsStompConnected] = useState(false);
   const roomSubscriptionRef = useRef<StompSubscription | null>(null);
@@ -116,17 +123,14 @@ const StompProvider = ({ children }: { children: React.ReactNode }) => {
       return;
     }
 
-    console.log(`Subscribing to /topic/user/${memberIdentifier}/rooms`);
+    console.log(`STOMP connected for member ${memberIdentifier}, subscribing to notifications only.`);
 
     unsubscribeAll();
 
-    roomSubscriptionRef.current = client.subscribe(
-      `/topic/user/${memberIdentifier}/rooms`,
-      (message) => {
-        console.log("Received new room info:", message.body);
-        queryClient.invalidateQueries({ queryKey: ["chatRooms"] });
-      }
-    );
+    // Rooms topic subscription intentionally disabled: backend currently closes the
+    // entire session when we subscribe there, which prevents notification delivery.
+    // Re-enable once the broker issue is resolved.
+    roomSubscriptionRef.current = null;
 
     const handleNotification = (message: IMessage) => {
       try {
@@ -152,7 +156,7 @@ const StompProvider = ({ children }: { children: React.ReactNode }) => {
     return () => {
       unsubscribeAll();
     };
-  }, [isStompConnected, memberIdentifier, prependNotification, queryClient, unsubscribeAll]);
+  }, [isStompConnected, memberIdentifier, prependNotification, unsubscribeAll]);
 
   // Global handler for logout
   useEffect(() => {
