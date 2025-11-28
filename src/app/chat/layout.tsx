@@ -94,23 +94,19 @@ export default function ChatLayout({
 
   const handleSetActiveTab = (tab: "direct" | "group" | "ai") => {
     setActiveTab(tab);
-    const firstRoomInTab = rooms[tab][0];
-    if (firstRoomInTab) {
-      handleSetSelectedRoom(firstRoomInTab.id);
-    } else {
-      handleSetSelectedRoom(null);
-    }
+    setSelectedRoomId(null);
+    router.push('/chat');
   };
   
   // Ensure a room is selected on initial load if there isn't one
-  useEffect(() => {
-    if (!selectedRoomId && rooms[activeTab].length > 0) {
-      const firstRoomId = rooms[activeTab][0].id;
-      const [type, actualId] = firstRoomId.split('-'); // Split here
-      setSelectedRoomId(firstRoomId);
-      router.replace(`/chat/${type}/${actualId}`); // Use split parts
-    }
-  }, [activeTab, rooms, selectedRoomId, setSelectedRoomId, router]);
+  // useEffect(() => {
+  //   if (!selectedRoomId && rooms[activeTab].length > 0) {
+  //     const firstRoomId = rooms[activeTab][0].id;
+  //     const [type, actualId] = firstRoomId.split('-'); // Split here
+  //     setSelectedRoomId(firstRoomId);
+  //     router.replace(`/chat/${type}/${actualId}`); // Use split parts
+  //   }
+  // }, [activeTab, rooms, selectedRoomId, setSelectedRoomId, router]);
 
 
   return (

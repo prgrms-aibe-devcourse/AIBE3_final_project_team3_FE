@@ -207,6 +207,7 @@ export default function ChatWindow({
   ];
 
   const menuItems = roomDetails.type === 'group' ? groupMenuItems : directMenuItems;
+  const isOwner = member?.memberId === roomDetails?.ownerId;
   // For AI chats, we might want a different menu or none at all
   if (roomDetails.type === 'ai') {
     // Example: AI chats only have a leave option
@@ -291,6 +292,16 @@ export default function ChatWindow({
               <div className="text-center text-xs text-gray-500 py-2">대화의 시작입니다.</div>
             )}
             {messages.map((msg) => {
+            if (msg.messageType === 'SYSTEM') {
+              return (
+                <div key={msg.id} className="text-center my-2">
+                  <p className="text-xs text-gray-500 italic px-4 py-1 bg-gray-800 rounded-full inline-block">
+                    {msg.content}
+                  </p>
+                </div>
+              );
+            }
+            
             const isUser = msg.senderId === member?.memberId;
             return (
               <div key={msg.id} className={`flex items-end gap-2 ${isUser ? "justify-end" : "justify-start"}`}>
@@ -369,9 +380,11 @@ export default function ChatWindow({
         <MembersModal
           isOpen={isMembersModalOpen}
           onClose={() => setIsMembersModalOpen(false)}
+          roomId={roomDetails.id}
           members={roomDetails.members || []}
           ownerId={roomDetails.ownerId || 0}
           currentUserId={member?.memberId || 0}
+          isOwner={isOwner}
         />
       )}
     </main>

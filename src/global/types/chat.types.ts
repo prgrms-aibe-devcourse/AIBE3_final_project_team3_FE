@@ -1,6 +1,7 @@
 export interface ChatRoomMember {
   id: number;
   nickname: string;
+  isFriend: boolean;
 }
 
 export interface CreateGroupChatReq {

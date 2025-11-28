@@ -53,6 +53,7 @@ export default function ChatSidebar({
   }) => (
     <button
       onClick={() => {
+        router.push('/chat');
         setActiveTab(tabName);
         setIsDropdownOpen(false);
       }}
@@ -116,6 +117,13 @@ export default function ChatSidebar({
           </div>
         </div>
 
+        {/* Tabs */}
+        <div className="flex-shrink-0 bg-gray-900 border-b border-gray-700 grid grid-cols-3">
+          <TabButton tabName="direct" label="1:1 Chat" Icon={MessageSquare} />
+          <TabButton tabName="group" label="Group Chat" Icon={Users} />
+          <TabButton tabName="ai" label="AI Chat" Icon={Bot} />
+        </div>
+
         {/* Room List */}
         <div className="flex-1 overflow-y-auto">
           <div className="p-2">
@@ -171,13 +179,6 @@ export default function ChatSidebar({
               );
             })}
           </div>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex-shrink-0 bg-gray-900 border-t border-gray-700 grid grid-cols-3">
-          <TabButton tabName="direct" label="1:1 Chat" Icon={MessageSquare} />
-          <TabButton tabName="group" label="Group Chat" Icon={Users} />
-          <TabButton tabName="ai" label="AI Chat" Icon={Bot} />
         </div>
       </aside>
       <NewGroupChatModal

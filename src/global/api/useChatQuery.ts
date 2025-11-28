@@ -351,3 +351,67 @@ export const useUploadFileMutation = () => {
     },
   });
 };
+
+// --- Member Management Mutations ---
+
+interface KickMemberVariables {
+  roomId: number;
+  memberId: number;
+}
+
+const kickMember = async ({ roomId, memberId }: KickMemberVariables): Promise<void> => {
+  const response = await apiClient.DELETE("/api/v1/chats/rooms/{roomId}/members/{memberId}", {
+    params: {
+      path: { roomId, memberId },
+    },
+  });
+  await unwrap(response);
+};
+
+export const useKickMemberMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, KickMemberVariables>({
+    mutationFn: kickMember,
+    onSuccess: (_, variables) => {
+      // Invalidate queries related to group chat rooms to refetch member lists
+      queryClient.invalidateQueries({ queryKey: ["chatRooms", "group"] });
+      // Optionally, you can also invalidate the specific room's messages if needed
+      // queryClient.invalidateQueries({ queryKey: ["chatMessages", variables.roomId] });
+      alert("멤버를 강퇴했습니다.");
+    },
+    onError: (error) => {
+      console.error("Failed to kick member:", error);
+      alert(`멤버 강퇴에 실패했습니다: ${error.message}`);
+    },
+  });
+};
+
+interface TransferOwnershipVariables {
+  roomId: number;
+  newOwnerId: number;
+}
+
+const transferOwnership = async ({ roomId, newOwnerId }: TransferOwnershipVariables): Promise<void> => {
+  const response = await apiClient.PATCH("/api/v1/chats/rooms/{roomId}/owner", {
+    params: {
+      path: { roomId },
+    },
+    body: { newOwnerId },
+  });
+  await unwrap(response);
+};
+
+export const useTransferOwnershipMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, TransferOwnershipVariables>({
+    mutationFn: transferOwnership,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["chatRooms", "group"] });
+      alert("방장을 위임했습니다.");
+    },
+    onError: (error) => {
+      console.error("Failed to transfer ownership:", error);
+      alert(`방장 위임에 실패했습니다: ${error.message}`);
+    },
+  });
+};

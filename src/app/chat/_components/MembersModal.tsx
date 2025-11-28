@@ -1,17 +1,44 @@
 "use client";
 
-import { Users, UserPlus, MessageSquare, Shield, ShieldAlert } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Users, UserPlus, MessageSquare, Shield, ShieldAlert, MoreVertical, UserX, Crown } from "lucide-react";
 import { ChatRoomMember } from "@/global/types/chat.types";
+import { useKickMemberMutation, useTransferOwnershipMutation, useCreateDirectChat } from "@/global/api/useChatQuery";
+import { useSendFriendRequest } from "@/global/api/useFriendshipMutation";
 
 interface MembersModalProps {
   isOpen: boolean;
   onClose: () => void;
+  roomId: number;
   members: ChatRoomMember[];
   ownerId: number;
   currentUserId: number;
+  isOwner: boolean;
 }
 
-export default function MembersModal({ isOpen, onClose, members, ownerId, currentUserId }: MembersModalProps) {
+export default function MembersModal({ isOpen, onClose, roomId, members, ownerId, currentUserId, isOwner }: MembersModalProps) {
+  const [openMenuId, setOpenMenuId] = useState<number | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const { mutate: kickMember } = useKickMemberMutation();
+  const { mutate: transferOwnership } = useTransferOwnershipMutation();
+  const { mutate: createDirectChat } = useCreateDirectChat();
+  const { mutate: sendFriendRequest } = useSendFriendRequest();
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setOpenMenuId(null);
+      }
+    };
+    if (openMenuId !== null) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [openMenuId]);
+
   if (!isOpen) return null;
 
   // Sort members to show the current user first, then by nickname
@@ -21,9 +48,36 @@ export default function MembersModal({ isOpen, onClose, members, ownerId, curren
     return a.nickname.localeCompare(b.nickname);
   });
 
-  const handleActionClick = (action: string, memberName: string) => {
-    // TODO: Implement actual actions
-    alert(`${memberName}님에게 ${action} 액션을 실행합니다. (구현 필요)`);
+  const handleActionClick = (action: string, member: ChatRoomMember) => {
+    setOpenMenuId(null); // Close menu after action
+    
+    switch (action) {
+      case '강퇴하기':
+        if (window.confirm(`'${member.nickname}'님을 정말로 강퇴하시겠습니까?`)) {
+          kickMember({ roomId, memberId: member.id });
+        }
+        break;
+      case '방장 위임':
+        if (window.confirm(`'${member.nickname}'님에게 방장을 위임하시겠습니까? 이 작업은 되돌릴 수 없습니다.`)) {
+          transferOwnership({ roomId, newOwnerId: member.id });
+        }
+        break;
+      case '1:1대화':
+        onClose(); // Close the modal first
+        createDirectChat({ partnerId: member.id });
+        break;
+      case '친구추가':
+        sendFriendRequest({ receiverId: member.id });
+        break;
+      // TODO: Implement other actions
+      default:
+        alert(`${member.nickname}님에게 ${action} 액션을 실행합니다. (구현 필요)`);
+        break;
+    }
+  };
+
+  const toggleMenu = (memberId: number) => {
+    setOpenMenuId(openMenuId === memberId ? null : memberId);
   };
 
   return (
@@ -49,7 +103,6 @@ export default function MembersModal({ isOpen, onClose, members, ownerId, curren
             <div key={member.id} className="group flex items-center justify-between p-2 rounded-lg hover:bg-gray-700/50">
               <div className="flex items-center">
                 <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-lg font-semibold text-white">
-                  {/* TODO: This should be replaced with real profile images when available */}
                   {member.nickname.charAt(0).toUpperCase()}
                 </div>
                 <p className="ml-4 font-medium text-gray-200">
@@ -59,19 +112,51 @@ export default function MembersModal({ isOpen, onClose, members, ownerId, curren
                 </p>
               </div>
               {member.id !== currentUserId && (
-                <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                  <button onClick={() => handleActionClick('친구추가', member.nickname)} className="p-2 text-gray-400 hover:text-white hover:bg-gray-600 rounded-full transition-colors">
-                    <UserPlus size={18} />
-                  </button>
-                  <button onClick={() => handleActionClick('1:1대화', member.nickname)} className="p-2 text-gray-400 hover:text-white hover:bg-gray-600 rounded-full transition-colors">
+                <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  {!member.isFriend && (
+                    <button onClick={() => handleActionClick('친구추가', member)} className="p-2 text-gray-400 hover:text-white hover:bg-gray-600 rounded-full transition-colors" title="친구 추가">
+                      <UserPlus size={18} />
+                    </button>
+                  )}
+                  <button onClick={() => handleActionClick('1:1대화', member)} className="p-2 text-gray-400 hover:text-white hover:bg-gray-600 rounded-full transition-colors" title="1:1 대화">
                     <MessageSquare size={18} />
                   </button>
-                  <button onClick={() => handleActionClick('차단하기', member.nickname)} className="p-2 text-gray-400 hover:text-red-400 hover:bg-gray-600 rounded-full transition-colors">
-                    <Shield size={18} />
-                  </button>
-                  <button onClick={() => handleActionClick('신고하기', member.nickname)} className="p-2 text-gray-400 hover:text-red-400 hover:bg-gray-600 rounded-full transition-colors">
-                    <ShieldAlert size={18} />
-                  </button>
+                  <div className="relative" ref={openMenuId === member.id ? menuRef : null}>
+                    <button onClick={() => toggleMenu(member.id)} className="p-2 text-gray-400 hover:text-white hover:bg-gray-600 rounded-full transition-colors" title="더 보기">
+                      <MoreVertical size={18} />
+                    </button>
+                    {openMenuId === member.id && (
+                      <div className="absolute right-0 mt-2 w-48 bg-gray-900 border border-gray-700 rounded-md shadow-lg z-20">
+                        <ul className="py-1">
+                          <li>
+                            <button onClick={() => handleActionClick('차단하기', member)} className="w-full text-left flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-red-500/20 hover:text-red-400">
+                              <Shield size={16} className="mr-3" /> 차단하기
+                            </button>
+                          </li>
+                          <li>
+                            <button onClick={() => handleActionClick('신고하기', member)} className="w-full text-left flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-red-500/20 hover:text-red-400">
+                              <ShieldAlert size={16} className="mr-3" /> 신고하기
+                            </button>
+                          </li>
+                          {isOwner && (
+                            <>
+                              <div className="my-1 h-px bg-gray-700" />
+                              <li>
+                                <button onClick={() => handleActionClick('강퇴하기', member)} className="w-full text-left flex items-center px-4 py-2 text-sm text-red-400 hover:bg-red-500/20">
+                                  <UserX size={16} className="mr-3" /> 강퇴하기
+                                </button>
+                              </li>
+                              <li>
+                                <button onClick={() => handleActionClick('방장 위임', member)} className="w-full text-left flex items-center px-4 py-2 text-sm text-yellow-400 hover:bg-yellow-500/20">
+                                  <Crown size={16} className="mr-3" /> 방장 위임
+                                </button>
+                              </li>
+                            </>
+                          )}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>

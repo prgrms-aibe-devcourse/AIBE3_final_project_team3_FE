@@ -59,6 +59,7 @@ export default function ChatRoomPage() {
           type: chatRoomType,
           avatar: '👥',
           members: room.members,
+          ownerId: room.ownerId,
         };
       }
     } else if (chatRoomType === 'ai' && aiRoomsData) {
