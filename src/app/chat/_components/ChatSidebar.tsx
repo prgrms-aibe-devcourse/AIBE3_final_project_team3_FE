@@ -135,9 +135,14 @@ export default function ChatSidebar({
                   }`}
                 >
                   <div className="relative">
-                    <div className="w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center text-xl">
-                      {room.avatar}
-                    </div>
+                    {/* TODO: This assumes room.avatar is a full, valid URL from the backend. */}
+                    {room.avatar ? (
+                      <img src={room.avatar} alt={room.name} className="w-12 h-12 rounded-full object-cover" />
+                    ) : (
+                      <div className="w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center text-xl font-semibold text-white">
+                        {room.name.charAt(0).toUpperCase()}
+                      </div>
+                    )}
                     {room.type === "direct" && (
                       <span className="absolute bottom-0 right-0 block h-3 w-3 rounded-full bg-green-500 border-2 border-gray-800"></span>
                     )}

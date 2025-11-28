@@ -152,14 +152,15 @@ const customFetch: typeof fetch = async (input, init) => {
     return fetch(request);
   };
 
-  const initialRequest = buildRequest(input, init, accessToken ?? null);
-
-  // 재발급 요청 자체에는 인터셉터를 다시 적용하지 않습니다.
-  if (initialRequest.url.endsWith("/api/v1/auth/reissue")) {
-    return fetch(initialRequest);
+  // Check if this is a reissue request to avoid intercepting it
+  const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+  if (url.endsWith("/api/v1/auth/reissue")) {
+    const request = buildRequest(input, init, accessToken ?? null);
+    return fetch(request);
   }
 
-  let response = await fetch(initialRequest);
+  // Perform initial fetch
+  let response = await performFetch(accessToken ?? null);
 
   if (response.status !== 401) {
     return response;

@@ -41,7 +41,8 @@ export default function ChatLayout({
       return {
         id: `direct-${room.id}`,
         name: partner.nickname,
-        avatar: partner.profileImageUrl || '/img/profile-fallback.png',
+        // TODO: Backend should provide profileImageUrl in the DirectChatRoomResp > ChatRoomMember type.
+        avatar: (partner as any).profileImageUrl,
         type: 'direct',
         unreadCount: 0,
         lastMessage: '대화를 시작해보세요.',
@@ -65,7 +66,8 @@ export default function ChatLayout({
       return {
         id: `ai-${room.id}`,
         name: room.name,
-        avatar: '/img/ai-chat-fallback.png',
+        // TODO: Backend should provide a representative image URL for AI chats.
+        avatar: undefined,
         type: 'ai',
         unreadCount: 0,
         lastMessage: room.aiPersona || 'AI 튜터와 대화해보세요.',
@@ -112,7 +114,7 @@ export default function ChatLayout({
 
 
   return (
-    <div className="h-screen w-full lg:w-3/5 lg:mx-auto">
+    <div className="h-[calc(100vh-4rem)] w-full lg:w-3/5 lg:mx-auto">
       <div className="flex h-full bg-gray-900 text-white rounded-xl shadow-2xl overflow-hidden">
         <ChatSidebar
           activeTab={activeTab}

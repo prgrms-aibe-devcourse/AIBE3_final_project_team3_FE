@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import { useCreateGroupChat } from "@/global/api/useChatQuery";
 import { useLoginStore } from "@/global/stores/useLoginStore";
-import { useChatStore } from "@/global/stores/useChatStore";
-import { CreateGroupChatReq, ChatRoom } from "@/global/types/chat.types";
+import { CreateGroupChatReq } from "@/global/types/chat.types";
 
 type NewGroupChatModalProps = {
   isOpen: boolean;
@@ -25,8 +24,7 @@ export default function NewGroupChatModal({
 
   const modalRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
-  const addRoom = useChatStore((state) => state.addRoom);
-  const { mutate: createGroupChat, isLoading, isError, error } = useCreateGroupChat();
+  const { mutate: createGroupChat, isPending } = useCreateGroupChat();
   const member = useLoginStore((state) => state.member);
 
   useEffect(() => {
@@ -70,23 +68,6 @@ export default function NewGroupChatModal({
       onSuccess: (newRoomData) => {
         alert("그룹 채팅방이 성공적으로 생성되었습니다.");
 
-        // Create a new ChatRoom object for the store
-        const newRoomForStore: ChatRoom = {
-          id: `group-${newRoomData.id}`,
-          name: newRoomData.roomName,
-          avatar: '👥', // Default avatar, can be improved
-          type: 'group',
-          lastMessage: '새로운 채팅방이 생성되었습니다.',
-          lastMessageTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          unreadCount: 0,
-        };
-
-        // Add the new room to the global store
-        addRoom(newRoomForStore);
-
-        // Navigate to the new chat room
-        router.push(`/chat/group/${newRoomData.id}`);
-        
         // Close modal and reset state
         onClose();
         setTitle("");
@@ -94,6 +75,8 @@ export default function NewGroupChatModal({
         setTopic("언어 교환");
         setUsePassword(false);
         setPassword("");
+
+        // Navigate to the new chat room (router.push is already handled in useCreateGroupChat)
       },
       onError: (err) => {
         console.error("그룹 채팅방 생성 실패:", err);
@@ -226,9 +209,9 @@ export default function NewGroupChatModal({
             <button
               type="submit"
               className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
-              disabled={isLoading}
+              disabled={isPending}
             >
-              {isLoading ? "Creating..." : "Create Room"}
+              {isPending ? "Creating..." : "Create Room"}
             </button>
           </div>
         </form>
