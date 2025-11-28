@@ -4,11 +4,11 @@ import { API_BASE_URL } from "@/global/consts";
 import { normaliseCountryValue } from "@/global/lib/countries";
 import { useLoginStore } from "@/global/stores/useLoginStore";
 import { MemberPresenceSummaryResp } from "@/global/types/auth.types";
-import { MemberProfile, MemberProfileUpdateReq } from "@/global/types/member.types";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { FriendDetail, FriendSummary, MemberProfile, MemberProfileUpdateReq } from "@/global/types/member.types";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-type MemberListPage = {
-    items: MemberPresenceSummaryResp[];
+type PaginatedListPage<T> = {
+    items: T[];
     totalPages: number | null;
     totalElements: number | null;
     pageIndex: number;
@@ -17,7 +17,7 @@ type MemberListPage = {
     isLast: boolean;
 };
 
-const EMPTY_MEMBER_LIST_PAGE: MemberListPage = {
+const createEmptyListPage = <T>(): PaginatedListPage<T> => ({
     items: [],
     totalPages: null,
     totalElements: null,
@@ -25,7 +25,10 @@ const EMPTY_MEMBER_LIST_PAGE: MemberListPage = {
     pageSize: 0,
     isFirst: true,
     isLast: true,
-};
+});
+
+type MemberListPage = PaginatedListPage<MemberPresenceSummaryResp>;
+type FriendListPage = PaginatedListPage<FriendSummary>;
 
 const normaliseInteger = (value: unknown, fallback: number | null): number | null => {
     if (typeof value === "number" && Number.isFinite(value)) {
@@ -56,32 +59,32 @@ const asRecord = (value: unknown): Record<string, unknown> | null => {
     return null;
 };
 
-const extractMemberArray = (record: Record<string, unknown>): MemberPresenceSummaryResp[] => {
+const extractItemsArray = <T>(record: Record<string, unknown>): T[] => {
     const candidates = [record.content, record.data, record.items];
 
     for (const candidate of candidates) {
         if (Array.isArray(candidate)) {
-            return candidate as MemberPresenceSummaryResp[];
+            return candidate as T[];
         }
     }
 
     return [];
 };
 
-const extractMembersPayload = (payload: unknown): MemberListPage => {
+const extractPaginatedPayload = <T>(payload: unknown): PaginatedListPage<T> => {
     if (!payload) {
-        return EMPTY_MEMBER_LIST_PAGE;
+        return createEmptyListPage<T>();
     }
 
     const root = asRecord(payload);
     const dataNode = root?.data && asRecord(root.data) ? (root.data as Record<string, unknown>) : root;
 
     if (!dataNode) {
-        return EMPTY_MEMBER_LIST_PAGE;
+        return createEmptyListPage<T>();
     }
 
     const pageableNode = asRecord(dataNode.pageable);
-    const items = extractMemberArray(dataNode);
+    const items = extractItemsArray<T>(dataNode);
     const sizeCandidate = dataNode.size ?? pageableNode?.pageSize;
     const directPageCandidate = normaliseInteger(
         dataNode.page ?? dataNode.pageNumber ?? pageableNode?.page ?? pageableNode?.pageNumber,
@@ -121,6 +124,17 @@ const extractMembersPayload = (payload: unknown): MemberListPage => {
         isFirst,
         isLast: inferredLast,
     };
+};
+
+const unwrapDataNode = <T>(payload: unknown): T => {
+    if (payload && typeof payload === "object" && "data" in payload) {
+        const dataNode = (payload as { data?: unknown }).data;
+        if (dataNode) {
+            return dataNode as T;
+        }
+    }
+
+    return payload as T;
 };
 
 type MemberQueryOptions = {
@@ -167,7 +181,67 @@ const fetchMembers = async (options?: MemberQueryOptions): Promise<MemberListPag
     }
 
     const apiResponse = await response.json();
-    return extractMembersPayload(apiResponse);
+    return extractPaginatedPayload<MemberPresenceSummaryResp>(apiResponse);
+};
+
+const fetchFriends = async (options?: MemberQueryOptions): Promise<FriendListPage> => {
+    const { accessToken } = useLoginStore.getState();
+    const page = normalisePageParam(options?.page, 0);
+    const size = Math.max(normaliseInteger(options?.size, 20) ?? 20, 1);
+    const url = new URL("/api/v1/members/friends", API_BASE_URL);
+    url.searchParams.set("page", String(page));
+    url.searchParams.set("size", String(size));
+
+    const response = await fetch(url.toString(), {
+        method: "GET",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+    });
+
+    if (!response.ok) {
+        throw new Error(`Failed to fetch friends: ${response.status}`);
+    }
+
+    const apiResponse = await response.json();
+    return extractPaginatedPayload<FriendSummary>(apiResponse);
+};
+
+const fetchFriendDetail = async (friendId: number): Promise<FriendDetail> => {
+    if (!Number.isFinite(friendId)) {
+        throw new Error("Invalid friendId");
+    }
+
+    const { accessToken } = useLoginStore.getState();
+    const url = new URL(`/api/v1/members/friends/${friendId}`, API_BASE_URL);
+
+    const response = await fetch(url.toString(), {
+        method: "GET",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+    });
+
+    if (!response.ok) {
+        throw new Error(`Failed to fetch friend detail: ${response.status}`);
+    }
+
+    const apiResponse = await response.json();
+    const detail = unwrapDataNode<FriendDetail>(apiResponse);
+
+    return {
+        ...detail,
+        interests: Array.isArray(detail.interests) ? detail.interests : [],
+        description: typeof detail.description === "string" ? detail.description : "",
+        profileImageUrl:
+            typeof detail.profileImageUrl === "string" && detail.profileImageUrl.length > 0
+                ? detail.profileImageUrl
+                : "",
+    };
 };
 
 export const useMembersQuery = (options?: MemberQueryOptions) => {
@@ -184,6 +258,38 @@ export const useMembersQuery = (options?: MemberQueryOptions) => {
         queryKey: ["members", normalisedOptions],
         queryFn: () => fetchMembers(normalisedOptions),
         enabled: !!accessToken,
+        staleTime: 1000 * 60 * 5,
+        refetchOnWindowFocus: false,
+    });
+};
+
+export const useFriendsQuery = (options?: MemberQueryOptions) => {
+    const { accessToken } = useLoginStore();
+    const page = normalisePageParam(options?.page, 0);
+    const size = Math.max(normaliseInteger(options?.size, 20) ?? 20, 1);
+
+    return useQuery<FriendListPage, Error>({
+        queryKey: ["friends", page, size],
+        queryFn: () => fetchFriends({ page, size }),
+        enabled: !!accessToken,
+        staleTime: 1000 * 60 * 5,
+        refetchOnWindowFocus: false,
+        placeholderData: keepPreviousData,
+    });
+};
+
+export const useFriendDetailQuery = (friendId?: number) => {
+    const { accessToken } = useLoginStore();
+
+    return useQuery<FriendDetail, Error>({
+        queryKey: ["friend-detail", friendId],
+        queryFn: () => {
+            if (typeof friendId !== "number") {
+                throw new Error("friendId is required");
+            }
+            return fetchFriendDetail(friendId);
+        },
+        enabled: !!accessToken && typeof friendId === "number",
         staleTime: 1000 * 60 * 5,
         refetchOnWindowFocus: false,
     });
