@@ -50,11 +50,21 @@ export interface ChatRoomResp {
   members: ChatRoomMember[];
 }
 
+export type MessageReq = {
+  roomId: number;
+  chatRoomType: "DIRECT" | "GROUP" | "AI";
+  content: string;
+  messageType: "TEXT" | "IMAGE" | "FILE";
+  isTranslateEnabled: boolean;
+};
+
 export type MessageResp = {
   id: string;
   senderId: number;
   sender: string;
   content: string;
+  translatedContent?: string;
+  isTranslateEnabled?: boolean;
   createdAt: string; // ISO 8601 형식의 문자열
   messageType: "TEXT" | "IMAGE" | "FILE" | "SYSTEM"; // 백엔드 ChatMessage.MessageType enum 값에 따라
   sequence: number;

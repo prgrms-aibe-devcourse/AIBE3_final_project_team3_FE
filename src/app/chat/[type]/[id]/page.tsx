@@ -7,8 +7,15 @@ import { useQueryClient } from "@tanstack/react-query";
 import { getStompClient, connect } from "@/global/stomp/stompClient";
 import { useLoginStore } from "@/global/stores/useLoginStore";
 import { MessageResp, DirectChatRoomResp, GroupChatRoomResp, AIChatRoomResp, ReadStatusUpdateEvent, SubscriberCountUpdateResp, UnreadCountUpdateEvent } from "@/global/types/chat.types";
-import type { IMessage } from "@stomp/stompjs";
-import ChatWindow from "../../_components/ChatWindow"; // Import the new component
+import type { IMessage, ISubscription } from "@stomp/stompjs";
+import ChatWindow from "../../_components/ChatWindow";
+
+// 번역 완료 및 피드백을 포함하는 메시지 업데이트 타입
+type MessageUpdatePayload = {
+  messageId: string;
+  translatedContent: string;
+  feedback: any[]; // feedback 구조는 나중에 더 구체화할 수 있습니다.
+};
 
 export default function ChatRoomPage() {
   const params = useParams();
@@ -19,11 +26,6 @@ export default function ChatRoomPage() {
   const { accessToken } = useLoginStore.getState();
   const queryClient = useQueryClient();
 
-  // Fetch room lists directly
-  const { data: directRoomsData } = useGetDirectChatRoomsQuery();
-  const { data: groupRoomsData } = useGetGroupChatRoomsQuery();
-  const { data: aiRoomsData } = useGetAiChatRoomsQuery();
-
   const {
     data,
     isLoading,
@@ -32,76 +34,55 @@ export default function ChatRoomPage() {
     hasNextPage,
     isFetchingNextPage,
   } = useChatMessagesQuery(roomId, chatRoomType);
+
+  // 채팅방 목록 데이터를 가져와서 현재 방의 상세 정보를 찾기 위함
+  const { data: directRoomsData } = useGetDirectChatRoomsQuery();
+  const { data: groupRoomsData } = useGetGroupChatRoomsQuery();
+  const { data: aiRoomsData } = useGetAiChatRoomsQuery();
+
   const [messages, setMessages] = useState<MessageResp[]>([]);
   const [subscriberCount, setSubscriberCount] = useState<number>(0);
   const [totalMemberCount, setTotalMemberCount] = useState<number>(0);
 
-  // When message data is successfully loaded, it means markAsReadOnEnter was called on the backend.
-  // We can now invalidate the room list query to update the unread count badge.
   useEffect(() => {
     if (data) {
-      console.log('[Query Invalidation] Messages loaded, invalidating chatRooms query to update unread count.');
       queryClient.invalidateQueries({ queryKey: ['chatRooms', chatRoomType] });
     }
   }, [data, chatRoomType, queryClient]);
 
-  // Find room details from API data
   const roomDetails = useMemo(() => {
     if (!member) return null;
-
+    let room;
     if (chatRoomType === 'direct' && directRoomsData) {
-      const room = directRoomsData.find((r: DirectChatRoomResp) => r.id === roomId);
+      room = directRoomsData.find((r: DirectChatRoomResp) => r.id === roomId);
       if (room) {
         const partner = room.user1.id === member.memberId ? room.user2 : room.user1;
-        return {
-          id: roomId,
-          name: partner.nickname,
-          type: chatRoomType,
-          avatar: '👤',
-          members: [room.user1, room.user2],
-        };
+        return { id: roomId, name: partner.nickname, type: chatRoomType, avatar: '👤', members: [room.user1, room.user2] };
       }
     } else if (chatRoomType === 'group' && groupRoomsData) {
-      const room = groupRoomsData.find((r: GroupChatRoomResp) => r.id === roomId);
-      if (room) {
-        return {
-          id: roomId,
-          name: room.name,
-          type: chatRoomType,
-          avatar: '👥',
-          members: room.members,
-          ownerId: room.ownerId,
-        };
-      }
+      room = groupRoomsData.find((r: GroupChatRoomResp) => r.id === roomId);
+      if (room) return { id: roomId, name: room.name, type: chatRoomType, avatar: '👥', members: room.members, ownerId: room.ownerId };
     } else if (chatRoomType === 'ai' && aiRoomsData) {
-      const room = aiRoomsData.find((r: AIChatRoomResp) => r.id === roomId);
-      if (room) {
-        return {
-          id: roomId,
-          name: room.name,
-          type: chatRoomType,
-          avatar: '🤖',
-          members: [],
-        };
-      }
+      room = aiRoomsData.find((r: AIChatRoomResp) => r.id === roomId);
+      if (room) return { id: roomId, name: room.name, type: chatRoomType, avatar: '🤖', members: [] };
     }
-
     return null;
   }, [chatRoomType, roomId, directRoomsData, groupRoomsData, aiRoomsData, member]);
 
-  // Reset when room changes
+  // roomDetails가 로드되면 총 멤버 수를 설정
   useEffect(() => {
-    console.log(`[Data] Room changed, resetting messages for roomId=${roomId}`);
+    if (roomDetails?.members) {
+      setTotalMemberCount(roomDetails.members.length);
+    }
+  }, [roomDetails]);
+
+  useEffect(() => {
     setMessages([]);
   }, [roomId, chatRoomType]);
 
-  // Load messages from API (flatten all pages from infinite query)
   useEffect(() => {
     if (data?.pages) {
-      const allMessages = data.pages
-        .filter(page => page?.messages)
-        .flatMap(page => page.messages);
-      console.log(`[Data] Loaded ${allMessages.length} messages from ${data.pages.length} pages`);
+      const allMessages = data.pages.filter(page => page?.messages).flatMap(page => page.messages);
       setMessages(allMessages);
     }
   }, [data]);
@@ -109,93 +90,72 @@ export default function ChatRoomPage() {
   useEffect(() => {
     if (!roomId || !member || !chatRoomType || !accessToken) return;
 
-    console.log(`[WebSocket Setup] Starting for roomId=${roomId}, memberId=${member.memberId}, type=${chatRoomType}`);
-
-    let subscription: any = null;
+    const subscriptions: ISubscription[] = [];
     let isCleanedUp = false;
 
-    const setupSubscription = () => {
+    const setupSubscriptions = () => {
+      if (isCleanedUp) return;
+      
       const client = getStompClient();
-      const destination = `/topic/${chatRoomType}/rooms/${roomId}`;
-      console.log(`[WebSocket] Subscribing to: ${destination}`);
-      console.log(`[WebSocket] Client connected: ${client.connected}, Session ID (internal): ${client.webSocket ? 'connected' : 'not connected'}`);
-
-      // 이미 cleanup되었으면 구독하지 않음
-      if (isCleanedUp) {
-        console.log(`[WebSocket] Component unmounted, skipping subscription`);
-        return;
-      }
-
-      subscription = client.subscribe(
-        destination,
-        (message: IMessage) => {
-          const payload = JSON.parse(message.body);
-
-          // 구독자 수 업데이트 이벤트 처리
-          if (payload.subscriberCount !== undefined && payload.totalMemberCount !== undefined) {
-            const countEvent = payload as SubscriberCountUpdateResp;
-            console.log(`[WebSocket] Received subscriber count event:`, countEvent);
-            setSubscriberCount(countEvent.subscriberCount);
-            setTotalMemberCount(countEvent.totalMemberCount);
-          }
-          // UnreadCount 업데이트 이벤트 처리 (서버가 정확한 값 계산해서 전송)
-          else if (payload.updates !== undefined) {
-            const updateEvent = payload as UnreadCountUpdateEvent;
-            console.log(`🔔 [WebSocket UNREAD UPDATE] Received ${updateEvent.updates.length} updates`);
-
-            setMessages((prevMessages) => {
-              // Map을 만들어서 빠른 조회
-              const updateMap = new Map(updateEvent.updates.map(u => [u.messageId, u.unreadCount]));
-
-              return prevMessages.map((msg) => {
-                const newCount = updateMap.get(msg.id);
-                if (newCount !== undefined) {
-                  console.log(`✅ [UNREAD UPDATE] msg ${msg.id} (seq=${msg.sequence}): ${msg.unreadCount} → ${newCount}`);
-                  return { ...msg, unreadCount: newCount };
-                }
-                return msg;
-              });
-            });
-          } else {
-            // 일반 메시지 처리
-            const receivedMessage = payload as MessageResp;
-            console.log(`[WebSocket] Received message:`, receivedMessage);
-            setMessages((prevMessages) => [...prevMessages, receivedMessage]);
-          }
+      
+      // 1. 일반 메시지 및 이벤트 구독
+      const mainDestination = `/topic/${chatRoomType}/rooms/${roomId}`;
+      console.log(`[WebSocket] Subscribing to: ${mainDestination}`);
+      subscriptions.push(client.subscribe(mainDestination, (message: IMessage) => {
+        const payload = JSON.parse(message.body);
+        if (payload.subscriberCount !== undefined) {
+          setSubscriberCount(payload.subscriberCount);
+          setTotalMemberCount(payload.totalMemberCount);
+        } else if (payload.updates !== undefined) {
+          const updateEvent = payload as UnreadCountUpdateEvent;
+          setMessages(prev => {
+            const updateMap = new Map(updateEvent.updates.map(u => [u.messageId, u.unreadCount]));
+            return prev.map(msg => updateMap.has(msg.id) ? { ...msg, unreadCount: updateMap.get(msg.id)! } : msg);
+          });
+        } else {
+          setMessages(prev => [...prev, payload as MessageResp]);
         }
-      );
-      console.log(`[WebSocket] Subscription created for room ${roomId}, subscriptionId=${subscription?.id}`);
+      }));
+
+      // 2. 번역 완료 메시지 구독
+      const updateDestination = `/topic/${chatRoomType}/rooms/${roomId}/message-update`;
+      console.log(`[WebSocket] Subscribing to: ${updateDestination}`);
+      subscriptions.push(client.subscribe(updateDestination, (message: IMessage) => {
+        const payload = JSON.parse(message.body) as MessageUpdatePayload;
+        console.log(`[WebSocket] Received message update:`, payload);
+        setMessages(prev => prev.map(msg => 
+          msg.id === payload.messageId 
+            ? { ...msg, translatedContent: payload.translatedContent, feedback: payload.feedback } 
+            : msg
+        ));
+      }));
+      
+      console.log(`[WebSocket] ${subscriptions.length} subscriptions created for room ${roomId}`);
     };
 
-    connect(accessToken, setupSubscription);
+    connect(accessToken, setupSubscriptions);
 
     return () => {
-      console.log(`[WebSocket Cleanup] Starting cleanup for roomId=${roomId}, memberId=${member.memberId}`);
+      console.log(`[WebSocket Cleanup] Cleaning up for room ${roomId}`);
       isCleanedUp = true;
-      if (subscription) {
-        console.log(`[WebSocket Cleanup] Unsubscribing from room ${roomId}, subscriptionId=${subscription.id}`);
-        subscription.unsubscribe();
-        subscription = null;
-        console.log(`[WebSocket Cleanup] Unsubscribed successfully from room ${roomId}`);
-      } else {
-        console.log(`[WebSocket Cleanup] No subscription to unsubscribe from room ${roomId}`);
-      }
+      subscriptions.forEach(sub => {
+        console.log(`[WebSocket Cleanup] Unsubscribing from subscriptionId=${sub.id}`);
+        sub.unsubscribe();
+      });
     };
   }, [roomId, member, chatRoomType, accessToken]);
 
-  const handleSendMessage = (text: string) => {
-    if (text.trim() === "" || !member) {
-      return;
-    }
+  const handleSendMessage = (message: { text: string; isTranslateEnabled: boolean }) => {
+    if (message.text.trim() === "" || !member) return;
 
     const client = getStompClient();
-
     if (client.connected) {
       const messagePayload = {
         roomId: roomId,
-        content: text,
+        content: message.text,
         messageType: "TEXT",
         chatRoomType: chatRoomType.toUpperCase(),
+        isTranslateEnabled: message.isTranslateEnabled,
       };
       console.log(`[WebSocket] Sending message:`, messagePayload);
       client.publish({
@@ -208,7 +168,6 @@ export default function ChatRoomPage() {
     }
   };
 
-  // The page now only handles logic and passes everything to the ChatWindow component
   return (
     <ChatWindow
       messages={messages}

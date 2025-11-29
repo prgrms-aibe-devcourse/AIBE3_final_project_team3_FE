@@ -1,17 +1,18 @@
 "use client";
 
-import { useRef, useEffect, FormEvent, useLayoutEffect, useState } from "react";
+import { useRef, useEffect, useLayoutEffect, useState } from "react";
 import { MessageResp } from "@/global/types/chat.types";
-import { Loader2, MoreVertical, Phone, Video, File, Image, ShieldAlert, LogOut, Users, Paperclip } from "lucide-react";
+import { Loader2, MoreVertical, Phone, Video, ShieldAlert, LogOut, Users } from "lucide-react";
 import { MemberSummaryResp } from "@/global/types/auth.types";
 import { useLeaveChatRoom, useUploadFileMutation } from "@/global/api/useChatQuery";
-import MembersModal from "./MembersModal"; // Import the new modal component
+import MembersModal from "./MembersModal";
+import MessageInput from "./MessageInput"; // 1. MessageInput 임포트
 
-// Define props for the component
+// 2. onSendMessage 타입 변경
 interface ChatWindowProps {
   messages: MessageResp[];
   member: MemberSummaryResp | null;
-  onSendMessage: (text: string) => void;
+  onSendMessage: (message: { text: string; isTranslateEnabled: boolean }) => void;
   isLoading: boolean;
   error: Error | null;
   roomDetails: {
@@ -19,7 +20,8 @@ interface ChatWindowProps {
     name: string;
     type: string;
     avatar?: string;
-    members?: any[]; // Simplified for now
+    ownerId?: number;
+    members?: any[];
   } | null;
   subscriberCount?: number;
   totalMemberCount?: number;
@@ -45,19 +47,15 @@ export default function ChatWindow({
   const messageContainerRef = useRef<HTMLDivElement>(null);
   const shouldScrollRef = useRef(true);
   const previousScrollHeightRef = useRef<number>(0);
-  
-  // State for dropdown and modals
+
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
 
   const menuRef = useRef<HTMLDivElement>(null);
-  const imageInputRef = useRef<HTMLInputElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { mutate: leaveRoom, isPending: isLeaving } = useLeaveChatRoom();
   const { mutate: uploadFile, isPending: isUploadingFile } = useUploadFileMutation();
 
-  // --- Dropdown Menu Logic ---
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -70,29 +68,25 @@ export default function ChatWindow({
     };
   }, []);
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>, fileType: 'image' | 'file') => {
-    const file = event.target.files?.[0];
+  // 3. MessageInput을 위한 새로운 파일 핸들러
+  const handleFileSelect = (file: File) => {
     if (file && roomDetails) {
+      const messageType = file.type.startsWith("image/") ? "IMAGE" : "FILE";
       uploadFile({
         roomId: roomDetails.id,
         chatRoomType: roomDetails.type,
         file: file,
-        messageType: fileType === 'image' ? 'IMAGE' : 'FILE',
+        messageType: messageType,
       });
-      // Reset the input value to allow selecting the same file again
-      event.target.value = '';
     }
-    setIsMenuOpen(false);
   };
-  
+
   const handleBlockUser = () => {
-    // TODO: Implement block user logic
     alert("사용자를 차단합니다. (구현 필요)");
     setIsMenuOpen(false);
   };
 
   const handleReportUser = () => {
-    // TODO: Implement report user logic
     alert("사용자를 신고합니다. (구현 필요)");
     setIsMenuOpen(false);
   };
@@ -107,10 +101,7 @@ export default function ChatWindow({
     }
     setIsMenuOpen(false);
   };
-  // --- End Dropdown Menu Logic ---
 
-
-  // On initial load or when room changes, scroll to bottom.
   useLayoutEffect(() => {
     if (messageContainerRef.current) {
       messageContainerRef.current.scrollTop = messageContainerRef.current.scrollHeight;
@@ -118,7 +109,6 @@ export default function ChatWindow({
     }
   }, [roomDetails?.id]);
 
-  // After messages update, scroll to bottom only if we were already at the bottom.
   useEffect(() => {
     const container = messageContainerRef.current;
     if (container && shouldScrollRef.current) {
@@ -126,7 +116,6 @@ export default function ChatWindow({
     }
   }, [messages]);
 
-  // Restore scroll position after loading more messages
   useEffect(() => {
     const container = messageContainerRef.current;
     if (container && isLoadingMore === false && previousScrollHeightRef.current > 0) {
@@ -134,7 +123,6 @@ export default function ChatWindow({
       const scrollDifference = newScrollHeight - previousScrollHeightRef.current;
       if (scrollDifference > 0) {
         container.scrollTop = scrollDifference;
-        console.log(`[Pagination] Restored scroll position: ${scrollDifference}px`);
       }
       previousScrollHeightRef.current = 0;
     }
@@ -143,31 +131,16 @@ export default function ChatWindow({
   const handleScroll = () => {
     const container = messageContainerRef.current;
     if (container) {
-      // Check if we're at the bottom (for auto-scroll on new messages)
       const threshold = 50;
       const position = container.scrollTop + container.clientHeight;
       const height = container.scrollHeight;
       shouldScrollRef.current = position >= height - threshold;
 
-      // Check if we're at the top (for loading more messages)
       const scrollTop = container.scrollTop;
       if (scrollTop < 100 && hasMore && !isLoadingMore && onLoadMore) {
-        console.log('[Pagination] Loading more messages...');
         previousScrollHeightRef.current = container.scrollHeight;
         onLoadMore();
       }
-    }
-  };
-
-  const handleFormSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    const form = e.target as HTMLFormElement;
-    const input = form.elements.namedItem("messageInput") as HTMLInputElement;
-    const text = input.value;
-    if (text.trim()) {
-      shouldScrollRef.current = true; // Always scroll when we send a message
-      onSendMessage(text);
-      form.reset();
     }
   };
 
@@ -187,20 +160,13 @@ export default function ChatWindow({
     );
   }
 
-  // --- Dynamic Menu Items ---
-  const baseMenuItems = [
-    { label: "사진/동영상", icon: Image, action: () => imageInputRef.current?.click() },
-    { label: "파일", icon: File, action: () => fileInputRef.current?.click() },
-  ];
-
+  // 4. 파일 업로드 메뉴 아이템 제거 (MessageInput으로 기능 이전)
   const groupMenuItems = [
-    ...baseMenuItems,
     { label: "멤버 보기", icon: Users, action: () => { setIsMenuOpen(false); setIsMembersModalOpen(true); } },
     { label: "채팅방 나가기", icon: LogOut, action: handleLeaveRoom, danger: true, disabled: isLeaving },
   ];
 
   const directMenuItems = [
-    ...baseMenuItems,
     { label: "차단하기", icon: ShieldAlert, action: handleBlockUser, danger: true },
     { label: "신고하기", icon: ShieldAlert, action: handleReportUser, danger: true },
     { label: "채팅방 나가기", icon: LogOut, action: handleLeaveRoom, danger: true, disabled: isLeaving },
@@ -208,16 +174,9 @@ export default function ChatWindow({
 
   const menuItems = roomDetails.type === 'group' ? groupMenuItems : directMenuItems;
   const isOwner = member?.memberId === roomDetails?.ownerId;
-  // For AI chats, we might want a different menu or none at all
-  if (roomDetails.type === 'ai') {
-    // Example: AI chats only have a leave option
-    // menuItems = [{ label: "채팅방 나가기", icon: LogOut, action: handleLeaveRoom, danger: true, disabled: isLeaving }];
-  }
-  // --- End Dynamic Menu Items ---
 
   return (
     <main className="flex flex-col bg-gray-850 overflow-hidden h-full">
-      {/* Chat Header */}
       <header className="flex items-center justify-between p-4 border-b border-gray-700 flex-shrink-0">
         <div className="flex items-center min-w-0">
           <div className="relative">
@@ -242,7 +201,6 @@ export default function ChatWindow({
           <button className="text-gray-400 hover:text-white"><Video size={20} /></button>
           <button className="text-gray-400 hover:text-white"><Phone size={20} /></button>
           
-          {/* Dropdown Menu */}
           <div className="relative" ref={menuRef}>
             <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-gray-400 hover:text-white">
               <MoreVertical size={20} />
@@ -273,7 +231,6 @@ export default function ChatWindow({
         </div>
       </header>
 
-      {/* Messages Area */}
       <div ref={messageContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto p-6 space-y-4">
         {isLoading ? (
           <div className="flex justify-center items-center h-full">
@@ -330,49 +287,14 @@ export default function ChatWindow({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Message Input */}
-      <div className="p-4 bg-gray-800 border-t border-gray-700">
-        <form onSubmit={handleFormSubmit} className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="p-2 text-gray-400 hover:text-white rounded-full hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            aria-label="Attach file"
-            disabled={isUploadingFile}
-          >
-            {isUploadingFile ? <Loader2 size={20} className="animate-spin" /> : <Paperclip size={20} />}
-          </button>
-          <input
-            name="messageInput"
-            type="text"
-            placeholder="Type a message..."
-            autoComplete="off"
-            className="flex-1 p-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            disabled={isUploadingFile}
-          />
-          <button
-            type="submit"
-            className="px-4 py-2 bg-emerald-600 text-white font-semibold rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={isUploadingFile}
-          >
-            Send
-          </button>
-        </form>
-      </div>
-      
-      {/* Hidden File Inputs */}
-      <input
-        type="file"
-        ref={imageInputRef}
-        onChange={(e) => handleFileSelect(e, 'image')}
-        className="hidden"
-        accept="image/*"
-      />
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={(e) => handleFileSelect(e, 'file')}
-        className="hidden"
+      {/* 5. 기존 입력 폼을 MessageInput 컴포넌트로 교체 */}
+      <MessageInput
+        onSendMessage={(message) => {
+          shouldScrollRef.current = true; // 메시지 전송 시 스크롤 활성화
+          onSendMessage(message);
+        }}
+        onFileSelect={handleFileSelect}
+        isUploading={isUploadingFile}
       />
 
       {/* Member List Modal */}
