@@ -71,6 +71,7 @@ export default function Header() {
   };
 
   const getNotificationIcon = (type: NotificationItem["type"]) => {
+    console.log("Notification type:", type);
     switch (type) {
       case "friend_request":
         return "👤";
@@ -82,6 +83,8 @@ export default function Header() {
         return "💬";
       case "chat_message":
         return "💭";
+      case "room_closed":
+        return "🚫";
       default:
         return "📢";
     }

@@ -101,6 +101,9 @@ const normaliseNotificationType = (value: unknown): NotificationType => {
     case "system_alert":
     case "system":
       return "system_alert";
+    case "room_closed":
+    case "roomclosed":
+      return "room_closed";
     default:
       return fallback;
   }

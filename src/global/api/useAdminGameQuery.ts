@@ -1,6 +1,22 @@
 import apiClient from "@/global/backend/client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import type { components } from "@/global/backend/schema";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { unwrap } from "../backend/unwrap"; // 응답 처리 헬퍼
+
+type SentenceGameItem = {
+  id: number;
+  originalContent: string;
+  correctedContent: string;
+  createdAt?: string;
+};
+
+type SentenceGameListResponse = {
+  content: SentenceGameItem[];
+  totalPages: number;
+  number: number;
+};
+
+type SentenceGameNotePage = components["schemas"]["PageAdminSentenceGameNoteResp"];
 
 // =========================
 // 📌 API 함수들
@@ -8,16 +24,18 @@ import { unwrap } from "../backend/unwrap"; // 응답 처리 헬퍼
 
 // 1) 학습노트 목록 조회 (문장게임 등록용)
 export async function fetchSentenceGameNoteList(page: number) {
-    const res = await apiClient.GET("/api/v1/admin/sentence-game/notes", {
+  const res = await apiClient.GET("/api/v1/admin/sentence-game/notes", {
     params: {
       query: {
-        page,
-        size: 20
-      }
-    }
+        pageable: {
+          page,
+          size: 20,
+        },
+      },
+    },
   });
 
-  return res.data.data;
+  return unwrap<SentenceGameNotePage>(res);
 } 
 
 // 2) 문장게임 문장 등록
@@ -32,16 +50,29 @@ export async function createSentenceGame(data: {
 
 // 3) 문장게임 목록 조회
 export async function fetchSentenceGameList(page: number) {
-const res = await apiClient.GET("/api/v1/admin/sentence-game",{
-    params: {query :{ page, size: 20 }},
-    }
-  );
-  return unwrap(res);
+  const res = await apiClient.GET("/api/v1/admin/sentence-game", {
+    params: {
+      query: {
+        pageable: {
+          page,
+          size: 20,
+        },
+      },
+    },
+  });
+
+  return unwrap<SentenceGameListResponse>(res);
 }
 
 // 4) 문장게임 삭제
 export async function deleteSentenceGame(id: number) {
-  const res = await apiClient.DELETE(`/api/v1/admin/sentence-game/${id}`);
+  const res = await apiClient.DELETE("/api/v1/admin/sentence-game/{sentenceGameId}", {
+    params: {
+      path: {
+        sentenceGameId: id,
+      },
+    },
+  });
   return unwrap(res);
 }
 
@@ -63,7 +94,7 @@ export function useSentenceGameCreateMutation() {
   return useMutation({
     mutationFn: createSentenceGame,
     onSuccess: () => {
-      qc.invalidateQueries(["sentenceGameList"]); 
+      qc.invalidateQueries({ queryKey: ["sentenceGameList"] }); 
     },
   });
 }
@@ -82,7 +113,7 @@ export function useSentenceGameDeleteMutation() {
   return useMutation({
     mutationFn: deleteSentenceGame,
     onSuccess: () => {
-      qc.invalidateQueries(["sentenceGameList"]);
+      qc.invalidateQueries({ queryKey: ["sentenceGameList"] });
     },
   });
 }

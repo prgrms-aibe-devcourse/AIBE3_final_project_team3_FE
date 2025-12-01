@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
-import { useParams } from "next/navigation";
-import { useChatMessagesQuery, useGetDirectChatRoomsQuery, useGetGroupChatRoomsQuery, useGetAiChatRoomsQuery } from "@/global/api/useChatQuery";
-import { useQueryClient } from "@tanstack/react-query";
-import { getStompClient, connect } from "@/global/stomp/stompClient";
+import { useChatMessagesQuery, useGetAiChatRoomsQuery, useGetDirectChatRoomsQuery, useGetGroupChatRoomsQuery } from "@/global/api/useChatQuery";
+import useRoomClosedRedirect from "@/global/hooks/useRoomClosedRedirect";
+import { connect, getStompClient } from "@/global/stomp/stompClient";
 import { useLoginStore } from "@/global/stores/useLoginStore";
-import { MessageResp, DirectChatRoomResp, GroupChatRoomResp, AIChatRoomResp, ReadStatusUpdateEvent, SubscriberCountUpdateResp, UnreadCountUpdateEvent } from "@/global/types/chat.types";
+import { AIChatRoomResp, DirectChatRoomResp, GroupChatRoomResp, MessageResp, SubscriberCountUpdateResp, UnreadCountUpdateEvent } from "@/global/types/chat.types";
 import type { IMessage } from "@stomp/stompjs";
+import { useQueryClient } from "@tanstack/react-query";
+import { useParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import ChatWindow from "../../_components/ChatWindow"; // Import the new component
 
 export default function ChatRoomPage() {
@@ -36,6 +37,9 @@ export default function ChatRoomPage() {
   const [subscriberCount, setSubscriberCount] = useState<number>(0);
   const [totalMemberCount, setTotalMemberCount] = useState<number>(0);
 
+
+  useRoomClosedRedirect();
+
   // When message data is successfully loaded, it means markAsReadOnEnter was called on the backend.
   // We can now invalidate the room list query to update the unread count badge.
   useEffect(() => {
@@ -52,7 +56,7 @@ export default function ChatRoomPage() {
     if (chatRoomType === 'direct' && directRoomsData) {
       const room = directRoomsData.find((r: DirectChatRoomResp) => r.id === roomId);
       if (room) {
-        const partner = room.user1.id === member.memberId ? room.user2 : room.user1;
+        const partner = room.user1.id === member.id ? room.user2 : room.user1;
         return {
           id: roomId,
           name: partner.nickname,
@@ -109,7 +113,7 @@ export default function ChatRoomPage() {
   useEffect(() => {
     if (!roomId || !member || !chatRoomType || !accessToken) return;
 
-    console.log(`[WebSocket Setup] Starting for roomId=${roomId}, memberId=${member.memberId}, type=${chatRoomType}`);
+    console.log(`[WebSocket Setup] Starting for roomId=${roomId}, memberId=${member.id}, type=${chatRoomType}`);
 
     let subscription: any = null;
     let isCleanedUp = false;
@@ -184,7 +188,7 @@ export default function ChatRoomPage() {
     connect(accessToken, setupSubscription);
 
     return () => {
-      console.log(`[WebSocket Cleanup] Starting cleanup for roomId=${roomId}, memberId=${member.memberId}`);
+      console.log(`[WebSocket Cleanup] Starting cleanup for roomId=${roomId}, memberId=${member.id}`);
       isCleanedUp = true;
       if (subscription) {
         subscription.unsubscribe();

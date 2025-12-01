@@ -1,15 +1,20 @@
 // src/global/api/useMiniGameQuery.ts
 
 import apiClient from "@/global/backend/client";
+import type { components } from "@/global/backend/schema";
 import { unwrap } from "@/global/backend/unwrap";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
+
+type SentenceGameCountResp = components["schemas"]["SentenceGameCountResp"];
+type SentenceGameStartResp = components["schemas"]["SentenceGameStartResp"];
+type SentenceGameSubmitResp = components["schemas"]["SentenceGameSubmitResp"];
 
 // -------------------------------
 // 🔥 1) 전체 문제 수 조회
 // -------------------------------
 export const fetchTotalCount = async () => {
   const res = await apiClient.GET("/api/v1/sentence-game", {});
-  return unwrap(res);
+  return unwrap<SentenceGameCountResp>(res);
 };
 
 // -------------------------------
@@ -19,7 +24,7 @@ export const fetchStartGame = async (count: number) => {
   const res = await apiClient.GET("/api/v1/sentence-game/start", {
     params: {query:{ count }},
   });
-  return unwrap(res);
+  return unwrap<SentenceGameStartResp>(res);
 };
 
 // -------------------------------
@@ -32,7 +37,7 @@ export const submitGameAnswer = async (body: {
   const res = await apiClient.POST("/api/v1/sentence-game/submit", {
     body,
   });
-  return unwrap(res);
+  return unwrap<SentenceGameSubmitResp>(res);
 };
 
 // -------------------------------

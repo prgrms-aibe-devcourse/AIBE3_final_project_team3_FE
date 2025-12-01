@@ -39,7 +39,7 @@ const DEFAULT_EDIT_FORM: ProfileEditFormState = {
   country: "",
   nickname: "",
   englishLevel: "BEGINNER",
-  interest: [],
+  interests: [],
   description: "",
   email: "",
   level: "BEGINNER",
@@ -205,7 +205,10 @@ export default function ProfilePage() {
       }
 
       const englishLevel = base.englishLevel ?? "BEGINNER";
-      const interests = base.interest ?? base.interests ?? [];
+      const legacyInterests = Array.isArray((base as { interest?: unknown }).interest)
+        ? ((base as { interest?: string[] }).interest ?? [])
+        : undefined;
+      const interests = legacyInterests ?? base.interests ?? [];
 
       setEditForm({
         name: base.name ?? "",
@@ -213,7 +216,7 @@ export default function ProfilePage() {
         country: (base.country ?? base.countryCode ?? "").toUpperCase(),
         englishLevel,
         level: englishLevel,
-        interest: interests,
+        interests,
         description: base.description ?? "",
         email: base.email ?? "",
       });
@@ -253,7 +256,7 @@ export default function ProfilePage() {
       nickname: trimmedNickname,
       country: countryCode as MemberProfileUpdateReq["country"],
       englishLevel: editForm.englishLevel ?? editForm.level ?? "BEGINNER",
-      interest: sanitisedInterests,
+      interests: sanitisedInterests,
       description: trimmedDescription,
     };
 
@@ -407,7 +410,12 @@ export default function ProfilePage() {
     ] ?? englishLevel;
     const joinedAt = profileData.joinedAt ? new Date(profileData.joinedAt) : null;
     const joinDate = joinedAt && !Number.isNaN(joinedAt.getTime()) ? joinedAt : null;
-    const interests = (profileData.interest ?? profileData.interests ?? []).map((item) => item?.trim?.() ?? String(item ?? "").trim()).filter((item) => item.length > 0);
+    const legacyInterests = Array.isArray((profileData as { interest?: unknown }).interest)
+      ? ((profileData as { interest?: string[] }).interest ?? [])
+      : undefined;
+    const interests = (legacyInterests ?? profileData.interests ?? [])
+      .map((item) => item?.trim?.() ?? String(item ?? "").trim())
+      .filter((item) => item.length > 0);
     const countryCodeRaw = profileData.country ?? "";
     const countryCode = countryCodeRaw ? countryCodeRaw.toUpperCase() : "";
     const countryName = profileData.countryName ?? getCountryLabel(countryCode);
