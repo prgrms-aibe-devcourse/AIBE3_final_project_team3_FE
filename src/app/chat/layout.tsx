@@ -1,12 +1,12 @@
 "use client";
 
-import ChatSidebar from "./_components/ChatSidebar";
+import { useGetAiChatRoomsQuery, useGetDirectChatRoomsQuery, useGetGroupChatRoomsQuery } from '@/global/api/useChatQuery';
 import { ChatRoom, useChatStore } from "@/global/stores/useChatStore";
-import { useRouter } from "next/navigation";
-import { useEffect, useMemo } from "react";
-import { useGetDirectChatRoomsQuery, useGetGroupChatRoomsQuery, useGetAiChatRoomsQuery } from '@/global/api/useChatQuery';
 import { useLoginStore } from '@/global/stores/useLoginStore';
-import { DirectChatRoomResp, GroupChatRoomResp, AIChatRoomResp } from '@/global/types/chat.types';
+import { AIChatRoomResp, DirectChatRoomResp, GroupChatRoomResp } from '@/global/types/chat.types';
+import { useRouter } from "next/navigation";
+import { useMemo } from "react";
+import ChatSidebar from "./_components/ChatSidebar";
 
 export default function ChatLayout({
   children,
@@ -30,12 +30,12 @@ export default function ChatLayout({
     }
 
     const directRooms: ChatRoom[] = (directRoomsData || []).map((room: DirectChatRoomResp) => {
-      const partner = room.user1.id === member.memberId ? room.user2 : room.user1;
+      const partner = room.user1.id === member.id ? room.user2 : room.user1;
       console.log("Layout Debug - Direct Room Transformation:", {
         roomId: room.id,
         user1Id: room.user1.id,
         user2Id: room.user2.id,
-        currentMemberId: member.memberId,
+        currentMemberId: member.id,
         partnerNickname: partner.nickname,
       });
       return {
@@ -67,7 +67,7 @@ export default function ChatLayout({
         id: `ai-${room.id}`,
         name: room.name,
         // TODO: Backend should provide a representative image URL for AI chats.
-        avatar: undefined,
+        avatar: "🤖",
         type: 'ai',
         unreadCount: 0,
         lastMessage: room.aiPersona || 'AI 튜터와 대화해보세요.',
@@ -97,7 +97,7 @@ export default function ChatLayout({
     setSelectedRoomId(null);
     router.push('/chat');
   };
-  
+
   // Ensure a room is selected on initial load if there isn't one
   // useEffect(() => {
   //   if (!selectedRoomId && rooms[activeTab].length > 0) {

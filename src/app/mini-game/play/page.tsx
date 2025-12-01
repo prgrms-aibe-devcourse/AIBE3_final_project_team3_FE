@@ -1,13 +1,15 @@
 "use client";
 
-import { useSearchParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
 import {
   useStartGameQuery,
   useSubmitAnswerMutation,
 } from "@/global/api/useSentenceGameQuery";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
 
-export default function MiniGamePlayPage() {
+export const dynamic = "force-dynamic";
+
+function MiniGamePlayContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -156,5 +158,13 @@ export default function MiniGamePlayPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function MiniGamePlayPage() {
+  return (
+    <Suspense fallback={<div className="p-10">Loading...</div>}>
+      <MiniGamePlayContent />
+    </Suspense>
   );
 }

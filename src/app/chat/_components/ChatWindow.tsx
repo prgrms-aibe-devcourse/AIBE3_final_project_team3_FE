@@ -1,10 +1,11 @@
 "use client";
 
-import { useRef, useEffect, FormEvent, useLayoutEffect, useState } from "react";
-import { MessageResp } from "@/global/types/chat.types";
-import { Loader2, MoreVertical, Phone, Video, File, Image, ShieldAlert, LogOut, Users, Paperclip } from "lucide-react";
-import { MemberSummaryResp } from "@/global/types/auth.types";
 import { useLeaveChatRoom, useUploadFileMutation } from "@/global/api/useChatQuery";
+import { MemberSummaryResp } from "@/global/types/auth.types";
+import { MessageResp } from "@/global/types/chat.types";
+import type { LucideIcon } from "lucide-react";
+import { File, Image, Loader2, LogOut, MoreVertical, Paperclip, Phone, ShieldAlert, Users, Video } from "lucide-react";
+import { FormEvent, useEffect, useLayoutEffect, useRef, useState } from "react";
 import MembersModal from "./MembersModal"; // Import the new modal component
 
 // Define props for the component
@@ -20,6 +21,7 @@ interface ChatWindowProps {
     type: string;
     avatar?: string;
     members?: any[]; // Simplified for now
+    ownerId?: number;
   } | null;
   subscriberCount?: number;
   totalMemberCount?: number;
@@ -27,6 +29,14 @@ interface ChatWindowProps {
   hasMore?: boolean;
   isLoadingMore?: boolean;
 }
+
+type MenuActionItem = {
+  label: string;
+  icon: LucideIcon;
+  action: () => void;
+  danger?: boolean;
+  disabled?: boolean;
+};
 
 export default function ChatWindow({
   messages,
@@ -45,7 +55,7 @@ export default function ChatWindow({
   const messageContainerRef = useRef<HTMLDivElement>(null);
   const shouldScrollRef = useRef(true);
   const previousScrollHeightRef = useRef<number>(0);
-  
+
   // State for dropdown and modals
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
@@ -84,7 +94,7 @@ export default function ChatWindow({
     }
     setIsMenuOpen(false);
   };
-  
+
   const handleBlockUser = () => {
     // TODO: Implement block user logic
     alert("사용자를 차단합니다. (구현 필요)");
@@ -188,26 +198,26 @@ export default function ChatWindow({
   }
 
   // --- Dynamic Menu Items ---
-  const baseMenuItems = [
+  const baseMenuItems: MenuActionItem[] = [
     { label: "사진/동영상", icon: Image, action: () => imageInputRef.current?.click() },
     { label: "파일", icon: File, action: () => fileInputRef.current?.click() },
   ];
 
-  const groupMenuItems = [
+  const groupMenuItems: MenuActionItem[] = [
     ...baseMenuItems,
     { label: "멤버 보기", icon: Users, action: () => { setIsMenuOpen(false); setIsMembersModalOpen(true); } },
     { label: "채팅방 나가기", icon: LogOut, action: handleLeaveRoom, danger: true, disabled: isLeaving },
   ];
 
-  const directMenuItems = [
+  const directMenuItems: MenuActionItem[] = [
     ...baseMenuItems,
     { label: "차단하기", icon: ShieldAlert, action: handleBlockUser, danger: true },
     { label: "신고하기", icon: ShieldAlert, action: handleReportUser, danger: true },
     { label: "채팅방 나가기", icon: LogOut, action: handleLeaveRoom, danger: true, disabled: isLeaving },
   ];
 
-  const menuItems = roomDetails.type === 'group' ? groupMenuItems : directMenuItems;
-  const isOwner = member?.memberId === roomDetails?.ownerId;
+  const menuItems: MenuActionItem[] = roomDetails.type === 'group' ? groupMenuItems : directMenuItems;
+  const isOwner = member?.id === roomDetails?.ownerId;
   // For AI chats, we might want a different menu or none at all
   if (roomDetails.type === 'ai') {
     // Example: AI chats only have a leave option
@@ -241,7 +251,7 @@ export default function ChatWindow({
         <div className="flex items-center space-x-4">
           <button className="text-gray-400 hover:text-white"><Video size={20} /></button>
           <button className="text-gray-400 hover:text-white"><Phone size={20} /></button>
-          
+
           {/* Dropdown Menu */}
           <div className="relative" ref={menuRef}>
             <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-gray-400 hover:text-white">
@@ -251,20 +261,19 @@ export default function ChatWindow({
               <div className="absolute right-0 mt-2 w-56 bg-gray-800 rounded-md shadow-lg z-20 border border-gray-700">
                 <ul className="py-1">
                   {menuItems.map((item, index) => (
-                     <li key={index}>
-                       <button
-                         onClick={item.action}
-                         disabled={item.disabled}
-                         className={`w-full text-left flex items-center px-4 py-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed ${
-                           item.danger
-                             ? "text-red-400 hover:bg-red-500 hover:text-white"
-                             : "text-gray-300 hover:bg-gray-700"
-                         }`}
-                       >
-                         <item.icon size={16} className="mr-3" />
-                         {item.label}
-                       </button>
-                     </li>
+                    <li key={index}>
+                      <button
+                        onClick={item.action}
+                        disabled={item.disabled}
+                        className={`w-full text-left flex items-center px-4 py-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed ${item.danger
+                          ? "text-red-400 hover:bg-red-500 hover:text-white"
+                          : "text-gray-300 hover:bg-gray-700"
+                          }`}
+                      >
+                        <item.icon size={16} className="mr-3" />
+                        {item.label}
+                      </button>
+                    </li>
                   ))}
                 </ul>
               </div>
@@ -292,39 +301,39 @@ export default function ChatWindow({
               <div className="text-center text-xs text-gray-500 py-2">대화의 시작입니다.</div>
             )}
             {messages.map((msg) => {
-            if (msg.messageType === 'SYSTEM') {
+              if (msg.messageType === 'SYSTEM') {
+                return (
+                  <div key={msg.id} className="text-center my-2">
+                    <p className="text-xs text-gray-500 italic px-4 py-1 bg-gray-800 rounded-full inline-block">
+                      {msg.content}
+                    </p>
+                  </div>
+                );
+              }
+
+              const isUser = msg.senderId === member?.id;
               return (
-                <div key={msg.id} className="text-center my-2">
-                  <p className="text-xs text-gray-500 italic px-4 py-1 bg-gray-800 rounded-full inline-block">
-                    {msg.content}
-                  </p>
+                <div key={msg.id} className={`flex items-end gap-2 ${isUser ? "justify-end" : "justify-start"}`}>
+                  {!isUser && (
+                    <div className="w-8 h-8 rounded-full bg-gray-600 flex-shrink-0" />
+                  )}
+                  <div className={`flex items-end gap-2 ${isUser ? "flex-row-reverse" : "flex-row"}`}>
+                    <div className={`max-w-md p-3 rounded-lg ${isUser ? "bg-emerald-600 text-white" : "bg-gray-700 text-gray-200"}`}>
+                      {!isUser && <p className="text-xs font-semibold pb-1">{msg.sender}</p>}
+                      <p className="text-sm">{msg.content}</p>
+                    </div>
+                    <div className="flex flex-col items-center space-y-1">
+                      {msg.unreadCount > 0 && (
+                        <p className="text-xs text-yellow-400 font-semibold">
+                          {msg.unreadCount}
+                        </p>
+                      )}
+                      <p className="text-xs text-gray-500">{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                    </div>
+                  </div>
                 </div>
               );
-            }
-            
-            const isUser = msg.senderId === member?.memberId;
-            return (
-              <div key={msg.id} className={`flex items-end gap-2 ${isUser ? "justify-end" : "justify-start"}`}>
-                {!isUser && (
-                  <div className="w-8 h-8 rounded-full bg-gray-600 flex-shrink-0" />
-                )}
-                <div className={`flex items-end gap-2 ${isUser ? "flex-row-reverse" : "flex-row"}`}>
-                  <div className={`max-w-md p-3 rounded-lg ${isUser ? "bg-emerald-600 text-white" : "bg-gray-700 text-gray-200"}`}>
-                    {!isUser && <p className="text-xs font-semibold pb-1">{msg.sender}</p>}
-                    <p className="text-sm">{msg.content}</p>
-                  </div>
-                  <div className="flex flex-col items-center space-y-1">
-                    {msg.unreadCount > 0 && (
-                      <p className="text-xs text-yellow-400 font-semibold">
-                        {msg.unreadCount}
-                      </p>
-                    )}
-                    <p className="text-xs text-gray-500">{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+            })}
           </>
         )}
         <div ref={messagesEndRef} />
@@ -359,7 +368,7 @@ export default function ChatWindow({
           </button>
         </form>
       </div>
-      
+
       {/* Hidden File Inputs */}
       <input
         type="file"
@@ -383,7 +392,7 @@ export default function ChatWindow({
           roomId={roomDetails.id}
           members={roomDetails.members || []}
           ownerId={roomDetails.ownerId || 0}
-          currentUserId={member?.memberId || 0}
+          currentUserId={member?.id || 0}
           isOwner={isOwner}
         />
       )}

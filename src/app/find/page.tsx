@@ -8,13 +8,16 @@ import { FriendSummary } from "@/global/types/member.types";
 import { Bot, MessageSquare, Plus, UserRoundCheck, Users } from "lucide-react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import GroupRoomList from "./components/GroupRoomList";
 import NewGroupChatModal from "./components/NewGroupChatModal";
 // Import new AI modal components and types
 import AIScenarioModal from "./components/AIScenarioModal";
 import AISituationModal from "./components/AISituationModal";
 import { AICategory, AIScenario } from "./constants/aiSituations";
+
+
+export const dynamic = "force-dynamic";
 
 
 // A simple utility to generate a placeholder avatar
@@ -81,7 +84,7 @@ type ActiveTab = "1v1" | "friends" | "group" | "ai";
 type MemberListItem = (MemberPresenceSummaryResp | FriendSummary) & { name?: string | null };
 const DEFAULT_PAGE_SIZE = 15;
 
-export default function FindPage() {
+function FindPageContent() {
   const [showOnlineOnly, setShowOnlineOnly] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const pageIndex = Math.max(currentPage - 1, 0);
@@ -1018,5 +1021,13 @@ export default function FindPage() {
         onSelectScenario={handleSelectAIScenario}
       />
     </>
+  );
+}
+
+export default function FindPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center p-6 text-gray-400">Loading...</div>}>
+      <FindPageContent />
+    </Suspense>
   );
 }
