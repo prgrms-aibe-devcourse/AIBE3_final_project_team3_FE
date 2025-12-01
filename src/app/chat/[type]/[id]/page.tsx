@@ -183,8 +183,8 @@ export default function ChatRoomPage() {
     };
   }, [roomId, member, chatRoomType, accessToken]);
 
-  const handleSendMessage = (text: string) => {
-    if (text.trim() === "" || !member) {
+  const handleSendMessage = (message: { text: string; isTranslateEnabled: boolean }) => {
+    if (message.text.trim() === "" || !member) {
       return;
     }
 
@@ -193,9 +193,10 @@ export default function ChatRoomPage() {
     if (client.connected) {
       const messagePayload = {
         roomId: roomId,
-        content: text,
+        content: message.text,
         messageType: "TEXT",
         chatRoomType: chatRoomType.toUpperCase(),
+        // 1단계: isTranslateEnabled는 아직 백엔드로 보내지 않음
       };
       console.log(`[WebSocket] Sending message:`, messagePayload);
       client.publish({

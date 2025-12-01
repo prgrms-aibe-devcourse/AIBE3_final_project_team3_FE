@@ -55,6 +55,8 @@ export type MessageResp = {
   senderId: number;
   sender: string;
   content: string;
+  translatedContent?: string;
+  isTranslateEnabled?: boolean;
   createdAt: string; // ISO 8601 형식의 문자열
   messageType: "TEXT" | "IMAGE" | "FILE" | "SYSTEM"; // 백엔드 ChatMessage.MessageType enum 값에 따라
   sequence: number;
