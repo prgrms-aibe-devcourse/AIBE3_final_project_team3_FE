@@ -8,6 +8,7 @@ import { useLoginStore } from "@/global/stores/useLoginStore";
 import { MessageResp, DirectChatRoomResp, GroupChatRoomResp, AIChatRoomResp, ReadStatusUpdateEvent, SubscriberCountUpdateResp } from "@/global/types/chat.types";
 import type { IMessage } from "@stomp/stompjs";
 import ChatWindow from "../../_components/ChatWindow"; // Import the new component
+import useRoomClosedRedirect from "@/global/hooks/useRoomClosedRedirect";
 
 export default function ChatRoomPage() {
   const params = useParams();
@@ -28,6 +29,7 @@ export default function ChatRoomPage() {
   const [subscriberCount, setSubscriberCount] = useState<number>(0);
   const [totalMemberCount, setTotalMemberCount] = useState<number>(0);
 
+  useRoomClosedRedirect();
   // Find room details from API data
   const roomDetails = useMemo(() => {
     if (!member) return null;

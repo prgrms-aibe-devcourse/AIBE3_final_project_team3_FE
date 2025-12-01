@@ -132,6 +132,7 @@ const StompProvider = ({ children }: { children: React.ReactNode }) => {
       try {
         const payload = JSON.parse(message.body ?? "{}");
         prependNotification(normaliseNotificationPayload(payload));
+      
       } catch (error) {
         console.error("Failed to parse notification payload", error);
         prependNotification({

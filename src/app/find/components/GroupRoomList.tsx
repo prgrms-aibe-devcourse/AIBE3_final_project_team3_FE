@@ -1,6 +1,7 @@
 "use client";
 
 import { useGetPublicGroupChatRoomsQuery, useJoinGroupChat } from "@/global/api/useChatQuery";
+import { useCloseRoomMutation } from "@/global/api/useAdminCloseRoomQuery";
 import { GroupChatRoomResp } from "@/global/types/chat.types";
 import { Users, Lock, Hash, MoreVertical } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
@@ -60,13 +61,99 @@ const PasswordModal = ({
   );
 };
 
+  
+// 방 폐쇄 모달 (관리자 전용)
+const CloseRoomModal = ({
+  isOpen,
+  onClose,
+  onConfirm,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: (reasonCode: number) => void;
+}) => {
+  const [reasonCode, setReasonCode] = useState<number | null>(null);
+
+  if (!isOpen) return null;
+
+  const reasons = [
+    { code: 1, label: "불건전한 대화" },
+    { code: 2, label: "규칙 위반 다수 발생" },
+    { code: 3, label: "신고 누적" },
+    { code: 4, label: "스팸/광고 방" },
+    { code: 5, label: "비정상 활동 탐지" },
+    { code: 99, label: "기타 사유" },
+  ];
+
+  const handleSubmit = () => {
+    if (reasonCode === null) {
+      alert("폐쇄 사유를 선택해주세요.");
+      return;
+    }
+    onConfirm(reasonCode);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[999]">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-lg">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold">방 폐쇄</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="bg-red-50 border border-red-300 text-red-600 px-4 py-3 rounded-md text-sm mb-4">
+          ⚠ 되돌릴 수 없습니다. 모든 멤버가 강제로 퇴장됩니다.
+        </div>
+
+        <label className="block mb-2 font-medium text-sm text-gray-700">
+          폐쇄 사유 *
+        </label>
+        <select
+          value={reasonCode ?? ""}
+          onChange={(e) => setReasonCode(Number(e.target.value))}
+          className="w-full border border-gray-300 rounded-md p-2 mb-6 bg-gray-100"
+        >
+          <option value="">폐쇄 사유 선택</option>
+          {reasons.map((r) => (
+            <option key={r.code} value={r.code}>
+              {r.label}
+            </option>
+          ))}
+        </select>
+
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300 transition"
+          >
+            취소
+          </button>
+          <button
+            onClick={handleSubmit}
+            className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 transition"
+          >
+            폐쇄하기
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Individual Group Room Card Component
 const GroupRoomCard = ({ room }: { room: GroupChatRoomResp }) => {
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isCloseModalOpen, setIsCloseModalOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const joinGroupChat = useJoinGroupChat();
   const { role } = useLoginStore();
+  const closeRoomMutation = useCloseRoomMutation();
 
   const handleJoinRoom = () => {
     if (room.hasPassword) {
@@ -81,13 +168,22 @@ const GroupRoomCard = ({ room }: { room: GroupChatRoomResp }) => {
     joinGroupChat.mutate({ roomId: room.id, password });
   };
 
-  const handleCloseRoom = () => {
-    if (confirm("정말 이 채팅방을 폐쇄하시겠습니까?")) {
-      console.log("방 폐쇄:", room.id);
-      // TODO: API 호출 - useCloseGroupChat() 같은 mutation 사용
-      setIsMenuOpen(false);
+  /* --- 관리자: 방 폐쇄 --- */
+const handleConfirmClose = (reasonCode: number) => {
+  closeRoomMutation.mutate(
+    { roomId: room.id, reasonCode },
+    {
+      onSuccess() {
+        alert("채팅방이 성공적으로 폐쇄되었습니다.");
+        setIsCloseModalOpen(false);
+        setIsMenuOpen(false);
+      },
+      onError(err) {
+        alert("채팅방 폐쇄 실패: " + err?.message);
+      },
     }
-  };
+  );
+};
 
   // 메뉴 외부 클릭 감지
   useEffect(() => {
@@ -126,11 +222,10 @@ const GroupRoomCard = ({ room }: { room: GroupChatRoomResp }) => {
                 <MoreVertical size={18} className="text-gray-400" />
               </button>
 
-              {/* 드롭다운 메뉴 */}
               {isMenuOpen && (
                 <div className="absolute right-0 mt-2 w-40 bg-gray-900 border border-gray-700 rounded-lg shadow-lg z-10">
                   <button
-                    onClick={handleCloseRoom}
+                    onClick={() => setIsCloseModalOpen(true)}
                     className="w-full text-left px-4 py-2 text-red-400 hover:bg-gray-800 rounded-lg transition-colors first:rounded-t-lg last:rounded-b-lg"
                   >
                     방 폐쇄하기
@@ -167,6 +262,12 @@ const GroupRoomCard = ({ room }: { room: GroupChatRoomResp }) => {
         isOpen={isPasswordModalOpen}
         onClose={() => setIsPasswordModalOpen(false)}
         onSubmit={handlePasswordSubmit}
+      />
+       {/* 🔥 폐쇄 모달 */}
+      <CloseRoomModal
+        isOpen={isCloseModalOpen}
+        onClose={() => setIsCloseModalOpen(false)}
+        onConfirm={handleConfirmClose}
       />
     </>
   );
