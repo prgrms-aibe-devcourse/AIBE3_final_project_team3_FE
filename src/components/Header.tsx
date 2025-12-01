@@ -115,7 +115,10 @@ export default function Header() {
   const { mutate: markAllNotificationsRead, isPending: isMarkingAll } = useMarkAllNotificationsRead();
   const { mutate: deleteNotificationMutation } = useDeleteNotification();
   const { mutate: deleteAllNotificationsMutation } = useDeleteAllNotifications();
-  useNotificationsQuery({ enabled: hasHydrated && isLoggedIn });
+  const {
+    refetch: refetchNotifications,
+    isFetching: isNotificationsFetching,
+  } = useNotificationsQuery({ enabled: hasHydrated && isLoggedIn });
 
   const handleMarkAsRead = (notificationId: number) => {
     markNotificationInStore(notificationId);
@@ -203,11 +206,11 @@ export default function Header() {
             </Link>
             {role === "ROLE_ADMIN" && (
               <Link
-              href="/admin/report-management"
-              className="text-red-400 hover:text-red-300 transition-colors font-semibold"
-            >
-              Admin
-            </Link>
+                href="/admin/report-management"
+                className="text-red-400 hover:text-red-300 transition-colors font-semibold"
+              >
+                Admin
+              </Link>
             )}
           </nav>
 
@@ -242,6 +245,15 @@ export default function Header() {
                       Notifications
                     </h3>
                     <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          void refetchNotifications();
+                        }}
+                        disabled={isNotificationsFetching}
+                        className="text-xs text-gray-300 hover:text-white disabled:opacity-60"
+                      >
+                        {isNotificationsFetching ? "Refreshing..." : "Refresh"}
+                      </button>
                       {unreadCount > 0 && (
                         <button
                           onClick={handleMarkAllAsRead}
@@ -265,8 +277,8 @@ export default function Header() {
                           setShowNotifications(false);
                         }}
                         className={`flex h-6 w-6 items-center justify-center rounded text-sm ${notifications.length === 0
-                            ? "text-gray-500 cursor-not-allowed"
-                            : "text-gray-400 hover:bg-gray-700 hover:text-red-400"
+                          ? "text-gray-500 cursor-not-allowed"
+                          : "text-gray-400 hover:bg-gray-700 hover:text-red-400"
                           }`}
                         aria-label="Delete all notifications"
                         aria-disabled={notifications.length === 0}
@@ -287,8 +299,14 @@ export default function Header() {
                       notifications.map((notification) => (
                         <div
                           key={notification.id}
-                          className={`relative p-3 border-b border-gray-700 hover:bg-gray-750 transition-colors ${!notification.isRead ? "bg-gray-750/50" : ""}`}
+                          className={`relative p-3 border-b transition-colors rounded-sm ${notification.isRead
+                              ? "border-gray-700 bg-gray-800/40 hover:bg-gray-750/60"
+                              : "border-emerald-700/60 bg-emerald-950/30 hover:bg-emerald-900/40 shadow-[0_0_12px_rgba(16,185,129,0.25)]"
+                            }`}
                         >
+                          {!notification.isRead && (
+                            <span className="absolute left-0 top-0 h-full w-1 bg-emerald-400 rounded-r" aria-hidden />
+                          )}
                           <button
                             onClick={() => handleDeleteNotification(notification.id)}
                             className="absolute top-1 right-1 flex h-8 w-8 items-center justify-center rounded-full text-gray-200 hover:bg-gray-700 hover:text-red-400 text-lg"
@@ -302,11 +320,25 @@ export default function Header() {
                               {getNotificationIcon(notification.type)}
                             </div>
                             <div className="flex-1 min-w-0 pr-10">
-                              <p className="text-sm text-white">
+                              <p
+                                className={`text-sm ${notification.isRead
+                                    ? "text-gray-200"
+                                    : "text-white font-semibold tracking-tight"
+                                  }`}
+                              >
                                 {notification.message}
                               </p>
-                              <p className="text-xs text-gray-400 mt-1">
+                              <p className="text-xs text-gray-400 mt-1 flex items-center gap-2">
                                 {formatTimeAgo(notification.createdAt)}
+                                {notification.isRead ? (
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wider bg-gray-700 text-gray-200">
+                                    Read
+                                  </span>
+                                ) : (
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wider bg-emerald-500/20 text-emerald-300">
+                                    New
+                                  </span>
+                                )}
                               </p>
                               <div className="flex items-center gap-2 mt-1">
                                 {!notification.isRead && (
@@ -447,21 +479,37 @@ export default function Header() {
                       <span className="text-xs font-medium text-white">
                         Notifications
                       </span>
-                      {unreadCount > 0 && (
+                      <div className="flex items-center gap-2">
                         <button
-                          onClick={handleMarkAllAsRead}
-                          className="text-xs text-emerald-400 hover:text-emerald-300"
+                          onClick={() => {
+                            void refetchNotifications();
+                          }}
+                          disabled={isNotificationsFetching}
+                          className="text-xs text-gray-300 hover:text-white disabled:opacity-60"
                         >
-                          Mark all read
+                          {isNotificationsFetching ? "Refreshing..." : "Refresh"}
                         </button>
-                      )}
+                        {unreadCount > 0 && (
+                          <button
+                            onClick={handleMarkAllAsRead}
+                            className="text-xs text-emerald-400 hover:text-emerald-300"
+                          >
+                            Mark all read
+                          </button>
+                        )}
+                      </div>
                     </div>
                     {notifications.map((notification) => (
                       <div
                         key={notification.id}
-                        className={`relative p-2 border-b border-gray-700 last:border-b-0 ${!notification.isRead ? "bg-gray-700/50" : ""
+                        className={`relative p-2 border-b last:border-b-0 rounded ${notification.isRead
+                            ? "border-gray-700 bg-gray-800/30"
+                            : "border-emerald-700/50 bg-emerald-950/30 shadow-[0_0_10px_rgba(16,185,129,0.2)]"
                           }`}
                       >
+                        {!notification.isRead && (
+                          <span className="absolute left-0 top-0 h-full w-1 bg-emerald-400 rounded-r" aria-hidden />
+                        )}
                         <button
                           onClick={() => handleDeleteNotification(notification.id)}
                           className="absolute top-1 right-1 flex h-8 w-8 items-center justify-center rounded-full text-gray-200 hover:bg-gray-700 hover:text-red-400 text-lg"
@@ -475,11 +523,19 @@ export default function Header() {
                             {getNotificationIcon(notification.type)}
                           </div>
                           <div className="flex-1 min-w-0 pr-10">
-                            <p className="text-xs text-white">
+                            <p
+                              className={`text-xs ${notification.isRead ? "text-gray-200" : "text-white font-semibold"
+                                }`}
+                            >
                               {notification.message}
                             </p>
-                            <p className="text-xs text-gray-400 mt-1">
+                            <p className="text-[11px] text-gray-400 mt-1 flex items-center gap-2">
                               {formatTimeAgo(notification.createdAt)}
+                              {notification.isRead ? (
+                                <span className="px-1.5 py-0.5 rounded-full bg-gray-700 text-gray-200 uppercase tracking-wide">Read</span>
+                              ) : (
+                                <span className="px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 uppercase tracking-wide">New</span>
+                              )}
                             </p>
                             {notification.senderId ? (
                               <button
@@ -535,13 +591,13 @@ export default function Header() {
               >
                 My Page
               </Link>
-                {role === "ROLE_ADMIN" && (
+              {role === "ROLE_ADMIN" && (
                 <Link
-                href="/admin/report-management"
-                className="text-red-400 hover:text-red-300 transition-colors font-semibold"
-              >
-                Admin
-              </Link>
+                  href="/admin/report-management"
+                  className="text-red-400 hover:text-red-300 transition-colors font-semibold"
+                >
+                  Admin
+                </Link>
               )}
               {hasHydrated && (isLoggedIn ? (
                 <button
