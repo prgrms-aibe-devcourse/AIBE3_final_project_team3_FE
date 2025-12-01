@@ -9,6 +9,7 @@ import { useLoginStore } from "@/global/stores/useLoginStore";
 import { MessageResp, DirectChatRoomResp, GroupChatRoomResp, AIChatRoomResp, ReadStatusUpdateEvent, SubscriberCountUpdateResp, UnreadCountUpdateEvent } from "@/global/types/chat.types";
 import type { IMessage } from "@stomp/stompjs";
 import ChatWindow from "../../_components/ChatWindow"; // Import the new component
+import useRoomClosedRedirect from "@/global/hooks/useRoomClosedRedirect";
 
 export default function ChatRoomPage() {
   const params = useParams();
@@ -35,6 +36,9 @@ export default function ChatRoomPage() {
   const [messages, setMessages] = useState<MessageResp[]>([]);
   const [subscriberCount, setSubscriberCount] = useState<number>(0);
   const [totalMemberCount, setTotalMemberCount] = useState<number>(0);
+
+
+  useRoomClosedRedirect();
 
   // When message data is successfully loaded, it means markAsReadOnEnter was called on the backend.
   // We can now invalidate the room list query to update the unread count badge.
