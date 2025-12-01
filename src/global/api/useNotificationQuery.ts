@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 
 import apiClient from "@/global/backend/client";
@@ -115,52 +115,44 @@ export const useNotificationsQuery = (options?: { enabled?: boolean }) => {
 
 export const useMarkNotificationRead = () => {
   const markAsRead = useNotificationStore((state) => state.markAsRead);
-  const qc = useQueryClient();
 
   return useMutation<void, Error, number>({
     mutationFn: (id) => markNotificationReadRequest(id),
     onSuccess: (_data, id) => {
       markAsRead(id);
-      qc.invalidateQueries({ queryKey: ["notifications", "list"] });
     },
   });
 };
 
 export const useMarkAllNotificationsRead = () => {
   const markAllAsRead = useNotificationStore((state) => state.markAllAsRead);
-  const qc = useQueryClient();
 
   return useMutation<void, Error, void>({
     mutationFn: () => markAllNotificationReadRequest(),
     onSuccess: () => {
       markAllAsRead();
-      qc.invalidateQueries({ queryKey: ["notifications", "list"] });
     },
   });
 };
 
 export const useDeleteNotification = () => {
   const removeNotification = useNotificationStore((state) => state.removeNotification);
-  const qc = useQueryClient();
 
   return useMutation<void, Error, number>({
     mutationFn: (id) => deleteNotificationRequest(id),
     onSuccess: (_data, id) => {
       removeNotification(id);
-      qc.invalidateQueries({ queryKey: ["notifications", "list"] });
     },
   });
 };
 
 export const useDeleteAllNotifications = () => {
   const reset = useNotificationStore((state) => state.reset);
-  const qc = useQueryClient();
 
   return useMutation<void, Error, void>({
     mutationFn: () => deleteAllNotificationRequest(),
     onSuccess: () => {
       reset();
-      qc.invalidateQueries({ queryKey: ["notifications", "list"] });
     },
   });
 };

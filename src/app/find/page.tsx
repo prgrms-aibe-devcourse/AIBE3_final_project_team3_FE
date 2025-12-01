@@ -128,7 +128,7 @@ function FindPageContent() {
   const [selectedSource, setSelectedSource] = useState<"members" | "friends" | null>(null);
   const searchParams = useSearchParams();
   const router = useRouter();
-  const skipAutoSelectRef = useRef(false);
+  const skipAutoSelectRef = useRef<number | null>(null);
   const requestedMemberId = useMemo(() => {
     const raw = searchParams.get("memberId");
     return normaliseNumericId(raw);
@@ -184,9 +184,14 @@ function FindPageContent() {
 
 
   useEffect(() => {
-    if (skipAutoSelectRef.current) {
-      skipAutoSelectRef.current = false;
+    const shouldSkipAutoSelect =
+      requestedMemberId != null && skipAutoSelectRef.current === requestedMemberId;
+    if (shouldSkipAutoSelect) {
       return;
+    }
+
+    if (skipAutoSelectRef.current !== null && skipAutoSelectRef.current !== requestedMemberId) {
+      skipAutoSelectRef.current = null;
     }
 
     if (!requestedMemberId) {
@@ -270,12 +275,57 @@ function FindPageContent() {
     error: selectedFriendDetailError,
   } = useFriendDetailQuery(selectedFriendMemberId ?? undefined);
 
+  const effectiveProfileMemberId = selectedUserId ?? requestedMemberId ?? undefined;
   const {
     data: selectedProfile,
     isLoading: isProfileLoading,
     isFetching: isProfileFetching,
     error: selectedProfileError,
-  } = useMemberProfileQuery(selectedUserId ?? undefined);
+  } = useMemberProfileQuery(effectiveProfileMemberId);
+
+  useEffect(() => {
+    const shouldSkipAutoSelect =
+      requestedMemberId != null && skipAutoSelectRef.current === requestedMemberId;
+    if (shouldSkipAutoSelect) {
+      return;
+    }
+
+    if (skipAutoSelectRef.current !== null && skipAutoSelectRef.current !== requestedMemberId) {
+      skipAutoSelectRef.current = null;
+    }
+
+    if (selectedUser || !requestedMemberId || !selectedProfile) {
+      return;
+    }
+
+    const fallbackId =
+      normaliseNumericId(selectedProfile.memberId) ??
+      normaliseNumericId(selectedProfile.id) ??
+      requestedMemberId;
+
+    if (!fallbackId) {
+      return;
+    }
+
+    const fallbackMember: MemberListItem = {
+      id: fallbackId,
+      memberId: fallbackId,
+      nickname:
+        selectedProfile.nickname ??
+        selectedProfile.name ??
+        selectedProfile.email ??
+        `member-${fallbackId}`,
+      name: selectedProfile.name ?? selectedProfile.nickname ?? null,
+      description: selectedProfile.description ?? "",
+      interests: Array.isArray(selectedProfile.interests) ? selectedProfile.interests : [],
+      country: selectedProfile.countryName ?? selectedProfile.country ?? "",
+      englishLevel: selectedProfile.englishLevel ?? "BEGINNER",
+      isOnline: false,
+    } as MemberListItem;
+
+    setSelectedSource("members");
+    setSelectedUser(fallbackMember);
+  }, [requestedMemberId, selectedProfile, selectedUser]);
 
   const selectedProfileMemberId = useMemo(() => {
     const friendDetailId = normaliseNumericId(selectedFriendDetail?.memberId);
@@ -935,7 +985,7 @@ function FindPageContent() {
                   </div>
                   <button
                     onClick={() => {
-                      skipAutoSelectRef.current = true;
+                      skipAutoSelectRef.current = requestedMemberId ?? null;
                       setSelectedUser(null);
                       setSelectedSource(null);
                       const params = new URLSearchParams(searchParams.toString());
