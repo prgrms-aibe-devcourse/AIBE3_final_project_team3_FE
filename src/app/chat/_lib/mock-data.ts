@@ -1,4 +1,22 @@
-import { ChatRoom, Message } from "../_components/ChatPage";
+type MockChatRoom = {
+  id: string;
+  name: string;
+  avatar: string;
+  lastMessage?: string;
+  lastMessageTime?: string;
+  unreadCount?: number;
+  type: "direct" | "group" | "ai";
+};
+
+type MockMessage = {
+  id: string;
+  text: string;
+  sender: {
+    name: string;
+    avatar: string;
+  };
+  timestamp: string;
+};
 
 export const mockUsers = [
   {
@@ -13,7 +31,7 @@ export const mockUsers = [
   },
 ];
 
-export const mockGroupRooms: ChatRoom[] = [
+export const mockGroupRooms: MockChatRoom[] = [
   {
     id: "group-1",
     name: "Travel Discussion",
@@ -34,7 +52,7 @@ export const mockGroupRooms: ChatRoom[] = [
   },
 ];
 
-export const mockAiRooms: ChatRoom[] = [
+export const mockAiRooms: MockChatRoom[] = [
   {
     id: "ai-1",
     name: "AI Tutor",
@@ -46,7 +64,7 @@ export const mockAiRooms: ChatRoom[] = [
   },
 ];
 
-export const mockMessages: Record<string, Message[]> = {
+export const mockMessages: Record<string, MockMessage[]> = {
   "ai-1": [
     {
       id: "msg-ai-1",

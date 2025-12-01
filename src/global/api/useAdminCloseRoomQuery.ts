@@ -1,11 +1,14 @@
 // /global/api/useAdminChatRoom.ts
-import apiClient from "../backend/client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import apiClient from "../backend/client";
 
 export function closeRoom(roomId: number, reasonCode: number) {
-  return apiClient.DELETE(
-    `/api/v1/admin/chat-rooms/${roomId}?reasonCode=${reasonCode}`
-  );
+  return apiClient.DELETE("/api/v1/admin/chat-rooms/{roomId}", {
+    params: {
+      path: { roomId },
+      query: { reasonCode },
+    },
+  });
 }
 
 export function useCloseRoomMutation() {
@@ -16,7 +19,7 @@ export function useCloseRoomMutation() {
       closeRoom(roomId, reasonCode),
 
     onSuccess() {
-      qc.invalidateQueries(["publicGroupChatRooms"]);
+      qc.invalidateQueries({ queryKey: ["publicGroupChatRooms"] });
     },
   });
 }

@@ -1,7 +1,13 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import apiClient from "@/global/backend/client";
 import { unwrap } from "@/global/backend/unwrap";
 import type { AdminReport, ReportStatus } from "@/global/types/report.types";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+
+type AdminReportListResponse = {
+  content: AdminReport[];
+  totalPages: number;
+  number: number;
+};
 
 // =======================
 // GET 신고 목록
@@ -10,13 +16,15 @@ export const fetchReportList = async (page: number) => {
   const res = await apiClient.GET("/api/v1/admin/reports", {
     params: {
       query: {
-        page,
-        size: 20
+        pageable: {
+          page,
+          size: 20,
+        },
       }
     },
   });
 
-  return unwrap(res); // Page<AdminReport>
+  return unwrap<AdminReportListResponse>(res); // Page<AdminReport>
 };
 
 export const useReportQuery = (page: number) =>
@@ -28,7 +36,8 @@ export const useReportQuery = (page: number) =>
 // PATCH 상태 변경
 // =======================
 export const patchReportStatus = async (reportId: number, status: ReportStatus) => {
-  const resp = await apiClient.PATCH(`/api/v1/admin/reports/${reportId}`, {
+  const resp = await apiClient.PATCH("/api/v1/admin/reports/{reportId}", {
+    params: { path: { reportId } },
     body: { status },
   });
 

@@ -1,10 +1,10 @@
-import { useMutation, useQuery, useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import apiClient from "@/global/backend/client";
 import { unwrap } from "@/global/backend/unwrap";
-import { useLoginStore } from "../stores/useLoginStore";
-import { ChatRoomDataResp, ChatRoomPageDataResp, DirectChatRoomResp, GroupChatRoomResp, AIChatRoomResp, CreateGroupChatReq, JoinGroupChatReq } from "../types/chat.types";
 import { ChatRoomResp } from "@/global/types/chat.types";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
+import { useLoginStore } from "../stores/useLoginStore";
+import { AIChatRoomResp, ChatRoomPageDataResp, CreateGroupChatReq, DirectChatRoomResp, GroupChatRoomResp, MessageResp } from "../types/chat.types";
 
 // --- Type Definitions ---
 // Types are now imported from chat.types.ts
@@ -322,14 +322,16 @@ interface UploadFileVariables {
 const uploadFile = async (variables: UploadFileVariables): Promise<MessageResp> => {
   const formData = new FormData();
   formData.append('file', variables.file);
-  formData.append('chatRoomType', variables.chatRoomType.toUpperCase());
-  formData.append('messageType', variables.messageType);
 
   const response = await apiClient.POST("/api/v1/chats/rooms/{roomId}/files", {
     params: {
       path: { roomId: variables.roomId },
+      query: {
+        chatRoomType: variables.chatRoomType.toUpperCase() as "DIRECT" | "GROUP" | "AI",
+        messageType: variables.messageType,
+      },
     },
-    body: formData,
+    body: formData as unknown as { file: string },
   });
 
   const unwrappedResponse = await unwrap<MessageResp>(response);

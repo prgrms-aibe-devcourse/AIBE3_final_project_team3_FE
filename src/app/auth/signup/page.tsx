@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { useSignup } from "@/global/api/useAuthQuery";
-import { COUNTRY_OPTIONS } from "@/global/lib/countries";
+import type { CountryCode } from "@/global/lib/countries";
+import { COUNTRY_OPTIONS, isSupportedCountryCode } from "@/global/lib/countries";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -17,7 +18,7 @@ export default function SignupPage() {
     email: "",
     password: "",
     confirmPassword: "",
-    country: "",
+    country: "" as CountryCode | "",
     level: "BEGINNER",
     interests: "",
     description: "",
@@ -41,9 +42,9 @@ export default function SignupPage() {
       return;
     }
 
-    const countryCode = (formData.country ?? "").trim().toUpperCase();
+    const countryCode = formData.country.trim().toUpperCase();
 
-    if (!countryCode) {
+    if (!isSupportedCountryCode(countryCode)) {
       alert("Please select your country.");
       return;
     }
@@ -173,7 +174,10 @@ export default function SignupPage() {
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white text-gray-900 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 value={formData.country}
                 onChange={(e) =>
-                  setFormData({ ...formData, country: e.target.value.toUpperCase() })
+                  setFormData({
+                    ...formData,
+                    country: e.target.value as CountryCode | "",
+                  })
                 }
               >
                 <option value="">Select your country</option>

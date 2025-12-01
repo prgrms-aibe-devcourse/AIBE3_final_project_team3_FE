@@ -1,6 +1,6 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import client from "@/global/backend/client";
 import { unwrap } from "@/global/backend/unwrap";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 // -----------------------------
 //  Type Definitions
@@ -26,11 +26,16 @@ export type FlattenFeedbackNote = {
   feedback: Feedback;
 };
 
+type LearningTag = "Grammar" | "Vocabulary" | "Translation";
+type LearningFilter = "all" | "completed" | "incomplete";
+type LearningTagParam = "GRAMMAR" | "VOCABULARY" | "TRANSLATION";
+type LearningFilterParam = "ALL" | "LEARNED" | "UNLEARNED";
+
 // -----------------------------
 //  Query Mappers
 // -----------------------------
 
-const mapFilter = (f: "all" | "completed" | "incomplete") => {
+const mapFilter = (f: LearningFilter): LearningFilterParam => {
   switch (f) {
     case "completed":
       return "LEARNED";
@@ -41,7 +46,7 @@ const mapFilter = (f: "all" | "completed" | "incomplete") => {
   }
 };
 
-const mapTag = (tag: string) => {
+const mapTag = (tag: LearningTag): LearningTagParam => {
   switch (tag) {
     case "Grammar":
       return "GRAMMAR";
@@ -49,8 +54,6 @@ const mapTag = (tag: string) => {
       return "VOCABULARY";
     case "Translation":
       return "TRANSLATION";
-    default:
-      return "";
   }
 };
 
@@ -58,14 +61,19 @@ const mapTag = (tag: string) => {
 //    API - Fetch Notes (페이지네이션 추가)
 // ==========================================
 
-const fetchNotes = async (tag: string, filter: string, page: number) => {
-  const q = new URLSearchParams();
-  q.set("tag", mapTag(tag));
-  q.set("learningFilter", mapFilter(filter));
-  q.set("page", String(page));    
-  q.set("size", "20");          
-
-  const resp = await client.GET(`/api/v1/learning-notes?${q.toString()}`, {});
+const fetchNotes = async (tag: LearningTag, filter: LearningFilter, page: number) => {
+  const resp = await client.GET("/api/v1/learning-notes", {
+    params: {
+      query: {
+        tag: mapTag(tag),
+        learningFilter: mapFilter(filter),
+        pageable: {
+          page,
+          size: 20,
+        },
+      },
+    },
+  });
   const payload = await unwrap<any>(resp);
 
   if (!payload || typeof payload !== "object") return { content: [] };
@@ -84,8 +92,8 @@ const fetchNotes = async (tag: string, filter: string, page: number) => {
 // ==========================================
 
 export const useLearningNotes = (
-  tag: "Grammar" | "Vocabulary" | "Translation",
-  filter: "all" | "completed" | "incomplete",
+  tag: LearningTag,
+  filter: LearningFilter,
   page: number
 ) =>
   useQuery({
@@ -103,15 +111,17 @@ export const useLearningNotes = (
 export const useToggleFeedbackMark = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ feedbackId, mark }: { feedbackId: number; mark: boolean }) =>
-      client
-        .PATCH(
-          `/api/v1/learning-notes/feedbacks/${feedbackId}/mark/${
-            mark ? "learned" : "unlearned"
-          }`,
-          {}
-        )
-        .then(() => true),
+    mutationFn: async ({ feedbackId, mark }: { feedbackId: number; mark: boolean }) => {
+      const path = mark
+        ? "/api/v1/learning-notes/feedbacks/{feedbackId}/mark/learned"
+        : "/api/v1/learning-notes/feedbacks/{feedbackId}/mark/unlearned";
+
+      await client.PATCH(path, {
+        params: { path: { feedbackId } },
+      });
+
+      return true;
+    },
 
     onSuccess: () =>
       qc.invalidateQueries({ queryKey: ["learningNotes"] }), // 전체 리스트 갱신
