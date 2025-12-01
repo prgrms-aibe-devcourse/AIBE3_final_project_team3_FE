@@ -286,6 +286,13 @@ export default function ChatWindow({
                   <div className={`max-w-md p-3 rounded-lg ${isUser ? "bg-emerald-600 text-white" : "bg-gray-700 text-gray-200"}`}>
                     {!isUser && <p className="text-xs font-semibold pb-1">{msg.sender}</p>}
                     <p className="text-sm">{msg.content}</p>
+                    {msg.translatedContent && (
+                      <div className="mt-2 pt-2 border-t border-gray-500/30">
+                        <p className="text-xs italic opacity-90">
+                          {msg.translatedContent}
+                        </p>
+                      </div>
+                    )}
                   </div>
                   <div className="flex flex-col items-center space-y-1">
                     {msg.unreadCount > 0 && (

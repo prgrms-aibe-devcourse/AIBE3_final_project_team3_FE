@@ -112,12 +112,15 @@ export default function ChatRoomPage() {
     console.log(`[WebSocket Setup] Starting for roomId=${roomId}, memberId=${member.memberId}, type=${chatRoomType}`);
 
     let subscription: any = null;
+    let updateSubscription: any = null;
     let isCleanedUp = false;
 
     const setupSubscription = () => {
       const client = getStompClient();
       const destination = `/topic/${chatRoomType}/rooms/${roomId}`;
-      console.log(`[WebSocket] Subscribing to: ${destination}`);
+      const updateDestination = `/topic/${chatRoomType}/rooms/${roomId}/message-update`;
+
+      console.log(`[WebSocket] Subscribing to: ${destination} and ${updateDestination}`);
       console.log(`[WebSocket] Client connected: ${client.connected}, Session ID (internal): ${client.webSocket ? 'connected' : 'not connected'}`);
 
       // 이미 cleanup되었으면 구독하지 않음
@@ -126,6 +129,7 @@ export default function ChatRoomPage() {
         return;
       }
 
+      // 1. 일반 메시지 및 상태 업데이트 구독
       subscription = client.subscribe(
         destination,
         (message: IMessage) => {
@@ -164,7 +168,27 @@ export default function ChatRoomPage() {
           }
         }
       );
-      console.log(`[WebSocket] Subscription created for room ${roomId}, subscriptionId=${subscription?.id}`);
+
+      // 2. 번역 업데이트 구독
+      updateSubscription = client.subscribe(
+        updateDestination,
+        (message: IMessage) => {
+          const payload = JSON.parse(message.body);
+          console.log(`[WebSocket] Received translation update:`, payload);
+
+          if (payload.messageId && payload.translatedContent) {
+            setMessages((prevMessages) =>
+              prevMessages.map((msg) =>
+                msg.id === payload.messageId
+                  ? { ...msg, translatedContent: payload.translatedContent }
+                  : msg
+              )
+            );
+          }
+        }
+      );
+      
+      console.log(`[WebSocket] Subscriptions created for room ${roomId}`);
     };
 
     connect(accessToken, setupSubscription);
@@ -173,13 +197,14 @@ export default function ChatRoomPage() {
       console.log(`[WebSocket Cleanup] Starting cleanup for roomId=${roomId}, memberId=${member.memberId}`);
       isCleanedUp = true;
       if (subscription) {
-        console.log(`[WebSocket Cleanup] Unsubscribing from room ${roomId}, subscriptionId=${subscription.id}`);
         subscription.unsubscribe();
         subscription = null;
-        console.log(`[WebSocket Cleanup] Unsubscribed successfully from room ${roomId}`);
-      } else {
-        console.log(`[WebSocket Cleanup] No subscription to unsubscribe from room ${roomId}`);
       }
+      if (updateSubscription) {
+        updateSubscription.unsubscribe();
+        updateSubscription = null;
+      }
+      console.log(`[WebSocket Cleanup] Unsubscribed successfully from room ${roomId}`);
     };
   }, [roomId, member, chatRoomType, accessToken]);
 
@@ -196,7 +221,7 @@ export default function ChatRoomPage() {
         content: message.text,
         messageType: "TEXT",
         chatRoomType: chatRoomType.toUpperCase(),
-        // 1단계: isTranslateEnabled는 아직 백엔드로 보내지 않음
+        isTranslateEnabled: message.isTranslateEnabled,
       };
       console.log(`[WebSocket] Sending message:`, messagePayload);
       client.publish({
