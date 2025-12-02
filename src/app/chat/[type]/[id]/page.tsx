@@ -1,7 +1,6 @@
 "use client";
 
 import { useChatMessagesQuery, useGetAiChatRoomsQuery, useGetDirectChatRoomsQuery, useGetGroupChatRoomsQuery } from "@/global/api/useChatQuery";
-import useRoomClosedRedirect from "@/global/hooks/useRoomClosedRedirect";
 import { connect, getStompClient } from "@/global/stomp/stompClient";
 import { useLoginStore } from "@/global/stores/useLoginStore";
 import { AIChatRoomResp, DirectChatRoomResp, GroupChatRoomResp, MessageResp, SubscriberCountUpdateResp, UnreadCountUpdateEvent } from "@/global/types/chat.types";
@@ -36,9 +35,6 @@ export default function ChatRoomPage() {
   const [messages, setMessages] = useState<MessageResp[]>([]);
   const [subscriberCount, setSubscriberCount] = useState<number>(0);
   const [totalMemberCount, setTotalMemberCount] = useState<number>(0);
-
-
-  useRoomClosedRedirect();
 
   // When message data is successfully loaded, it means markAsReadOnEnter was called on the backend.
   // We can now invalidate the room list query to update the unread count badge.
@@ -136,7 +132,15 @@ export default function ChatRoomPage() {
         destination,
         (message: IMessage) => {
           const payload = JSON.parse(message.body);
+          
+          // 방 폐쇄 이벤트 처리
+          if (payload.type === "ROOM_CLOSED") {
+            console.log("[WebSocket] Room closed event received", payload);
 
+            alert(`'${payload.roomName}' 채팅방이 폐쇄되었습니다.\n사유: ${payload.reasonLabel}`);
+            window.location.reload();
+            return;
+          }
           // 1. 번역 업데이트 이벤트 처리
           if (payload.type === 'TRANSLATION_UPDATE') {
              console.log(`[WebSocket] Received translation update:`, payload);
