@@ -3,6 +3,7 @@
 import { useCreateDirectChat } from "@/global/api/useChatQuery";
 import { useFriendDetailQuery, useFriendsQuery, useMemberProfileQuery, useMembersQuery } from "@/global/api/useMemberQuery";
 import { useFriendshipActions } from "@/global/hooks/useFriendshipActions";
+import { getCountryFlagEmoji, normaliseCountryValue } from "@/global/lib/countries";
 import { MemberPresenceSummaryResp } from "@/global/types/auth.types";
 import { FriendSummary } from "@/global/types/member.types";
 import { Bot, MessageSquare, Plus, UserRoundCheck, Users } from "lucide-react";
@@ -40,6 +41,71 @@ const formatFriendSince = (value: string): string => {
     month: "long",
     day: "numeric",
   }).format(date);
+};
+
+const formatLastSeen = (value: string): string => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  const diffMs = Date.now() - date.getTime();
+  const diffMinutes = Math.max(Math.floor(diffMs / (1000 * 60)), 0);
+
+  if (diffMinutes < 1) {
+    return "방금 전";
+  }
+
+  if (diffMinutes < 60) {
+    return `${diffMinutes}분 전`;
+  }
+
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) {
+    return `${diffHours}시간 전`;
+  }
+
+  const formatted = new Intl.DateTimeFormat("ko-KR", {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+
+  return formatted;
+};
+
+type EnglishLevelKey = "BEGINNER" | "INTERMEDIATE" | "ADVANCED" | "NATIVE";
+
+const ENGLISH_LEVEL_META: Record<EnglishLevelKey, { label: string; icon: string; badgeClass: string }> = {
+  BEGINNER: {
+    label: "초급",
+    icon: "🌱",
+    badgeClass: "bg-emerald-900/40 text-emerald-200 border border-emerald-700/50",
+  },
+  INTERMEDIATE: {
+    label: "중급",
+    icon: "🚀",
+    badgeClass: "bg-blue-900/30 text-blue-200 border border-blue-600/40",
+  },
+  ADVANCED: {
+    label: "고급",
+    icon: "🧠",
+    badgeClass: "bg-purple-900/30 text-purple-200 border border-purple-600/40",
+  },
+  NATIVE: {
+    label: "원어민",
+    icon: "🌐",
+    badgeClass: "bg-amber-900/30 text-amber-200 border border-amber-600/40",
+  },
+};
+
+const resolveEnglishLevelMeta = (level?: string | null) => {
+  const upper = typeof level === "string" ? level.toUpperCase() : "";
+  const key = (Object.prototype.hasOwnProperty.call(ENGLISH_LEVEL_META, upper)
+    ? upper
+    : "BEGINNER") as EnglishLevelKey;
+  return ENGLISH_LEVEL_META[key];
 };
 
 type FriendshipState = "FRIEND" | "REQUEST_SENT" | "REQUEST_RECEIVED" | "NONE";
@@ -81,7 +147,7 @@ const normaliseNumericId = (value: unknown): number | null => {
 };
 
 type ActiveTab = "1v1" | "friends" | "group" | "ai";
-type MemberListItem = (MemberPresenceSummaryResp | FriendSummary) & { name?: string | null };
+type MemberListItem = (MemberPresenceSummaryResp | FriendSummary) & { name?: string | null; lastSeenAt?: string | null };
 const DEFAULT_PAGE_SIZE = 15;
 
 function FindPageContent() {
@@ -317,6 +383,7 @@ function FindPageContent() {
         `member-${fallbackId}`,
       name: selectedProfile.name ?? selectedProfile.nickname ?? null,
       description: selectedProfile.description ?? "",
+      lastSeenAt: selectedProfile.lastSeenAt ?? undefined,
       interests: Array.isArray(selectedProfile.interests) ? selectedProfile.interests : [],
       country: selectedProfile.countryName ?? selectedProfile.country ?? "",
       englishLevel: selectedProfile.englishLevel ?? "BEGINNER",
@@ -375,12 +442,6 @@ function FindPageContent() {
 
   const modalNickname = selectedFriendDetail?.nickname ?? selectedProfile?.nickname ?? selectedUser?.nickname ?? "";
   const modalName = selectedProfile?.name ?? selectedUser?.name ?? "";
-  const modalCountry =
-    selectedFriendDetail?.country ??
-    selectedProfile?.countryName ??
-    selectedProfile?.country ??
-    selectedUser?.country ??
-    "";
   const modalEnglishLevel =
     selectedFriendDetail?.englishLevel ??
     selectedProfile?.englishLevel ??
@@ -391,6 +452,21 @@ function FindPageContent() {
     selectedProfile?.description ??
     selectedUser?.description ??
     "";
+  const modalCountryMeta = normaliseCountryValue(
+    selectedFriendDetail?.country ??
+    selectedProfile?.country ??
+    selectedProfile?.countryName ??
+    selectedUser?.country ??
+    "",
+  );
+  const modalCountryDisplay = modalCountryMeta.name || "-";
+  const modalCountryFlag = getCountryFlagEmoji(modalCountryMeta.code);
+
+  const englishLevelMeta = resolveEnglishLevelMeta(modalEnglishLevel);
+  const modalEnglishLevelDisplay = englishLevelMeta.label;
+  const modalEnglishLevelBadgeClass = englishLevelMeta.badgeClass;
+  const modalEnglishLevelIcon = englishLevelMeta.icon;
+
   const modalInterests = selectedFriendDetail
     ? normaliseInterests(selectedFriendDetail.interests)
     : selectedProfile
@@ -400,8 +476,6 @@ function FindPageContent() {
     (modalName ? `${modalNickname} (${modalName})` : modalNickname) ||
     selectedUser?.nickname ||
     "회원 정보";
-  const modalCountryDisplay = modalCountry || "-";
-  const modalEnglishLevelDisplay = modalEnglishLevel || "-";
   const modalDescriptionDisplay = modalDescription || "소개 정보가 아직 없습니다.";
   const modalAvatarSrc =
     selectedFriendDetail?.profileImageUrl && selectedFriendDetail.profileImageUrl.length > 0
@@ -416,6 +490,13 @@ function FindPageContent() {
   };
 
   const modalPresence = getPresenceMeta(resolveIsOnline(selectedUser));
+  const modalLastSeenSource =
+    selectedFriendDetail?.lastSeenAt ??
+    selectedProfile?.lastSeenAt ??
+    (selectedUser as { lastSeenAt?: string } | null)?.lastSeenAt ??
+    null;
+  const isCurrentlyOnline = resolveIsOnline(selectedUser) === true;
+  const modalLastSeenDisplay = !isCurrentlyOnline && modalLastSeenSource ? formatLastSeen(modalLastSeenSource) : null;
   const isFriendDetailPending = isFriendSelection && (isFriendDetailLoading || isFriendDetailFetching);
   const friendDetailErrorMessage = isFriendSelection && selectedFriendDetailError ? selectedFriendDetailError.message : null;
   const friendSinceDisplay = isFriendSelection && selectedFriendDetail?.createdAt
@@ -672,10 +753,6 @@ function FindPageContent() {
                 <h3 className="text-lg font-semibold text-white">
                   {user.nickname}
                 </h3>
-                <p className={`${presence.textClass} text-sm flex items-center`}>
-                  <span className={`w-2 h-2 rounded-full mr-2 ${presence.badgeClass}`}></span>
-                  {presence.label}
-                </p>
                 <p className="text-gray-400 text-sm">{user.country}</p>
               </div>
             </div>
@@ -958,12 +1035,25 @@ function FindPageContent() {
                     </div>
                     <div className="ml-4">
                       <h2 className="text-2xl font-bold text-white">{modalDisplayName}</h2>
-                      <p className={`${modalPresence.textClass} flex items-center`}>
-                        <span className={`w-2 h-2 rounded-full mr-2 ${modalPresence.badgeClass}`}></span>
-                        {modalPresence.label}
-                      </p>
-                      <p className="text-gray-400">{modalCountryDisplay}</p>
-                      <p className="text-gray-400 text-sm">{modalEnglishLevelDisplay}</p>
+                      <div className="flex items-center gap-2 text-gray-300">
+                        {modalCountryFlag ? (
+                          <span className="text-xl" aria-hidden>
+                            {modalCountryFlag}
+                          </span>
+                        ) : null}
+                        <span className="text-gray-400">{modalCountryDisplay}</span>
+                      </div>
+                      {modalLastSeenDisplay && (
+                        <p className="text-gray-400 text-xs mt-1">
+                          마지막 접속: {modalLastSeenDisplay}
+                        </p>
+                      )}
+                      <div
+                        className={`mt-2 inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold ${modalEnglishLevelBadgeClass}`}
+                      >
+                        <span aria-hidden>{modalEnglishLevelIcon}</span>
+                        <span>{modalEnglishLevelDisplay}</span>
+                      </div>
                       <div className="mt-3 flex flex-wrap items-center gap-2">
                         {renderFriendshipStatus()}
                       </div>

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { useLogout } from "@/global/api/useAuthQuery";
+import { useAcceptFriendRequest, useRejectFriendRequest } from "@/global/api/useFriendshipMutation";
 import {
   useDeleteAllNotifications,
   useDeleteNotification,
@@ -12,15 +13,94 @@ import {
   useMarkNotificationRead,
   useNotificationsQuery,
 } from "@/global/api/useNotificationQuery";
+import apiClient from "@/global/backend/client";
 import { useLoginStore } from "@/global/stores/useLoginStore";
 import { useNotificationStore } from "@/global/stores/useNotificationStore";
 import { NotificationItem } from "@/global/types/notification.types";
 import { useShallow } from "zustand/react/shallow";
 
+const FRIEND_REQUEST_ID_KEYS = [
+  "friendRequestId",
+  "requestId",
+  "pendingFriendRequestId",
+  "pendingFriendRequestIdFromOpponent",
+  "receivedFriendRequestId",
+] as const;
+
+const toNumericId = (value: unknown): number | null => {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return Math.trunc(value);
+  }
+
+  if (typeof value === "string" && value.trim().length > 0) {
+    const parsed = Number.parseInt(value, 10);
+    if (!Number.isNaN(parsed)) {
+      return parsed;
+    }
+  }
+
+  return null;
+};
+
+const extractFriendRequestIdFromRecord = (
+  record?: Record<string, unknown> | null,
+): number | null => {
+  if (!record) {
+    return null;
+  }
+
+  for (const key of FRIEND_REQUEST_ID_KEYS) {
+    const id = toNumericId(record[key]);
+    if (typeof id === "number") {
+      return id;
+    }
+  }
+
+  return null;
+};
+
+const resolveFriendRequestId = async (notification: NotificationItem): Promise<number | null> => {
+  const metadataRecord =
+    notification.metadata && typeof notification.metadata === "object"
+      ? (notification.metadata as Record<string, unknown>)
+      : null;
+
+  const metadataId = extractFriendRequestIdFromRecord(metadataRecord);
+  if (metadataId) {
+    return metadataId;
+  }
+
+  if (!notification.senderId) {
+    return null;
+  }
+
+  const { data, error } = await apiClient.GET("/api/v1/members/{id}", {
+    params: {
+      path: {
+        id: notification.senderId,
+      },
+    },
+  });
+
+  if (error) {
+    throw new Error("친구 요청 정보를 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+  }
+
+  const payload = (data ?? {}) as { data?: unknown };
+  const profileRecord =
+    (payload.data && typeof payload.data === "object"
+      ? (payload.data as Record<string, unknown>)
+      : null) ||
+    (typeof data === "object" && data ? (data as Record<string, unknown>) : null);
+
+  return extractFriendRequestIdFromRecord(profileRecord);
+};
+
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [friendRequestActionId, setFriendRequestActionId] = useState<number | null>(null);
   const router = useRouter();
   const {
     notifications,
@@ -90,17 +170,57 @@ export default function Header() {
     }
   };
 
-  const handleNotificationAction = (
+  const { mutateAsync: acceptFriendRequestMutation } = useAcceptFriendRequest();
+  const { mutateAsync: rejectFriendRequestMutation } = useRejectFriendRequest();
+
+  const handleNotificationAction = async (
     notification: NotificationItem,
-    action: "accept" | "decline"
+    action: "accept" | "decline",
   ) => {
-    // Mock notification actions
-    if (notification.type === "friend_request") {
-      alert(`Friend request ${action}ed!`);
-    } else if (notification.type === "chat_invitation") {
-      alert(`Chat invitation ${action}ed!`);
+    if (notification.type !== "friend_request") {
+      alert("해당 알림 타입에 연결된 동작이 없습니다.");
+      return;
     }
-    handleMarkAsRead(notification.id);
+
+    if (friendRequestActionId && friendRequestActionId !== notification.id) {
+      alert("다른 친구 요청을 처리 중입니다. 잠시 후 다시 시도해 주세요.");
+      return;
+    }
+
+    setFriendRequestActionId(notification.id);
+    try {
+      const requestId = await resolveFriendRequestId(notification);
+      if (!requestId) {
+        throw new Error("친구 요청 정보를 찾지 못했습니다. 이미 처리되었을 수 있어요.");
+      }
+
+      if (action === "accept") {
+        await acceptFriendRequestMutation({
+          requestId,
+          opponentMemberId: notification.senderId ?? undefined,
+          refreshMembers: true,
+        });
+        alert("친구 요청을 수락했습니다.");
+      } else {
+        await rejectFriendRequestMutation({
+          requestId,
+          opponentMemberId: notification.senderId ?? undefined,
+          refreshMembers: true,
+        });
+        alert("친구 요청을 거절했습니다.");
+      }
+
+      handleMarkAsRead(notification.id);
+    } catch (error) {
+      console.error(error);
+      alert(
+        error instanceof Error
+          ? error.message
+          : "친구 요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+      );
+    } finally {
+      setFriendRequestActionId(null);
+    }
   };
 
   const { accessToken, hasHydrated } = useLoginStore(
@@ -161,6 +281,76 @@ export default function Header() {
         setDeletingId(null);
       },
     });
+  };
+
+  const renderAuthButtons = (variant: "desktop" | "mobile") => {
+    const isDesktop = variant === "desktop";
+
+    if (!hasHydrated) {
+      return isDesktop ? (
+        <div className="flex items-center space-x-3 text-gray-500">
+          <span className="h-4 w-16 rounded bg-gray-700/60 animate-pulse" aria-hidden />
+          <span className="h-8 w-20 rounded bg-gray-700/60 animate-pulse" aria-hidden />
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2 py-2 text-gray-500">
+          <span className="h-4 w-24 rounded bg-gray-700/60 animate-pulse" aria-hidden />
+          <span className="h-10 w-full rounded bg-gray-700/60 animate-pulse" aria-hidden />
+        </div>
+      );
+    }
+
+    if (isLoggedIn) {
+      return isDesktop ? (
+        <button
+          onClick={handleLogout}
+          disabled={isLoggingOut}
+          className="text-gray-200 hover:text-emerald-400 transition-colors flex items-center disabled:opacity-70"
+        >
+          {isLoggingOut ? "Logging out..." : "Logout"}
+        </button>
+      ) : (
+        <button
+          onClick={handleLogout}
+          disabled={isLoggingOut}
+          className="text-gray-200 hover:text-emerald-400 transition-colors py-2 text-left disabled:opacity-70"
+        >
+          {isLoggingOut ? "Logging out..." : "Logout"}
+        </button>
+      );
+    }
+
+    return isDesktop ? (
+      <>
+        <Link
+          href="/auth/login"
+          className="text-gray-200 hover:text-emerald-400 transition-colors flex items-center"
+        >
+          Login
+        </Link>
+        <Link
+          href="/auth/signup"
+          className="bg-emerald-600 text-white px-4 py-2 rounded-md hover:bg-emerald-500 transition-colors shadow-lg flex items-center"
+        >
+          Sign Up
+        </Link>
+      </>
+    ) : (
+      <>
+        <Link
+          href="/auth/login"
+          className="text-gray-200 hover:text-emerald-400 transition-colors py-2"
+        >
+          Login
+        </Link>
+        <Link
+          href="/auth/signup"
+          className="bg-emerald-600 text-white px-4 py-2 rounded-md hover:bg-emerald-500 transition-colors text-center shadow-lg"
+        >
+          Sign Up
+        </Link>
+      </>
+    );
   };
 
   return (
@@ -300,8 +490,8 @@ export default function Header() {
                         <div
                           key={notification.id}
                           className={`relative p-3 border-b transition-colors rounded-sm ${notification.isRead
-                              ? "border-gray-700 bg-gray-800/40 hover:bg-gray-750/60"
-                              : "border-emerald-700/60 bg-emerald-950/30 hover:bg-emerald-900/40 shadow-[0_0_12px_rgba(16,185,129,0.25)]"
+                            ? "border-gray-700 bg-gray-800/40 hover:bg-gray-750/60"
+                            : "border-emerald-700/60 bg-emerald-950/30 hover:bg-emerald-900/40 shadow-[0_0_12px_rgba(16,185,129,0.25)]"
                             }`}
                         >
                           {!notification.isRead && (
@@ -322,8 +512,8 @@ export default function Header() {
                             <div className="flex-1 min-w-0 pr-10">
                               <p
                                 className={`text-sm ${notification.isRead
-                                    ? "text-gray-200"
-                                    : "text-white font-semibold tracking-tight"
+                                  ? "text-gray-200"
+                                  : "text-white font-semibold tracking-tight"
                                   }`}
                               >
                                 {notification.message}
@@ -370,20 +560,26 @@ export default function Header() {
                                     <button
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        handleNotificationAction(notification, "accept");
+                                        void handleNotificationAction(notification, "accept");
                                       }}
-                                      className="bg-emerald-600 text-white px-3 py-1 rounded text-xs hover:bg-emerald-700 transition-colors"
+                                      disabled={friendRequestActionId === notification.id}
+                                      className="bg-emerald-600 text-white px-3 py-1 rounded text-xs hover:bg-emerald-700 transition-colors disabled:opacity-60"
                                     >
-                                      Accept
+                                      {friendRequestActionId === notification.id
+                                        ? "Processing..."
+                                        : "Accept"}
                                     </button>
                                     <button
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        handleNotificationAction(notification, "decline");
+                                        void handleNotificationAction(notification, "decline");
                                       }}
-                                      className="bg-gray-600 text-white px-3 py-1 rounded text-xs hover:bg-gray-700 transition-colors"
+                                      disabled={friendRequestActionId === notification.id}
+                                      className="bg-gray-600 text-white px-3 py-1 rounded text-xs hover:bg-gray-700 transition-colors disabled:opacity-60"
                                     >
-                                      Decline
+                                      {friendRequestActionId === notification.id
+                                        ? "Processing..."
+                                        : "Decline"}
                                     </button>
                                   </div>
                                 )}
@@ -397,30 +593,7 @@ export default function Header() {
               )}
             </div>
 
-            {hasHydrated && (isLoggedIn ? (
-              <button
-                onClick={handleLogout}
-                disabled={isLoggingOut}
-                className="text-gray-200 hover:text-emerald-400 transition-colors flex items-center disabled:opacity-70"
-              >
-                {isLoggingOut ? "Logging out..." : "Logout"}
-              </button>
-            ) : (
-              <>
-                <Link
-                  href="/auth/login"
-                  className="text-gray-200 hover:text-emerald-400 transition-colors flex items-center"
-                >
-                  Login
-                </Link>
-                <Link
-                  href="/auth/signup"
-                  className="bg-emerald-600 text-white px-4 py-2 rounded-md hover:bg-emerald-500 transition-colors shadow-lg flex items-center"
-                >
-                  Sign Up
-                </Link>
-              </>
-            ))}
+            {renderAuthButtons("desktop")}
           </div>
 
           {/* Mobile Menu Button */}
@@ -503,8 +676,8 @@ export default function Header() {
                       <div
                         key={notification.id}
                         className={`relative p-2 border-b last:border-b-0 rounded ${notification.isRead
-                            ? "border-gray-700 bg-gray-800/30"
-                            : "border-emerald-700/50 bg-emerald-950/30 shadow-[0_0_10px_rgba(16,185,129,0.2)]"
+                          ? "border-gray-700 bg-gray-800/30"
+                          : "border-emerald-700/50 bg-emerald-950/30 shadow-[0_0_10px_rgba(16,185,129,0.2)]"
                           }`}
                       >
                         {!notification.isRead && (
@@ -553,6 +726,30 @@ export default function Header() {
                                 Mark as read
                               </button>
                             )}
+                            {notification.type === "friend_request" && !notification.isRead && (
+                              <div className="flex gap-2 mt-2">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    void handleNotificationAction(notification, "accept");
+                                  }}
+                                  disabled={friendRequestActionId === notification.id}
+                                  className="bg-emerald-600 text-white px-2 py-1 rounded text-[11px] hover:bg-emerald-700 transition-colors disabled:opacity-60"
+                                >
+                                  {friendRequestActionId === notification.id ? "Processing" : "Accept"}
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    void handleNotificationAction(notification, "decline");
+                                  }}
+                                  disabled={friendRequestActionId === notification.id}
+                                  className="bg-gray-600 text-white px-2 py-1 rounded text-[11px] hover:bg-gray-700 transition-colors disabled:opacity-60"
+                                >
+                                  {friendRequestActionId === notification.id ? "Processing" : "Decline"}
+                                </button>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -599,30 +796,7 @@ export default function Header() {
                   Admin
                 </Link>
               )}
-              {hasHydrated && (isLoggedIn ? (
-                <button
-                  onClick={handleLogout}
-                  disabled={isLoggingOut}
-                  className="text-gray-200 hover:text-emerald-400 transition-colors py-2 text-left disabled:opacity-70"
-                >
-                  {isLoggingOut ? "Logging out..." : "Logout"}
-                </button>
-              ) : (
-                <>
-                  <Link
-                    href="/auth/login"
-                    className="text-gray-200 hover:text-emerald-400 transition-colors py-2"
-                  >
-                    Login
-                  </Link>
-                  <Link
-                    href="/auth/signup"
-                    className="bg-emerald-600 text-white px-4 py-2 rounded-md hover:bg-emerald-500 transition-colors text-center shadow-lg"
-                  >
-                    Sign Up
-                  </Link>
-                </>
-              ))}
+              {renderAuthButtons("mobile")}
             </nav>
           </div>
         )}

@@ -437,6 +437,7 @@ const normaliseProfile = (payload: unknown): MemberProfile => {
         interest: interests,
         interests,
         description: profile.description ?? "",
+        lastSeenAt: typeof profile.lastSeenAt === "string" ? profile.lastSeenAt : undefined,
         email: profile.email ?? "",
         memberId: profile.memberId ?? profile.id,
         id: profile.id ?? profile.memberId,
@@ -519,6 +520,14 @@ const updateMyProfile = async (payload: MemberProfileUpdateReq) => {
     }
 };
 
+const deleteMyAccount = async () => {
+    const { error } = await apiClient.DELETE("/api/v1/members/me", {});
+
+    if (error) {
+        throw new Error(getApiErrorMessage(error, "회원 탈퇴에 실패했습니다. 잠시 후 다시 시도해주세요."));
+    }
+};
+
 const extractProfileImageUrl = (payload: unknown): string | null => {
     if (!payload) {
         return null;
@@ -595,5 +604,11 @@ export const useUploadProfileImage = () => {
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ["member", "me"] });
         },
+    });
+};
+
+export const useDeleteMyAccount = () => {
+    return useMutation<void, Error, void>({
+        mutationFn: deleteMyAccount,
     });
 };

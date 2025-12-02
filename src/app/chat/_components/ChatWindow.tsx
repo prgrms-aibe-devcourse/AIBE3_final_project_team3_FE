@@ -1,10 +1,10 @@
 "use client";
 
-import { useRef, useEffect, useLayoutEffect, useState } from "react";
-import { MessageResp } from "@/global/types/chat.types";
-import { Loader2, MoreVertical, Phone, Video, ShieldAlert, LogOut, Users, LucideIcon } from "lucide-react"; // LucideIcon 추가
-import { MemberSummaryResp } from "@/global/types/auth.types";
 import { useLeaveChatRoom, useUploadFileMutation } from "@/global/api/useChatQuery";
+import { MemberSummaryResp } from "@/global/types/auth.types";
+import { MessageResp } from "@/global/types/chat.types";
+import { Loader2, LogOut, LucideIcon, MoreVertical, Phone, ShieldAlert, Users, Video } from "lucide-react"; // LucideIcon 추가
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import MembersModal from "./MembersModal";
 import MessageInput from "./MessageInput";
 
@@ -59,13 +59,13 @@ export default function ChatWindow({
   // State for dropdown and modals
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
-  
+
   // State to track which messages should show original text instead of translation
-  const [showOriginalIds, setShowOriginalIds] = useState<Set<number>>(new Set());
+  const [showOriginalIds, setShowOriginalIds] = useState<Set<string>>(new Set());
 
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const toggleOriginal = (messageId: number) => {
+  const toggleOriginal = (messageId: string) => {
     setShowOriginalIds((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(messageId)) {
@@ -104,7 +104,7 @@ export default function ChatWindow({
       });
     }
   };
-  
+
   const handleBlockUser = () => {
     // TODO: Implement block user logic
     alert("사용자를 차단합니다. (구현 필요)");
@@ -209,7 +209,7 @@ export default function ChatWindow({
   ];
 
   const menuItems = roomDetails.type === 'group' ? groupMenuItems : directMenuItems;
-  const isOwner = member?.memberId === roomDetails?.ownerId;
+  const isOwner = member?.id === roomDetails?.ownerId;
   // --- End Dynamic Menu Items ---
 
   return (
@@ -238,7 +238,7 @@ export default function ChatWindow({
         <div className="flex items-center space-x-4">
           <button className="text-gray-400 hover:text-white"><Video size={20} /></button>
           <button className="text-gray-400 hover:text-white"><Phone size={20} /></button>
-          
+
           {/* Dropdown Menu */}
           <div className="relative" ref={menuRef}>
             <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-gray-400 hover:text-white">
@@ -248,20 +248,19 @@ export default function ChatWindow({
               <div className="absolute right-0 mt-2 w-56 bg-gray-800 rounded-md shadow-lg z-20 border border-gray-700">
                 <ul className="py-1">
                   {menuItems.map((item, index) => (
-                     <li key={index}>
-                       <button
-                         onClick={item.action}
-                         disabled={item.disabled}
-                         className={`w-full text-left flex items-center px-4 py-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed ${
-                           item.danger
-                             ? "text-red-400 hover:bg-red-500 hover:text-white"
-                             : "text-gray-300 hover:bg-gray-700"
-                         }`}
-                       >
-                         <item.icon size={16} className="mr-3" />
-                         {item.label}
-                       </button>
-                     </li>
+                    <li key={index}>
+                      <button
+                        onClick={item.action}
+                        disabled={item.disabled}
+                        className={`w-full text-left flex items-center px-4 py-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed ${item.danger
+                            ? "text-red-400 hover:bg-red-500 hover:text-white"
+                            : "text-gray-300 hover:bg-gray-700"
+                          }`}
+                      >
+                        <item.icon size={16} className="mr-3" />
+                        {item.label}
+                      </button>
+                    </li>
                   ))}
                 </ul>
               </div>
@@ -288,87 +287,86 @@ export default function ChatWindow({
             {!hasMore && messages.length > 0 && (
               <div className="text-center text-xs text-gray-500 py-2">대화의 시작입니다.</div>
             )}
-                        {messages.map((msg) => {
-                          if (msg.messageType === 'SYSTEM') {
-                            return (
-                              <div key={msg.id} className="text-center my-2">
-                                <p className="text-xs text-gray-500 italic px-4 py-1 bg-gray-800 rounded-full inline-block">
-                                  {msg.content}
-                                </p>
-                              </div>
-                            );
-                          }
-                        
-                          const isUser = msg.senderId === member?.memberId;
-                          const hasTranslation = !!msg.translatedContent;
-                          // If it has translation, show translation by default. If user toggled, show original.
-                          // If no translation, always show original (msg.content).
-                          const isShowingOriginal = !hasTranslation || showOriginalIds.has(msg.id);
-                          const displayContent = isShowingOriginal ? msg.content : msg.translatedContent;
-            
-                          return (
-                            <div key={msg.id} className={`flex items-end gap-2 ${isUser ? "justify-end" : "justify-start"}`}>
-                              {!isUser && (
-                                <div className="w-8 h-8 rounded-full bg-gray-600 flex-shrink-0" />
-                              )}
-                              <div className={`flex items-end gap-2 ${isUser ? "flex-row-reverse" : "flex-row"}`}>
-                                <div 
-                                  className={`max-w-md p-3 rounded-lg relative group ${
-                                    isUser ? "bg-emerald-600 text-white" : "bg-gray-700 text-gray-200"
-                                  } ${hasTranslation ? "cursor-pointer hover:opacity-90 transition-opacity" : ""}`}
-                                  onClick={() => hasTranslation && toggleOriginal(msg.id)}
-                                  title={hasTranslation ? "클릭하여 원문/번역 전환" : ""}
-                                >
-                                  {!isUser && <p className="text-xs font-semibold pb-1">{msg.sender}</p>}
-                                  <p className="text-sm whitespace-pre-wrap">{displayContent}</p>
-                                  
-                                  {hasTranslation && (
-                                    <div className="flex justify-end mt-1">
-                                      <span className="text-[10px] opacity-60 border border-white/20 rounded px-1">
-                                        {isShowingOriginal ? "Original" : "Translated"}
-                                      </span>
-                                    </div>
-                                  )}
-                                </div>
-                                <div className="flex flex-col items-center space-y-1">
-                                  {msg.unreadCount > 0 && (
-                                    <p className="text-xs text-yellow-400 font-semibold">
-                                      {msg.unreadCount}
-                                    </p>
-                                  )}
-                                  <p className="text-xs text-gray-500">{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </>
-                    )}
-                    <div ref={messagesEndRef} />
+            {messages.map((msg) => {
+              if (msg.messageType === 'SYSTEM') {
+                return (
+                  <div key={msg.id} className="text-center my-2">
+                    <p className="text-xs text-gray-500 italic px-4 py-1 bg-gray-800 rounded-full inline-block">
+                      {msg.content}
+                    </p>
                   </div>
-            
-                  {/* Message Input */}
-                  <MessageInput
-                    onSendMessage={(message) => {
-                      shouldScrollRef.current = true; // Always scroll when we send a message
-                      onSendMessage(message);
-                    }}
-                    onFileSelect={handleFileSelect}
-                    isUploading={isUploadingFile}
-                  />
-            
-                  {/* Member List Modal */}
-                  {roomDetails && roomDetails.type === 'group' && (
-                    <MembersModal
-                      isOpen={isMembersModalOpen}
-                      onClose={() => setIsMembersModalOpen(false)}
-                      roomId={roomDetails.id}
-                      members={roomDetails.members || []}
-                      ownerId={roomDetails.ownerId || 0}
-                      currentUserId={member?.memberId || 0}
-                      isOwner={isOwner}
-                    />
+                );
+              }
+
+              const isUser = msg.senderId === member?.id;
+              const hasTranslation = !!msg.translatedContent;
+              // If it has translation, show translation by default. If user toggled, show original.
+              // If no translation, always show original (msg.content).
+              const isShowingOriginal = !hasTranslation || showOriginalIds.has(msg.id);
+              const displayContent = isShowingOriginal ? msg.content : msg.translatedContent;
+
+              return (
+                <div key={msg.id} className={`flex items-end gap-2 ${isUser ? "justify-end" : "justify-start"}`}>
+                  {!isUser && (
+                    <div className="w-8 h-8 rounded-full bg-gray-600 flex-shrink-0" />
                   )}
-                </main>
+                  <div className={`flex items-end gap-2 ${isUser ? "flex-row-reverse" : "flex-row"}`}>
+                    <div
+                      className={`max-w-md p-3 rounded-lg relative group ${isUser ? "bg-emerald-600 text-white" : "bg-gray-700 text-gray-200"
+                        } ${hasTranslation ? "cursor-pointer hover:opacity-90 transition-opacity" : ""}`}
+                      onClick={() => hasTranslation && toggleOriginal(msg.id)}
+                      title={hasTranslation ? "클릭하여 원문/번역 전환" : ""}
+                    >
+                      {!isUser && <p className="text-xs font-semibold pb-1">{msg.sender}</p>}
+                      <p className="text-sm whitespace-pre-wrap">{displayContent}</p>
+
+                      {hasTranslation && (
+                        <div className="flex justify-end mt-1">
+                          <span className="text-[10px] opacity-60 border border-white/20 rounded px-1">
+                            {isShowingOriginal ? "Original" : "Translated"}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex flex-col items-center space-y-1">
+                      {msg.unreadCount > 0 && (
+                        <p className="text-xs text-yellow-400 font-semibold">
+                          {msg.unreadCount}
+                        </p>
+                      )}
+                      <p className="text-xs text-gray-500">{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                    </div>
+                  </div>
+                </div>
               );
-            }
+            })}
+          </>
+        )}
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Message Input */}
+      <MessageInput
+        onSendMessage={(message) => {
+          shouldScrollRef.current = true; // Always scroll when we send a message
+          onSendMessage(message);
+        }}
+        onFileSelect={handleFileSelect}
+        isUploading={isUploadingFile}
+      />
+
+      {/* Member List Modal */}
+      {roomDetails && roomDetails.type === 'group' && (
+        <MembersModal
+          isOpen={isMembersModalOpen}
+          onClose={() => setIsMembersModalOpen(false)}
+          roomId={roomDetails.id}
+          members={roomDetails.members || []}
+          ownerId={roomDetails.ownerId || 0}
+          currentUserId={member?.id ?? 0}
+          isOwner={isOwner}
+        />
+      )}
+    </main>
+  );
+}

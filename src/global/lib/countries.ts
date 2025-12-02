@@ -176,3 +176,24 @@ export const getCountryLabel = (code: string): string => {
   const normalisedCode = code.trim().toUpperCase();
   return COUNTRY_LABELS[normalisedCode as CountryCode] ?? normalisedCode;
 };
+
+const convertToFlag = (alpha2: string): string => {
+  const base = 0x1f1e6 - "A".charCodeAt(0);
+  const codePoints = Array.from(alpha2).map((char) => char.charCodeAt(0) + base);
+  return String.fromCodePoint(...codePoints);
+};
+
+export const getCountryFlagEmoji = (value: string | null | undefined): string => {
+  if (!value) {
+    return "";
+  }
+
+  const trimmed = value.trim().toUpperCase();
+  const directCandidate = /^[A-Z]{2}$/.test(trimmed) ? trimmed : COUNTRY_NAME_TO_CODE[trimmed];
+
+  if (!directCandidate) {
+    return "";
+  }
+
+  return convertToFlag(directCandidate);
+};

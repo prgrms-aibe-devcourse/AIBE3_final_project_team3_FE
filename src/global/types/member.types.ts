@@ -10,6 +10,7 @@ export type MemberProfile = MemberProfileUpdateReq & {
   email?: string;
   interests?: string[];
   profileImageUrl?: string;
+  lastSeenAt?: string;
   isFriend?: boolean;
   isPendingRequest?: boolean;
   isPendingFriendRequestFromMe?: boolean;

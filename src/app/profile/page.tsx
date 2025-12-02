@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { ChangeEvent, useCallback, useEffect, useRef, useState } from "react";
 
-import { useMyProfile, useUpdateProfile, useUploadProfileImage } from "@/global/api/useMemberQuery";
+import { useDeleteMyAccount, useMyProfile, useUpdateProfile, useUploadProfileImage } from "@/global/api/useMemberQuery";
 import { COUNTRY_OPTIONS, getCountryLabel } from "@/global/lib/countries";
 import { useLoginStore } from "@/global/stores/useLoginStore";
 import { MemberProfileUpdateReq } from "@/global/types/member.types";
@@ -20,12 +20,6 @@ interface UserProfile {
   description: string;
   interests: string[];
   profileImageUrl?: string;
-  isFriend: boolean;
-  isPendingRequest: boolean;
-  joinDate: Date | null;
-  totalChats: number;
-  vocabularyLearned: number;
-  streak: number;
 }
 
 type ProfileEditFormState = Omit<MemberProfileUpdateReq, "country"> & {
@@ -115,31 +109,24 @@ export default function ProfilePage() {
   const router = useRouter();
   const accessToken = useLoginStore((state) => state.accessToken);
   const hasHydrated = useLoginStore((state) => state.hasHydrated);
+  const clearAccessToken = useLoginStore((state) => state.clearAccessToken);
+  const accountEmail = useLoginStore((state) => state.accountEmail ?? "");
   const [profile, setProfile] = useState<UserProfile>({
     memberId: null,
     name: "",
     nickname: "",
-    email: "",
+    email: accountEmail,
     countryCode: "",
     countryName: "",
     level: "BEGINNER",
     description: "",
     interests: [],
     profileImageUrl: "",
-    isFriend: false,
-    isPendingRequest: false,
-    joinDate: null,
-    totalChats: 0,
-    vocabularyLearned: 0,
-    streak: 0,
   });
 
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<ProfileEditFormState>(DEFAULT_EDIT_FORM);
   const [interestDraft, setInterestDraft] = useState("");
-  const [showFriendProfile, setShowFriendProfile] = useState(false);
-  const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null);
-  const [showInviteModal, setShowInviteModal] = useState(false);
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
   const [avatarVersion, setAvatarVersion] = useState<number>(0);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -148,52 +135,10 @@ export default function ProfilePage() {
   const { data: profileData, isLoading, error } = useMyProfile();
   const updateProfileMutation = useUpdateProfile();
   const uploadProfileImageMutation = useUploadProfileImage();
+  const deleteAccountMutation = useDeleteMyAccount();
   const isSaving = updateProfileMutation.isPending;
   const isUploadingAvatar = uploadProfileImageMutation.isPending;
-
-  // Mock friends data
-  const [friends, setFriends] = useState<Friend[]>([
-    {
-      id: 1,
-      name: "Sarah Johnson",
-      country: "USA",
-      isOnline: true,
-      lastSeen: new Date(),
-      level: "Advanced",
-    },
-    {
-      id: 2,
-      name: "Yuki Tanaka",
-      country: "Japan",
-      isOnline: true,
-      lastSeen: new Date(Date.now() - 30 * 60 * 1000), // 30 minutes ago
-      level: "Intermediate",
-    },
-    {
-      id: 3,
-      name: "Miguel Rodriguez",
-      country: "Spain",
-      isOnline: false,
-      lastSeen: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-      level: "Beginner",
-    },
-    {
-      id: 4,
-      name: "Emma Wilson",
-      country: "UK",
-      isOnline: true,
-      lastSeen: new Date(),
-      level: "Native",
-    },
-    {
-      id: 5,
-      name: "Chen Wei",
-      country: "China",
-      isOnline: false,
-      lastSeen: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
-      level: "Intermediate",
-    },
-  ]);
+  const isDeletingAccount = deleteAccountMutation.isPending;
 
   const syncFormWithProfile = useCallback(
     (source?: ReturnType<typeof useMyProfile>["data"]) => {
@@ -218,11 +163,11 @@ export default function ProfilePage() {
         level: englishLevel,
         interests,
         description: base.description ?? "",
-        email: base.email ?? "",
+        email: base.email ?? accountEmail ?? "",
       });
       setInterestDraft(interests.join(", "));
     },
-    [profileData]
+    [profileData, accountEmail]
   );
 
   const handleSave = () => {
@@ -273,31 +218,6 @@ export default function ProfilePage() {
   const handleCancel = () => {
     syncFormWithProfile();
     setIsEditing(false);
-  };
-
-  const handleViewFriendProfile = (friend: Friend) => {
-    setSelectedFriend(friend);
-    setShowFriendProfile(true);
-  };
-
-  const handleRemoveFriend = (friendId: number) => {
-    if (confirm("Are you sure you want to remove this friend?")) {
-      setFriends((prev) => prev.filter((f) => f.id !== friendId));
-      setShowFriendProfile(false);
-      alert("Friend removed successfully!");
-    }
-  };
-
-  const handleStartChat = (friend: Friend) => {
-    // Mock chat creation - in real app this would create a chat room and redirect
-    alert(`Starting chat with ${friend.name}...`);
-    setShowFriendProfile(false);
-  };
-
-  const handleInviteToRoom = (friend: Friend) => {
-    setSelectedFriend(friend);
-    setShowInviteModal(true);
-    setShowFriendProfile(false);
   };
 
   const handleAvatarButtonClick = () => {
@@ -353,13 +273,6 @@ export default function ProfilePage() {
   };
 
   useEffect(() => {
-    if (!selectedFriend) {
-      setShowFriendProfile(false);
-      setShowInviteModal(false);
-    }
-  }, [selectedFriend]);
-
-  useEffect(() => {
     const previousPreview = previewUrlRef.current;
     if (previousPreview && previousPreview !== avatarPreviewUrl) {
       URL.revokeObjectURL(previousPreview);
@@ -377,26 +290,28 @@ export default function ProfilePage() {
     };
   }, []);
 
-  const handleSendInvite = (roomName: string) => {
-    if (selectedFriend) {
-      alert(
-        `Invitation sent to ${selectedFriend.name} for "${roomName}" room!`
-      );
-      setShowInviteModal(false);
-      setSelectedFriend(null);
+  const handleDeleteAccount = () => {
+    if (isDeletingAccount) {
+      return;
     }
-  };
 
-  const formatLastSeen = (lastSeen: Date) => {
-    const now = new Date();
-    const diffInMinutes = Math.floor(
-      (now.getTime() - lastSeen.getTime()) / (1000 * 60)
+    const confirmed = window.confirm(
+      "정말로 계정을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.",
     );
+    if (!confirmed) {
+      return;
+    }
 
-    if (diffInMinutes < 1) return "Just now";
-    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
-    return `${Math.floor(diffInMinutes / 1440)}d ago`;
+    deleteAccountMutation.mutate(undefined, {
+      onSuccess: () => {
+        alert("계정이 삭제되었습니다. 다시 이용하려면 새로 가입해주세요.");
+        clearAccessToken();
+        router.replace("/auth/login");
+      },
+      onError: (mutationError) => {
+        alert(mutationError.message);
+      },
+    });
   };
 
   useEffect(() => {
@@ -408,8 +323,6 @@ export default function ProfilePage() {
     const levelLabel = ENGLISH_LEVEL_LABELS[
       englishLevel as MemberProfileUpdateReq["englishLevel"]
     ] ?? englishLevel;
-    const joinedAt = profileData.joinedAt ? new Date(profileData.joinedAt) : null;
-    const joinDate = joinedAt && !Number.isNaN(joinedAt.getTime()) ? joinedAt : null;
     const legacyInterests = Array.isArray((profileData as { interest?: unknown }).interest)
       ? ((profileData as { interest?: string[] }).interest ?? [])
       : undefined;
@@ -424,19 +337,13 @@ export default function ProfilePage() {
       memberId: profileData.memberId ?? profileData.id ?? null,
       name: profileData.name ?? "",
       nickname: profileData.nickname ?? "",
-      email: profileData.email ?? "",
+      email: profileData.email ?? accountEmail ?? "",
       countryCode,
       countryName,
       level: levelLabel,
       description: profileData.description ?? "",
       interests,
       profileImageUrl: profileData.profileImageUrl ?? "",
-      isFriend: Boolean(profileData.isFriend),
-      isPendingRequest: Boolean(profileData.isPendingRequest),
-      joinDate,
-      totalChats: profileData.totalChats ?? 0,
-      vocabularyLearned: profileData.vocabularyLearned ?? 0,
-      streak: profileData.streak ?? 0,
     });
 
     if (!isEditing) {
@@ -445,7 +352,7 @@ export default function ProfilePage() {
     if (avatarPreviewUrl && profileData.profileImageUrl) {
       setAvatarPreviewUrl(null);
     }
-  }, [profileData, isEditing, syncFormWithProfile, avatarPreviewUrl]);
+  }, [profileData, isEditing, syncFormWithProfile, avatarPreviewUrl, accountEmail]);
 
   useEffect(() => {
     if (!hasHydrated) {
@@ -465,24 +372,18 @@ export default function ProfilePage() {
     return null;
   }
 
-  const connectionLabel = profile.isFriend
-    ? "Friends"
-    : profile.isPendingRequest
-      ? "Pending"
-      : "Not connected";
-
   const displayProfileImageUrl = avatarPreviewUrl ?? buildVersionedImageUrl(
     profile.profileImageUrl,
     avatarVersion,
   );
+  const resolvedEmail = profile.email || editForm.email || accountEmail || "";
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <h1 className="text-3xl font-bold mb-8 text-white">My Profile</h1>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Profile Card */}
-        <div className="lg:col-span-2">
+      <div className="grid grid-cols-1 gap-8">
+        <div>
           <div className="bg-gray-800 rounded-lg shadow-sm border border-gray-600 p-6">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-semibold text-white">
@@ -521,11 +422,14 @@ export default function ProfilePage() {
                 nickname={profile.nickname || "-"}
                 name={profile.name}
                 memberId={profile.memberId}
-                connectionLabel={connectionLabel}
                 onClickChangeAvatar={handleAvatarButtonClick}
                 changeButtonDisabled={isUploadingAvatar}
                 isUploadingAvatar={isUploadingAvatar}
-              />
+              >
+                {resolvedEmail && (
+                  <p className="text-xs text-gray-400">{resolvedEmail}</p>
+                )}
+              </ProfileSummaryHeader>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -580,15 +484,18 @@ export default function ProfilePage() {
                   <>
                     <input
                       type="email"
-                      value={editForm.email}
+                      value={editForm.email ?? accountEmail ?? ""}
                       readOnly
+                      disabled
                       className="w-full px-3 py-2 border border-gray-600 bg-gray-800 text-gray-400 rounded-lg cursor-not-allowed"
                       aria-readonly="true"
                     />
                     <p className="text-xs text-gray-500 mt-1">이메일은 변경할 수 없습니다.</p>
                   </>
                 ) : (
-                  <p className="text-gray-200">{profile.email}</p>
+                  <p className="text-gray-200">
+                    {resolvedEmail || "등록된 이메일이 없습니다."}
+                  </p>
                 )}
               </div>
 
@@ -699,478 +606,25 @@ export default function ProfilePage() {
                 )}
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Member Since
-                </label>
-                <p className="text-gray-200">
-                  {profile.joinDate ? profile.joinDate.toLocaleDateString() : "-"}
+              <div className="mt-8 border-t border-gray-700 pt-6">
+                <h3 className="text-sm font-semibold text-red-400 mb-2">
+                  위험 구역
+                </h3>
+                <p className="text-sm text-gray-400 mb-4">
+                  계정을 삭제하면 채팅 기록과 설정이 복구 없이 제거됩니다.
                 </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Friends Section */}
-          <div className="bg-gray-800 rounded-lg shadow-sm border border-gray-600 p-6 mt-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold text-white">
-                Friends ({friends.length})
-              </h2>
-              <button className="text-emerald-400 hover:text-emerald-300 text-sm font-medium">
-                Find Friends
-              </button>
-            </div>
-
-            <div className="space-y-3 max-h-96 overflow-y-auto">
-              {friends.length === 0 ? (
-                <div className="text-center py-8">
-                  <div className="text-4xl mb-2">👥</div>
-                  <p className="text-gray-400">No friends yet</p>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Start chatting to make new friends!
-                  </p>
-                </div>
-              ) : (
-                friends.map((friend) => (
-                  <div
-                    key={friend.id}
-                    className="flex items-center justify-between p-3 bg-gray-700 rounded-lg hover:bg-gray-650 transition-colors"
-                  >
-                    <div
-                      className="flex items-center space-x-3 cursor-pointer flex-1"
-                      onClick={() => handleViewFriendProfile(friend)}
-                    >
-                      <div className="relative">
-                        <div className="w-12 h-12 bg-gray-600 rounded-full flex items-center justify-center">
-                          <span className="text-lg font-medium text-white">
-                            {friend.name.charAt(0)}
-                          </span>
-                        </div>
-                        <div
-                          className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-gray-700 ${friend.isOnline ? "bg-emerald-500" : "bg-gray-500"
-                            }`}
-                        />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-white truncate">
-                          {friend.name}
-                        </p>
-                        <p className="text-sm text-gray-400">
-                          {friend.country} • {friend.level}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {friend.isOnline
-                            ? "Online"
-                            : `Last seen ${formatLastSeen(friend.lastSeen)}`}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => handleStartChat(friend)}
-                        className="bg-emerald-600 text-white p-2 rounded-lg hover:bg-emerald-700 transition-colors"
-                        title="Start Chat"
-                      >
-                        <svg
-                          className="w-4 h-4"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                      </button>
-                      <button
-                        onClick={() => handleInviteToRoom(friend)}
-                        className="bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700 transition-colors"
-                        title="Invite to Room"
-                      >
-                        <svg
-                          className="w-4 h-4"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2ha1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Stats Card */}
-        <div className="space-y-6">
-          <div className="bg-gray-800 rounded-lg shadow-sm border border-gray-600 p-6">
-            <h3 className="text-lg font-semibold mb-4 text-white">
-              Learning Stats
-            </h3>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-300">Total Chats</span>
-                <span className="text-2xl font-bold text-emerald-400">
-                  {profile.totalChats}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-300">Vocabulary Learned</span>
-                <span className="text-2xl font-bold text-green-400">
-                  {profile.vocabularyLearned}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-300">Current Streak</span>
-                <span className="text-2xl font-bold text-amber-400">
-                  {profile.streak} days
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-gray-800 rounded-lg shadow-sm border border-gray-600 p-6">
-            <h3 className="text-lg font-semibold mb-4 text-white">
-              Achievements
-            </h3>
-            <div className="space-y-3">
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-yellow-600 rounded-full flex items-center justify-center">
-                  <span className="text-sm">🏆</span>
-                </div>
-                <div>
-                  <p className="font-medium text-white">First Chat</p>
-                  <p className="text-sm text-gray-400">
-                    Completed your first conversation
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                  <span className="text-sm">📚</span>
-                </div>
-                <div>
-                  <p className="font-medium text-white">Vocabulary Master</p>
-                  <p className="text-sm text-gray-400">Learned 100+ words</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
-                  <span className="text-sm">🔥</span>
-                </div>
-                <div>
-                  <p className="font-medium text-white">Week Streak</p>
-                  <p className="text-sm text-gray-400">
-                    7 days consecutive learning
-                  </p>
-                </div>
+                <button
+                  onClick={handleDeleteAccount}
+                  disabled={isDeletingAccount}
+                  className="px-4 py-2 rounded-lg bg-red-600 text-white font-medium hover:bg-red-500 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {isDeletingAccount ? "삭제 중..." : "계정 삭제"}
+                </button>
               </div>
             </div>
           </div>
         </div>
       </div>
-
-      {/* Recent Activity */}
-      <div className="mt-8">
-        <div className="bg-gray-800 rounded-lg shadow-sm border border-gray-600 p-6">
-          <h3 className="text-lg font-semibold mb-4 text-white">
-            Recent Activity
-          </h3>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between py-2 border-b border-gray-700">
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                  <span className="text-sm">💬</span>
-                </div>
-                <div>
-                  <p className="font-medium text-white">AI Chat Session</p>
-                  <p className="text-sm text-gray-400">
-                    Practiced conversation for 20 minutes
-                  </p>
-                </div>
-              </div>
-              <span className="text-sm text-gray-400">2 hours ago</span>
-            </div>
-            <div className="flex items-center justify-between py-2 border-b border-gray-700">
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
-                  <span className="text-sm">📝</span>
-                </div>
-                <div>
-                  <p className="font-medium text-white">New Vocabulary</p>
-                  <p className="text-sm text-gray-400">
-                    Added 3 new words to learning notes
-                  </p>
-                </div>
-              </div>
-              <span className="text-sm text-gray-400">Yesterday</span>
-            </div>
-            <div className="flex items-center justify-between py-2">
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
-                  <span className="text-sm">👥</span>
-                </div>
-                <div>
-                  <p className="font-medium text-white">User Chat</p>
-                  <p className="text-sm text-gray-400">
-                    Joined 'Travel English' room
-                  </p>
-                </div>
-              </div>
-              <span className="text-sm text-gray-400">2 days ago</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Friend Profile Modal */}
-      {showFriendProfile && selectedFriend && (
-        <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-          onClick={() => {
-            setShowFriendProfile(false);
-            setSelectedFriend(null);
-          }}
-        >
-          <div
-            className="bg-gray-800 rounded-lg border border-gray-600 w-full max-w-md"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="p-4 border-b border-gray-600">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-white">
-                  Friend Profile
-                </h3>
-                <button
-                  onClick={() => {
-                    setShowFriendProfile(false);
-                    setSelectedFriend(null);
-                  }}
-                  className="text-gray-400 hover:text-white"
-                >
-                  <svg
-                    className="w-5 h-5"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            <div className="p-6 text-center">
-              <div className="relative inline-block mb-4">
-                <div className="w-20 h-20 bg-gray-600 rounded-full flex items-center justify-center">
-                  <span className="text-2xl font-medium text-white">
-                    {selectedFriend.name.charAt(0)}
-                  </span>
-                </div>
-                <div
-                  className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-gray-800 ${selectedFriend.isOnline ? "bg-emerald-500" : "bg-gray-500"
-                    }`}
-                />
-              </div>
-
-              <h4 className="text-xl font-semibold text-white mb-2">
-                {selectedFriend.name}
-              </h4>
-              <p className="text-gray-300 mb-1">{selectedFriend.country}</p>
-              <p className="text-sm text-gray-400 mb-1">
-                English Level: {selectedFriend.level}
-              </p>
-              <p className="text-sm text-gray-500 mb-6">
-                {selectedFriend.isOnline
-                  ? "🟢 Online"
-                  : `🔴 Last seen ${formatLastSeen(selectedFriend.lastSeen)}`}
-              </p>
-
-              <div className="space-y-3">
-                <button
-                  onClick={() => handleStartChat(selectedFriend)}
-                  className="w-full bg-emerald-600 text-white py-3 px-4 rounded-lg hover:bg-emerald-700 transition-colors flex items-center justify-center space-x-2"
-                >
-                  <svg
-                    className="w-5 h-5"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  <span>Start Private Chat</span>
-                </button>
-
-                <button
-                  onClick={() => handleInviteToRoom(selectedFriend)}
-                  className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
-                >
-                  <svg
-                    className="w-5 h-5"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2ha1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z" />
-                  </svg>
-                  <span>Invite to Group Chat</span>
-                </button>
-
-                <button
-                  onClick={() => handleRemoveFriend(selectedFriend.id)}
-                  className="w-full bg-red-600 text-white py-3 px-4 rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center space-x-2"
-                >
-                  <svg
-                    className="w-5 h-5"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  <span>Remove Friend</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Invite to Room Modal */}
-      {showInviteModal && selectedFriend && (
-        <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-          onClick={() => {
-            setShowInviteModal(false);
-            setSelectedFriend(null);
-          }}
-        >
-          <div
-            className="bg-gray-800 rounded-lg border border-gray-600 w-full max-w-md"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="p-4 border-b border-gray-600">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-white">
-                  Invite {selectedFriend.name} to Chat Room
-                </h3>
-                <button
-                  onClick={() => {
-                    setShowInviteModal(false);
-                    setSelectedFriend(null);
-                  }}
-                  className="text-gray-400 hover:text-white"
-                >
-                  <svg
-                    className="w-5 h-5"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            <div className="p-4">
-              <div className="space-y-4">
-                <div>
-                  <p className="text-sm text-gray-300 mb-3">
-                    Choose a room to invite {selectedFriend.name} to:
-                  </p>
-
-                  <div className="space-y-2">
-                    {/* Mock available rooms */}
-                    {[
-                      {
-                        name: "Travel Stories",
-                        members: 12,
-                        topic: "Share travel experiences",
-                      },
-                      {
-                        name: "Food & Cooking",
-                        members: 8,
-                        topic: "Discuss recipes and cuisines",
-                      },
-                      {
-                        name: "Music Lovers",
-                        members: 15,
-                        topic: "Talk about favorite music",
-                      },
-                      {
-                        name: "Study Buddy",
-                        members: 6,
-                        topic: "Help each other with English",
-                      },
-                    ].map((room) => (
-                      <button
-                        key={room.name}
-                        onClick={() => handleSendInvite(room.name)}
-                        className="w-full text-left p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors border border-gray-600 hover:border-blue-500"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="font-medium text-white">
-                              {room.name}
-                            </p>
-                            <p className="text-sm text-gray-400">
-                              {room.topic}
-                            </p>
-                          </div>
-                          <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded-full">
-                            {room.members} members
-                          </span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="border-t border-gray-600 pt-4">
-                  <button
-                    onClick={() => {
-                      const roomName = prompt("Enter new room name:");
-                      if (roomName) {
-                        handleSendInvite(roomName);
-                      }
-                    }}
-                    className="w-full bg-emerald-600 text-white py-2 px-4 rounded-lg hover:bg-emerald-700 transition-colors flex items-center justify-center space-x-2"
-                  >
-                    <svg
-                      className="w-4 h-4"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    <span>Create New Room & Invite</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

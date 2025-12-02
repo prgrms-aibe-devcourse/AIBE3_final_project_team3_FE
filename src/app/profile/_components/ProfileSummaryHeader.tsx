@@ -7,7 +7,6 @@ interface ProfileSummaryHeaderProps {
     nickname?: string;
     name?: string;
     memberId?: number | null;
-    connectionLabel?: string;
     onClickChangeAvatar?: () => void;
     changeButtonDisabled?: boolean;
     changeButtonText?: string;
@@ -44,7 +43,6 @@ export function ProfileSummaryHeader({
     nickname,
     name,
     memberId,
-    connectionLabel,
     onClickChangeAvatar,
     changeButtonDisabled,
     changeButtonText = "프로필 사진 변경",
@@ -77,11 +75,6 @@ export function ProfileSummaryHeader({
                 )}
                 {name && (
                     <p className="text-sm text-gray-300">{name}</p>
-                )}
-                {connectionLabel && (
-                    <p className="text-sm text-gray-300">
-                        Connection: <span className="ml-1 text-white">{connectionLabel}</span>
-                    </p>
                 )}
                 {children}
                 {onClickChangeAvatar && (

@@ -1,24 +1,27 @@
 "use client";
 
-import Link from "next/link";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useLogin } from "@/global/api/useAuthQuery";
+import { useLoginStore } from "@/global/stores/useLoginStore";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
-  
+
   const router = useRouter();
   const { mutate: login, isPending } = useLogin();
+  const setAccountEmail = useLoginStore((state) => state.setAccountEmail);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     login(formData, {
       onSuccess: () => {
+        setAccountEmail(formData.email);
         // 로그인 성공 시 채팅 페이지로 이동
         router.push("/chat");
       },
