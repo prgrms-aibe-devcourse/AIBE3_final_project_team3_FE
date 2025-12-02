@@ -27,10 +27,8 @@ export async function fetchSentenceGameNoteList(page: number) {
   const res = await apiClient.GET("/api/v1/admin/sentence-game/notes", {
     params: {
       query: {
-        pageable: {
-          page,
-          size: 20,
-        },
+        page,
+        size: 20,
       },
     },
   });
@@ -53,10 +51,8 @@ export async function fetchSentenceGameList(page: number) {
   const res = await apiClient.GET("/api/v1/admin/sentence-game", {
     params: {
       query: {
-        pageable: {
-          page,
-          size: 20,
-        },
+        page,
+        size: 20,
       },
     },
   });

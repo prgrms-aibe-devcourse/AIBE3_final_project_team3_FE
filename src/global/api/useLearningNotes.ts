@@ -67,10 +67,8 @@ const fetchNotes = async (tag: LearningTag, filter: LearningFilter, page: number
       query: {
         tag: mapTag(tag),
         learningFilter: mapFilter(filter),
-        pageable: {
-          page,
-          size: 20,
-        },
+        page,
+        size: 20,
       },
     },
   });

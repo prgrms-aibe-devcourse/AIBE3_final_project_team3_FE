@@ -16,10 +16,8 @@ export const fetchReportList = async (page: number) => {
   const res = await apiClient.GET("/api/v1/admin/reports", {
     params: {
       query: {
-        pageable: {
-          page,
-          size: 20,
-        },
+        page,
+        size: 20,
       }
     },
   });
