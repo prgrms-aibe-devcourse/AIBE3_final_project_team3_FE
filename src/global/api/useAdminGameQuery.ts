@@ -1,4 +1,5 @@
 import apiClient from "@/global/backend/client";
+import type { components } from "@/global/backend/schema";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { unwrap } from "../backend/unwrap"; // 응답 처리 헬퍼
 
