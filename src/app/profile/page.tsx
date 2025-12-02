@@ -22,7 +22,6 @@ interface UserProfile {
   profileImageUrl?: string;
   isFriend: boolean;
   isPendingRequest: boolean;
-  joinDate: Date | null;
   totalChats: number;
   vocabularyLearned: number;
   streak: number;
@@ -128,7 +127,6 @@ export default function ProfilePage() {
     profileImageUrl: "",
     isFriend: false,
     isPendingRequest: false,
-    joinDate: null,
     totalChats: 0,
     vocabularyLearned: 0,
     streak: 0,
@@ -408,8 +406,6 @@ export default function ProfilePage() {
     const levelLabel = ENGLISH_LEVEL_LABELS[
       englishLevel as MemberProfileUpdateReq["englishLevel"]
     ] ?? englishLevel;
-    const joinedAt = profileData.joinedAt ? new Date(profileData.joinedAt) : null;
-    const joinDate = joinedAt && !Number.isNaN(joinedAt.getTime()) ? joinedAt : null;
     const legacyInterests = Array.isArray((profileData as { interest?: unknown }).interest)
       ? ((profileData as { interest?: string[] }).interest ?? [])
       : undefined;
@@ -433,7 +429,6 @@ export default function ProfilePage() {
       profileImageUrl: profileData.profileImageUrl ?? "",
       isFriend: Boolean(profileData.isFriend),
       isPendingRequest: Boolean(profileData.isPendingRequest),
-      joinDate,
       totalChats: profileData.totalChats ?? 0,
       vocabularyLearned: profileData.vocabularyLearned ?? 0,
       streak: profileData.streak ?? 0,
@@ -464,12 +459,6 @@ export default function ProfilePage() {
   if (!accessToken) {
     return null;
   }
-
-  const connectionLabel = profile.isFriend
-    ? "Friends"
-    : profile.isPendingRequest
-      ? "Pending"
-      : "Not connected";
 
   const displayProfileImageUrl = avatarPreviewUrl ?? buildVersionedImageUrl(
     profile.profileImageUrl,
@@ -521,7 +510,6 @@ export default function ProfilePage() {
                 nickname={profile.nickname || "-"}
                 name={profile.name}
                 memberId={profile.memberId}
-                connectionLabel={connectionLabel}
                 onClickChangeAvatar={handleAvatarButtonClick}
                 changeButtonDisabled={isUploadingAvatar}
                 isUploadingAvatar={isUploadingAvatar}
@@ -697,15 +685,6 @@ export default function ProfilePage() {
                 ) : (
                   <p className="text-gray-400 text-sm">등록된 관심사가 없습니다.</p>
                 )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Member Since
-                </label>
-                <p className="text-gray-200">
-                  {profile.joinDate ? profile.joinDate.toLocaleDateString() : "-"}
-                </p>
               </div>
             </div>
           </div>

@@ -437,6 +437,7 @@ const normaliseProfile = (payload: unknown): MemberProfile => {
         interest: interests,
         interests,
         description: profile.description ?? "",
+        lastSeenAt: typeof profile.lastSeenAt === "string" ? profile.lastSeenAt : undefined,
         email: profile.email ?? "",
         memberId: profile.memberId ?? profile.id,
         id: profile.id ?? profile.memberId,
