@@ -17,10 +17,12 @@ export interface LoginState {
   member: MemberSummaryResp | null;
   accessToken: string | null;
   role: string | null;
+  accountEmail: string | null;
   hasHydrated: boolean;
   setMember: (member: MemberSummaryResp | null) => void;
   setAccessToken: (token: string | null) => void;
   setLogin: (token: string) => void;
   clearAccessToken: () => void;
+  setAccountEmail: (email: string | null) => void;
   setHydrated: (value: boolean) => void;
 }
