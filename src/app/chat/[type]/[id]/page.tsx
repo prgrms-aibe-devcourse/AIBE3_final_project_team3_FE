@@ -136,7 +136,15 @@ export default function ChatRoomPage() {
         destination,
         (message: IMessage) => {
           const payload = JSON.parse(message.body);
+          
+          // 방 폐쇄 이벤트 처리
+          if (payload.type === "ROOM_CLOSED") {
+            console.log("[WebSocket] Room closed event received", payload);
 
+            alert(`'${payload.roomName}' 채팅방이 폐쇄되었습니다.\n사유: ${payload.reasonLabel}`);
+            window.location.reload();
+            return;
+          }
           // 1. 번역 업데이트 이벤트 처리
           if (payload.type === 'TRANSLATION_UPDATE') {
              console.log(`[WebSocket] Received translation update:`, payload);
