@@ -12,21 +12,23 @@ export const AI_ROOM_TYPE_OPTIONS: AiRoomTypeOption[] = [
   {
     type: "ROLE_PLAY",
     title: "상황극 역할놀이",
-    description: "실전 상황을 연기하며 표현력을 키우는 AI 역할놀이 모드",
-    details: "카페 주문부터 업무 협상까지, 세분화된 role_play_type에 맞춘 시나리오를 제공합니다.",
-    badge: "추천",
+    description: "처음 이용자에게 추천되는 실전 상황 연습 모드",
+    details: "카페 주문부터 업무 협상까지, role_play_type에 맞춘 시나리오로 바로 말하기 감각을 살립니다.",
+    badge: "신규 추천",
   },
   {
     type: "TUTOR_PERSONAL",
     title: "개인화 튜터",
-    description: "내 학습 이력과 관심사에 맞춘 RAG 기반 개인 튜터",
-    details: "학습 노트와 관심사를 반영해 피드백과 과제를 제안합니다.",
+    description: "내 학습노트 데이터만으로 맞춤 코칭을 제공하는 개인 튜터",
+    details: "작성해 둔 학습노트 문장·피드백을 컨텍스트로 삼아 필요한 표현과 과제를 제안합니다.",
+    badge: "내 노트 추천",
   },
   {
     type: "TUTOR_SIMILAR",
     title: "유사도 튜터",
-    description: "비슷한 실력/목표를 가진 학습자와 매칭된 튜터",
-    details: "목표별 추천 표현과 예문을 제공하는 AI 컨설턴트입니다.",
+    description: "나와 비슷한 학습 패턴을 가진 사례를 찾아주는 RAG 튜터",
+    details: "유사 학습자의 노트를 컨텍스트로 넣어 새로운 표현, 예문, 피드백을 제안합니다.",
+    badge: "유사 노트 추천",
   },
 ];
 
