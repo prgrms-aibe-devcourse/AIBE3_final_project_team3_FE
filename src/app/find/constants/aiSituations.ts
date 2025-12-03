@@ -1,14 +1,87 @@
+import { PromptListItem } from "@/global/types/prompt.types";
+
 export interface AIScenario {
-  id: string;
+  id: number | string;
   title: string;
   description?: string;
+  promptType?: string;
+  rolePlayType?: string;
 }
 
 export interface AICategory {
   id: string;
   title: string;
+  promptType?: string;
+  rolePlayType?: string;
   scenarios: AIScenario[];
 }
+
+const ROLE_PLAY_TYPE_LABELS: Record<string, string> = {
+  DAILY_SERVICE: "일상 & 서비스 상황",
+  COMPANY_WORK: "회사/직장 상황",
+  SCHOOL_LEARNING: "학교/학습 상황",
+  TRAVEL_AIRPORT_IMMIGRATION: "여행 & 공항/이민 상황",
+  HOSPITAL_EMERGENCY: "병원 & 긴급 상황",
+  ONLINE_DIGITAL: "온라인/디지털 상황",
+  RELATIONSHIPS_EMOTIONS: "인간관계 & 감정/갈등 상황",
+  META_SITUATIONS: "영어 학습 메타 상황",
+};
+
+const FALLBACK_CATEGORY_KEY = "UNCATEGORIZED";
+
+const toTitleCaseLabel = (value: string) =>
+  value
+    .toLowerCase()
+    .split("_")
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+
+export const formatRolePlayTypeLabel = (rolePlayType?: string | null) => {
+  if (!rolePlayType || rolePlayType === FALLBACK_CATEGORY_KEY) {
+    return "기타 상황극 프롬프트";
+  }
+  return ROLE_PLAY_TYPE_LABELS[rolePlayType] ?? toTitleCaseLabel(rolePlayType);
+};
+
+export const buildCategoriesFromPromptList = (
+  promptList?: PromptListItem[] | null,
+): AICategory[] => {
+  if (!Array.isArray(promptList) || promptList.length === 0) {
+    return [];
+  }
+
+  const grouped = promptList.reduce<Record<string, AIScenario[]>>((acc, prompt) => {
+    const rawRoleType =
+      typeof prompt.rolePlayType === "string" && prompt.rolePlayType.trim().length > 0
+        ? prompt.rolePlayType.trim().toUpperCase()
+        : FALLBACK_CATEGORY_KEY;
+
+    if (!acc[rawRoleType]) {
+      acc[rawRoleType] = [];
+    }
+
+    acc[rawRoleType].push({
+      id: prompt.id,
+      title: prompt.title,
+      promptType: prompt.promptType,
+      rolePlayType: rawRoleType === FALLBACK_CATEGORY_KEY ? undefined : rawRoleType,
+    });
+
+    return acc;
+  }, {});
+
+  return Object.entries(grouped).map(([rolePlayTypeKey, scenarios], index) => {
+    const title = formatRolePlayTypeLabel(rolePlayTypeKey);
+    const safeKey = rolePlayTypeKey === FALLBACK_CATEGORY_KEY ? "others" : rolePlayTypeKey.toLowerCase();
+    return {
+      id: `${safeKey}-${index + 1}`,
+      title,
+      rolePlayType: rolePlayTypeKey === FALLBACK_CATEGORY_KEY ? undefined : rolePlayTypeKey,
+      scenarios,
+    };
+  });
+};
 
 export const AI_SITUATION_CATEGORIES: AICategory[] = [
   {

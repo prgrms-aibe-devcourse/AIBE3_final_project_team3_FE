@@ -1,3 +1,5 @@
+export type AiChatRoomType = "ROLE_PLAY" | "TUTOR_PERSONAL" | "TUTOR_SIMILAR";
+
 export interface ChatRoomMember {
   id: number;
   nickname: string;
@@ -25,6 +27,12 @@ export interface GroupChatRoomResp {
   description: string;
   topic: string;
   hasPassword: boolean;
+
+export interface CreateAIChatReq {
+  roomName: string;
+  personaId: number;
+  roomType: AiChatRoomType;
+}
   memberCount: number;
   createdAt: string;
   ownerId: number;
@@ -39,8 +47,7 @@ export interface JoinGroupChatReq {
 export interface AIChatRoomResp {
   id: number;
   name: string;
-  aiModelId: string;
-  aiPersona: string;
+  aiPersona: number;
 }
 
 export interface ChatRoomResp {

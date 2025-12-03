@@ -1,21 +1,25 @@
 "use client";
 
-import { useCreateDirectChat } from "@/global/api/useChatQuery";
+import { useCreateAiChat, useCreateDirectChat } from "@/global/api/useChatQuery";
 import { useFriendDetailQuery, useFriendsQuery, useMemberProfileQuery, useMembersQuery } from "@/global/api/useMemberQuery";
+import { usePromptListQuery } from "@/global/api/usePromptQuery";
 import { useFriendshipActions } from "@/global/hooks/useFriendshipActions";
 import { getCountryFlagEmoji, normaliseCountryValue } from "@/global/lib/countries";
 import { MemberPresenceSummaryResp } from "@/global/types/auth.types";
+import { AiChatRoomType } from "@/global/types/chat.types";
 import { FriendSummary } from "@/global/types/member.types";
 import { Bot, MessageSquare, Plus, UserRoundCheck, Users } from "lucide-react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
-import GroupRoomList from "./components/GroupRoomList";
-import NewGroupChatModal from "./components/NewGroupChatModal";
-// Import new AI modal components and types
+import AICreateRoomModal from "./components/AICreateRoomModal";
+import AIRoomTypeModal from "./components/AIRoomTypeModal";
 import AIScenarioModal from "./components/AIScenarioModal";
 import AISituationModal from "./components/AISituationModal";
-import { AICategory, AIScenario } from "./constants/aiSituations";
+import GroupRoomList from "./components/GroupRoomList";
+import NewGroupChatModal from "./components/NewGroupChatModal";
+import { formatAiRoomTypeLabel } from "./constants/aiRoomTypes";
+import { AICategory, AIScenario, buildCategoriesFromPromptList } from "./constants/aiSituations";
 
 
 export const dynamic = "force-dynamic";
@@ -202,9 +206,23 @@ function FindPageContent() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("1v1");
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false); // Renamed for clarity
   // New state for AI modals
+  const [isAIRoomTypeModalOpen, setIsAIRoomTypeModalOpen] = useState(false);
   const [isAISituationModalOpen, setIsAISituationModalOpen] = useState(false);
   const [isAIScenarioModalOpen, setIsAIScenarioModalOpen] = useState(false);
+  const [isAICreateModalOpen, setIsAICreateModalOpen] = useState(false);
+  const [selectedRoomType, setSelectedRoomType] = useState<AiChatRoomType | null>(null);
   const [selectedAICategory, setSelectedAICategory] = useState<AICategory | null>(null);
+  const [selectedAIScenario, setSelectedAIScenario] = useState<AIScenario | null>(null);
+  const {
+    data: promptList,
+    isLoading: isPromptLoading,
+    error: promptError,
+    refetch: refetchPromptList,
+  } = usePromptListQuery();
+  const aiCategories = useMemo(() => buildCategoriesFromPromptList(promptList), [promptList]);
+  const aiPromptModalTitle = selectedRoomType
+    ? `${formatAiRoomTypeLabel(selectedRoomType)} 프롬프트 선택`
+    : undefined;
 
 
   useEffect(() => {
@@ -218,8 +236,22 @@ function FindPageContent() {
     if (activeTab === "group") {
       setIsGroupModalOpen(true);
     } else if (activeTab === "ai") {
-      setIsAISituationModalOpen(true); // Open the first AI modal
+      setSelectedRoomType(null);
+      setSelectedAICategory(null);
+      setSelectedAIScenario(null);
+      setIsAISituationModalOpen(false);
+      setIsAIScenarioModalOpen(false);
+      setIsAICreateModalOpen(false);
+      setIsAIRoomTypeModalOpen(true);
     }
+  };
+
+  const handleSelectAIRoomType = (roomType: AiChatRoomType) => {
+    setSelectedRoomType(roomType);
+    setSelectedAICategory(null);
+    setSelectedAIScenario(null);
+    setIsAIRoomTypeModalOpen(false);
+    setIsAISituationModalOpen(true);
   };
 
   // Handlers for AI modals
@@ -233,19 +265,50 @@ function FindPageContent() {
     setIsAIScenarioModalOpen(false); // Close second modal
     setIsAISituationModalOpen(true); // Open first modal
     setSelectedAICategory(null); // Clear selected category
+    setSelectedAIScenario(null); // Clear selected scenario
+    setIsAICreateModalOpen(false); // Close creation modal
   };
 
   const handleSelectAIScenario = (scenario: AIScenario) => {
-    // TODO: Implement logic to create AI chat room with this scenario
-    alert(`AI 채팅방 생성 요청: ${selectedAICategory?.title} - ${scenario.title}`);
+    if (!selectedRoomType) {
+      alert("AI 채팅방 유형을 먼저 선택해 주세요.");
+      return;
+    }
+    setSelectedAIScenario(scenario);
     setIsAIScenarioModalOpen(false); // Close second modal
-    setSelectedAICategory(null); // Clear selected category
+    setIsAICreateModalOpen(true); // Open creation modal
   };
 
   const closeAllAIModals = () => {
+    setIsAIRoomTypeModalOpen(false);
     setIsAISituationModalOpen(false);
     setIsAIScenarioModalOpen(false);
+    setIsAICreateModalOpen(false);
+    setSelectedRoomType(null);
     setSelectedAICategory(null);
+    setSelectedAIScenario(null);
+  };
+
+  const handleCreateAiRoom = (roomName: string) => {
+    if (!selectedRoomType || !selectedAIScenario) {
+      alert("AI 채팅방 유형과 프롬프트를 먼저 선택해 주세요.");
+      return;
+    }
+
+    const personaId = Number(selectedAIScenario.id);
+    if (!Number.isFinite(personaId)) {
+      alert("선택한 프롬프트 ID가 올바르지 않습니다. 다시 시도해 주세요.");
+      return;
+    }
+
+    createAiChatMutation.mutate(
+      { roomName, personaId, roomType: selectedRoomType },
+      {
+        onSuccess: () => {
+          closeAllAIModals();
+        },
+      }
+    );
   };
 
 
@@ -288,6 +351,7 @@ function FindPageContent() {
     }
   }, [requestedMemberId, members, friendMembers, selectedUser]);
   const createChatMutation = useCreateDirectChat();
+  const createAiChatMutation = useCreateAiChat();
   const {
     sendFriendRequest: mutateSendFriendRequest,
     acceptFriendRequest: mutateAcceptFriendRequest,
@@ -1146,11 +1210,24 @@ function FindPageContent() {
         onClose={() => setIsGroupModalOpen(false)} // Use renamed state
       />
 
+      <AIRoomTypeModal
+        isOpen={isAIRoomTypeModalOpen}
+        onClose={closeAllAIModals}
+        onSelect={handleSelectAIRoomType}
+      />
+
       {/* New AI Situation Modals */}
       <AISituationModal
         isOpen={isAISituationModalOpen}
         onClose={closeAllAIModals}
         onSelectCategory={handleSelectAICategory}
+        categories={aiCategories}
+        isLoading={isPromptLoading}
+        errorMessage={promptError?.message}
+        onRetry={() => {
+          void refetchPromptList();
+        }}
+        headerTitle={aiPromptModalTitle}
       />
 
       <AIScenarioModal
@@ -1159,6 +1236,15 @@ function FindPageContent() {
         onBack={handleBackToCategories}
         selectedCategory={selectedAICategory}
         onSelectScenario={handleSelectAIScenario}
+      />
+
+      <AICreateRoomModal
+        isOpen={isAICreateModalOpen}
+        onClose={closeAllAIModals}
+        selectedRoomType={selectedRoomType}
+        selectedPrompt={selectedAIScenario}
+        onSubmit={handleCreateAiRoom}
+        isSubmitting={createAiChatMutation.isPending}
       />
     </>
   );
