@@ -59,8 +59,8 @@ export default function ChatSidebar({
         setIsDropdownOpen(false);
       }}
       className={`flex flex-col items-center justify-center w-full py-2 transition-colors ${activeTab === tabName
-          ? "text-emerald-400"
-          : "text-gray-400 hover:text-white"
+        ? "text-emerald-400"
+        : "text-gray-400 hover:text-white"
         }`}
     >
       <Icon className="w-6 h-6 mb-1" />
@@ -137,8 +137,8 @@ export default function ChatSidebar({
                   key={room.id}
                   onClick={() => setSelectedRoomId(room.id)}
                   className={`flex items-center p-3 rounded-lg cursor-pointer transition-colors ${selectedRoomId === room.id
-                      ? "bg-emerald-600/20"
-                      : "hover:bg-gray-700/50"
+                    ? "bg-emerald-600/20"
+                    : "hover:bg-gray-700/50"
                     }`}
                 >
                   <div className="relative">
@@ -184,7 +184,7 @@ export default function ChatSidebar({
                       <p className="text-xs text-gray-400 truncate mt-1">
                         {room.lastMessage}
                       </p>
-                      {room.unreadCount && room.unreadCount > 0 ? (
+                      {room.type !== "ai" && room.unreadCount && room.unreadCount > 0 ? (
                         <span className="ml-2 mt-1 bg-emerald-500 text-white text-xs font-bold rounded-full h-5 min-w-[1.25rem] px-1 flex items-center justify-center flex-shrink-0">
                           {room.unreadCount > 99 ? '99+' : room.unreadCount}
                         </span>
