@@ -2,12 +2,14 @@
 
 import { useRef, useEffect, useLayoutEffect, useState } from "react";
 import { MessageResp } from "@/global/types/chat.types";
-import { Loader2, MoreVertical, Phone, Video, ShieldAlert, LogOut, Users, LucideIcon } from "lucide-react"; // LucideIcon 추가
+import { Loader2, MoreVertical, Phone, Video, ShieldAlert, LogOut, Users, LucideIcon, Sparkles } from "lucide-react"; // Sparkles 추가
 import { MemberSummaryResp } from "@/global/types/auth.types";
-import { useLeaveChatRoom, useUploadFileMutation } from "@/global/api/useChatQuery";
+import { useLeaveChatRoom, useUploadFileMutation, useAiFeedbackMutation } from "@/global/api/useChatQuery"; // useAiFeedbackMutation 추가
 import { useLanguage } from "@/contexts/LanguageContext";
 import MembersModal from "./MembersModal";
 import MessageInput from "./MessageInput";
+import LearningNoteModal from "./LearningNoteModal"; // Import Modal
+import { AiFeedbackResp } from "@/global/types/chat.types";
 
 // Define props for the component
 interface ChatWindowProps {
@@ -31,7 +33,7 @@ interface ChatWindowProps {
   isLoadingMore?: boolean;
 }
 
-type MenuActionItem = { // MenuActionItem 타입 정의도 추가 (만약 누락되었다면)
+type MenuActionItem = {
   label: string;
   icon: LucideIcon;
   action: () => void;
@@ -62,6 +64,11 @@ export default function ChatWindow({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
   
+  // State for Learning Note Modal
+  const [isLearningNoteModalOpen, setIsLearningNoteModalOpen] = useState(false);
+  const [selectedMessageForAnalysis, setSelectedMessageForAnalysis] = useState<{ original: string; translated: string } | null>(null);
+  const [analysisResult, setAnalysisResult] = useState<AiFeedbackResp | null>(null);
+  
   // State to track which messages should show original text instead of translation
   const [showOriginalIds, setShowOriginalIds] = useState<Set<number>>(new Set());
 
@@ -81,6 +88,20 @@ export default function ChatWindow({
 
   const { mutate: leaveRoom, isPending: isLeaving } = useLeaveChatRoom();
   const { mutate: uploadFile, isPending: isUploadingFile } = useUploadFileMutation();
+  const { mutate: analyzeFeedback, isPending: isAnalyzing } = useAiFeedbackMutation(); // Mutation Hook
+
+  const handleAnalyzeClick = (original: string, translated: string) => {
+    setSelectedMessageForAnalysis({ original, translated });
+    analyzeFeedback(
+      { originalContent: original, translatedContent: translated },
+      {
+        onSuccess: (data) => {
+          setAnalysisResult(data);
+          setIsLearningNoteModalOpen(true);
+        },
+      }
+    );
+  };
 
   // --- Dropdown Menu Logic ---
   useEffect(() => {
@@ -132,6 +153,14 @@ export default function ChatWindow({
   // --- End Dropdown Menu Logic ---
 
 
+  // Scroll to bottom helper
+  const scrollToBottom = () => {
+    const container = messageContainerRef.current;
+    if (container) {
+      container.scrollTop = container.scrollHeight;
+    }
+  };
+
   // On initial load or when room changes, scroll to bottom.
   useLayoutEffect(() => {
     if (messageContainerRef.current) {
@@ -144,7 +173,7 @@ export default function ChatWindow({
   useEffect(() => {
     const container = messageContainerRef.current;
     if (container && shouldScrollRef.current) {
-      container.scrollTop = container.scrollHeight;
+      scrollToBottom();
     }
   }, [messages]);
 
@@ -334,14 +363,61 @@ export default function ChatWindow({
                                   title={hasTranslation ? "클릭하여 원문/번역 전환" : ""}
                                 >
                                   {!isUser && <p className="text-xs font-semibold pb-1">{msg.sender}</p>}
-                                  <p className="text-sm whitespace-pre-wrap">{displayContent}</p>
+                                  
+                                  {msg.messageType === 'IMAGE' ? (
+                                    <img 
+                                      src={msg.content} 
+                                      alt="Sent image" 
+                                      className="max-w-full max-h-64 rounded-lg cursor-pointer object-contain bg-black/20"
+                                      onLoad={() => shouldScrollRef.current && scrollToBottom()}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        window.open(msg.content, '_blank');
+                                      }}
+                                    />
+                                  ) : msg.messageType === 'FILE' ? (
+                                    <a 
+                                      href={msg.content} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="flex items-center gap-2 text-blue-300 underline break-all"
+                                    >
+                                      <span className="text-xl">📁</span>
+                                      {decodeURIComponent(msg.content.split('/').pop() || 'File')}
+                                    </a>
+                                  ) : (
+                                    <p className="text-sm whitespace-pre-wrap">{displayContent}</p>
+                                  )}
                                   
                                   {hasTranslation && (
-                                    <div className="flex justify-end mt-1">
-                                      <span className="text-[10px] opacity-60 border border-white/20 rounded px-1">
-                                        {isShowingOriginal ? "Original" : "Translated"}
-                                      </span>
-                                    </div>
+                                    <>
+                                      <div className="flex justify-end mt-1">
+                                        <span className="text-[10px] opacity-60 border border-white/20 rounded px-1">
+                                          {isShowingOriginal ? "Original" : "Translated"}
+                                        </span>
+                                      </div>
+                                      {/* Learning Note Analysis Button */}
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation(); // Prevent bubble click (toggle translation)
+                                          if (msg.translatedContent) {
+                                              handleAnalyzeClick(msg.content, msg.translatedContent);
+                                          }
+                                        }}
+                                        disabled={isAnalyzing}
+                                        className={`absolute top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-gray-800 text-yellow-400 shadow-lg hover:bg-gray-600 transition-all opacity-0 group-hover:opacity-100 z-10 ${
+                                          isUser ? "-left-10" : "-right-10"
+                                        } ${isAnalyzing ? "opacity-50 cursor-wait" : ""}`}
+                                        title="AI 분석 및 Learning Note 저장"
+                                      >
+                                        {isAnalyzing && selectedMessageForAnalysis?.original === msg.content ? (
+                                            <Loader2 size={16} className="animate-spin" />
+                                        ) : (
+                                            <Sparkles size={16} />
+                                        )}
+                                      </button>
+                                    </>
                                   )}
                                 </div>
                                 <div className="flex flex-col items-center space-y-1">
@@ -381,6 +457,17 @@ export default function ChatWindow({
                       ownerId={roomDetails.ownerId || 0}
                       currentUserId={member?.memberId || 0}
                       isOwner={isOwner}
+                    />
+                  )}
+
+                  {/* Learning Note Modal */}
+                  {selectedMessageForAnalysis && (
+                    <LearningNoteModal
+                      isOpen={isLearningNoteModalOpen}
+                      onClose={() => setIsLearningNoteModalOpen(false)}
+                      originalContent={selectedMessageForAnalysis.original}
+                      translatedContent={selectedMessageForAnalysis.translated}
+                      feedbackData={analysisResult}
                     />
                   )}
                 </main>

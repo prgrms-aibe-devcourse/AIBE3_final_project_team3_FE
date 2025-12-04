@@ -104,3 +104,20 @@ export interface SubscriberCountUpdateResp {
   subscriberCount: number;
   totalMemberCount: number;
 }
+
+export interface AiFeedbackReq {
+  originalContent: string;
+  translatedContent: string;
+}
+
+export interface AiFeedbackItem {
+  tag: string;
+  problem: string;
+  correction: string;
+  extra: string;
+}
+
+export interface AiFeedbackResp {
+  correctedContent: string;
+  feedback: AiFeedbackItem[];
+}

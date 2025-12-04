@@ -1,10 +1,10 @@
 import apiClient from "@/global/backend/client";
 import { unwrap } from "@/global/backend/unwrap";
-import { ChatRoomResp } from "@/global/types/chat.types";
+import { API_BASE_URL } from "../consts";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useLoginStore } from "../stores/useLoginStore";
-import { AIChatRoomResp, ChatRoomPageDataResp, CreateGroupChatReq, DirectChatRoomResp, GroupChatRoomResp, MessageResp } from "../types/chat.types";
+import { AIChatRoomResp, AiFeedbackReq, AiFeedbackResp, ChatRoomPageDataResp, CreateGroupChatReq, DirectChatRoomResp, GroupChatRoomResp, MessageResp } from "../types/chat.types";
 
 // --- Type Definitions ---
 // Types are now imported from chat.types.ts
@@ -322,23 +322,28 @@ interface UploadFileVariables {
 const uploadFile = async (variables: UploadFileVariables): Promise<MessageResp> => {
   const formData = new FormData();
   formData.append('file', variables.file);
+  const { accessToken } = useLoginStore.getState();
 
-  const response = await apiClient.POST("/api/v1/chats/rooms/{roomId}/files", {
-    params: {
-      path: { roomId: variables.roomId },
-      query: {
-        chatRoomType: variables.chatRoomType.toUpperCase() as "DIRECT" | "GROUP" | "AI",
-        messageType: variables.messageType,
-      },
+  const url = new URL(`${API_BASE_URL}/api/v1/chats/rooms/${variables.roomId}/files`);
+  url.searchParams.append('chatRoomType', variables.chatRoomType.toUpperCase());
+  url.searchParams.append('messageType', variables.messageType);
+
+  const response = await fetch(url.toString(), {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      // Content-Type header must be omitted for FormData to set boundary correctly
     },
-    body: formData as unknown as { file: string },
+    body: formData,
   });
 
-  const unwrappedResponse = await unwrap<MessageResp>(response);
-  if (!unwrappedResponse) {
-    throw new Error("Failed to upload file: No data received.");
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.msg || 'File upload failed');
   }
-  return unwrappedResponse;
+
+  const jsonResponse = await response.json();
+  return jsonResponse.data;
 };
 
 export const useUploadFileMutation = () => {
@@ -414,6 +419,29 @@ export const useTransferOwnershipMutation = () => {
     onError: (error) => {
       console.error("Failed to transfer ownership:", error);
       alert(`방장 위임에 실패했습니다: ${error.message}`);
+    },
+  });
+};
+
+// --- AI Feedback Mutation ---
+
+const fetchAiFeedback = async (req: AiFeedbackReq): Promise<AiFeedbackResp> => {
+  const response = await apiClient.POST("/api/v1/chats/feedback", {
+    body: req,
+  });
+  const feedback = await unwrap<AiFeedbackResp>(response);
+  if (!feedback) {
+    throw new Error("Failed to analyze feedback: No data received.");
+  }
+  return feedback;
+};
+
+export const useAiFeedbackMutation = () => {
+  return useMutation<AiFeedbackResp, Error, AiFeedbackReq>({
+    mutationFn: fetchAiFeedback,
+    onError: (error) => {
+      console.error("AI Analysis failed:", error);
+      alert(`AI 분석에 실패했습니다: ${error.message}`);
     },
   });
 };

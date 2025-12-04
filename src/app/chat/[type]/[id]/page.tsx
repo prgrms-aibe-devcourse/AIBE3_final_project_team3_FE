@@ -149,7 +149,18 @@ export default function ChatRoomPage() {
                 );
              }
           }
-          // 2. 구독자 수 업데이트 이벤트 처리
+          // 2. 멤버 업데이트 이벤트 처리 (JOIN, LEAVE, KICK)
+          else if (['JOIN', 'LEAVE', 'KICK'].includes(payload.type)) {
+             console.log(`[WebSocket] Received member update:`, payload);
+             if (payload.subscriberCount !== undefined) setSubscriberCount(payload.subscriberCount);
+             if (payload.totalMemberCount !== undefined) setTotalMemberCount(payload.totalMemberCount);
+             
+             // 멤버 목록 갱신
+             if (chatRoomType === 'group') {
+                queryClient.invalidateQueries({ queryKey: ['chatRooms', 'group'] });
+             }
+          }
+          // 3. 구독자 수 업데이트 이벤트 처리
           else if (payload.subscriberCount !== undefined && payload.totalMemberCount !== undefined) {
             const countEvent = payload as SubscriberCountUpdateResp;
             console.log(`[WebSocket] Received subscriber count event:`, countEvent);
