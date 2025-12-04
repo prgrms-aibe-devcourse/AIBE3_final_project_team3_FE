@@ -27,17 +27,17 @@ export interface GroupChatRoomResp {
   description: string;
   topic: string;
   hasPassword: boolean;
-
-export interface CreateAIChatReq {
-  roomName: string;
-  personaId: number;
-  roomType: AiChatRoomType;
-}
   memberCount: number;
   createdAt: string;
   ownerId: number;
   members: ChatRoomMember[];
   unreadCount: number;
+}
+
+export interface CreateAIChatReq {
+  roomName: string;
+  personaId: number;
+  roomType: AiChatRoomType;
 }
 
 export interface JoinGroupChatReq {

@@ -1,17 +1,18 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import NewGroupChatModal from "@/app/find/components/NewGroupChatModal";
 import { ChatRoom } from "@/global/stores/useChatStore";
 import {
-  MessageSquare,
-  Users,
   Bot,
-  Search,
+  MessageSquare,
   Plus,
+  Search,
+  Users,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
-import NewGroupChatModal from "@/app/find/components/NewGroupChatModal";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 type ChatSidebarProps = {
   activeTab: "direct" | "group" | "ai";
@@ -57,11 +58,10 @@ export default function ChatSidebar({
         setActiveTab(tabName);
         setIsDropdownOpen(false);
       }}
-      className={`flex flex-col items-center justify-center w-full py-2 transition-colors ${
-        activeTab === tabName
+      className={`flex flex-col items-center justify-center w-full py-2 transition-colors ${activeTab === tabName
           ? "text-emerald-400"
           : "text-gray-400 hover:text-white"
-      }`}
+        }`}
     >
       <Icon className="w-6 h-6 mb-1" />
       <span className="text-xs font-medium">{label}</span>
@@ -136,21 +136,37 @@ export default function ChatSidebar({
                   href={href}
                   key={room.id}
                   onClick={() => setSelectedRoomId(room.id)}
-                  className={`flex items-center p-3 rounded-lg cursor-pointer transition-colors ${
-                    selectedRoomId === room.id
+                  className={`flex items-center p-3 rounded-lg cursor-pointer transition-colors ${selectedRoomId === room.id
                       ? "bg-emerald-600/20"
                       : "hover:bg-gray-700/50"
-                  }`}
+                    }`}
                 >
                   <div className="relative">
-                    {/* TODO: This assumes room.avatar is a full, valid URL from the backend. */}
-                    {room.avatar ? (
-                      <img src={room.avatar} alt={room.name} className="w-12 h-12 rounded-full object-cover" />
-                    ) : (
-                      <div className="w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center text-xl font-semibold text-white">
-                        {room.name.charAt(0).toUpperCase()}
-                      </div>
-                    )}
+                    {(() => {
+                      const src = room.avatar?.trim() ?? "";
+                      const isImageAvatar =
+                        src.startsWith("http://") || src.startsWith("https://") || src.startsWith("/");
+
+                      if (isImageAvatar) {
+                        return (
+                          <Image
+                            src={src}
+                            alt={room.name}
+                            width={48}
+                            height={48}
+                            unoptimized
+                            className="w-12 h-12 rounded-full object-cover"
+                          />
+                        );
+                      }
+
+                      const fallbackLabel = src || room.name.charAt(0).toUpperCase();
+                      return (
+                        <div className="w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center text-xl font-semibold text-white">
+                          {fallbackLabel}
+                        </div>
+                      );
+                    })()}
                     {room.type === "direct" && (
                       <span className="absolute bottom-0 right-0 block h-3 w-3 rounded-full bg-green-500 border-2 border-gray-800"></span>
                     )}
