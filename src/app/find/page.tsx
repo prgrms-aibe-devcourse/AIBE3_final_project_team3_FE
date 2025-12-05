@@ -1,17 +1,14 @@
 "use client";
 
 import { useCreateAiChat, useCreateDirectChat } from "@/global/api/useChatQuery";
-import { useFriendDetailQuery, useFriendsQuery, useMemberProfileQuery, useMembersQuery } from "@/global/api/useMemberQuery";
+import { useFriendsQuery, useMembersQuery } from "@/global/api/useMemberQuery";
 import { usePromptListQuery } from "@/global/api/usePromptQuery";
-import { useFriendshipActions } from "@/global/hooks/useFriendshipActions";
-import { getCountryFlagEmoji, normaliseCountryValue } from "@/global/lib/countries";
-import { MemberPresenceSummaryResp } from "@/global/types/auth.types";
 import { AiChatRoomType } from "@/global/types/chat.types";
-import { FriendSummary } from "@/global/types/member.types";
 import { Bot, MessageSquare, Plus, UserRoundCheck, Users } from "lucide-react";
-import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import MemberGrid from "./_components/MemberGrid";
+import { MemberListItem, MemberSource } from "./_lib/memberUtils";
 import AICreateRoomModal from "./components/AICreateRoomModal";
 import AIRoomTypeModal from "./components/AIRoomTypeModal";
 import AIScenarioModal from "./components/AIScenarioModal";
@@ -21,152 +18,9 @@ import NewGroupChatModal from "./components/NewGroupChatModal";
 import { AI_ROOM_TYPE_OPTIONS, formatAiRoomTypeLabel } from "./constants/aiRoomTypes";
 import { AICategory, AIScenario, buildCategoriesFromPromptList } from "./constants/aiSituations";
 
-
 export const dynamic = "force-dynamic";
 
-
-// A simple utility to generate a placeholder avatar
-const getAvatar = (name: string) => `https://i.pravatar.cc/150?u=${name}`;
-
-const resolveProfileImageUrl = (value?: string | null) => {
-  if (typeof value === "string") {
-    const trimmed = value.trim();
-    if (trimmed.length > 0) {
-      return trimmed;
-    }
-  }
-
-  return null;
-};
-
-const getPresenceMeta = (isOnline?: boolean) => ({
-  badgeClass: isOnline ? "bg-green-500" : "bg-gray-500",
-  textClass: isOnline ? "text-emerald-400" : "text-gray-400",
-  label: isOnline ? "Online" : "Offline",
-});
-
-const formatFriendSince = (value: string): string => {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return new Intl.DateTimeFormat("ko-KR", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  }).format(date);
-};
-
-const formatLastSeen = (value: string): string => {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  const diffMs = Date.now() - date.getTime();
-  const diffMinutes = Math.max(Math.floor(diffMs / (1000 * 60)), 0);
-
-  if (diffMinutes < 1) {
-    return "방금 전";
-  }
-
-  if (diffMinutes < 60) {
-    return `${diffMinutes}분 전`;
-  }
-
-  const diffHours = Math.floor(diffMinutes / 60);
-  if (diffHours < 24) {
-    return `${diffHours}시간 전`;
-  }
-
-  const formatted = new Intl.DateTimeFormat("ko-KR", {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
-
-  return formatted;
-};
-
-type EnglishLevelKey = "BEGINNER" | "INTERMEDIATE" | "ADVANCED" | "NATIVE";
-
-const ENGLISH_LEVEL_META: Record<EnglishLevelKey, { label: string; icon: string; badgeClass: string }> = {
-  BEGINNER: {
-    label: "초급",
-    icon: "🌱",
-    badgeClass: "bg-emerald-900/40 text-emerald-200 border border-emerald-700/50",
-  },
-  INTERMEDIATE: {
-    label: "중급",
-    icon: "🚀",
-    badgeClass: "bg-blue-900/30 text-blue-200 border border-blue-600/40",
-  },
-  ADVANCED: {
-    label: "고급",
-    icon: "🧠",
-    badgeClass: "bg-purple-900/30 text-purple-200 border border-purple-600/40",
-  },
-  NATIVE: {
-    label: "원어민",
-    icon: "🌐",
-    badgeClass: "bg-amber-900/30 text-amber-200 border border-amber-600/40",
-  },
-};
-
-const resolveEnglishLevelMeta = (level?: string | null) => {
-  const upper = typeof level === "string" ? level.toUpperCase() : "";
-  const key = (Object.prototype.hasOwnProperty.call(ENGLISH_LEVEL_META, upper)
-    ? upper
-    : "BEGINNER") as EnglishLevelKey;
-  return ENGLISH_LEVEL_META[key];
-};
-
-type FriendshipState = "FRIEND" | "REQUEST_SENT" | "REQUEST_RECEIVED" | "NONE";
-
-const FRIENDSHIP_STATUS_LABELS: Record<FriendshipState, string> = {
-  FRIEND: "이미 친구",
-  REQUEST_SENT: "요청 전송됨",
-  REQUEST_RECEIVED: "요청 도착",
-  NONE: "친구 아님",
-};
-
-const FRIENDSHIP_STATUS_DESCRIPTIONS: Record<FriendshipState, string> = {
-  FRIEND: "현재 서로 친구 상태입니다.",
-  REQUEST_SENT: "내가 보낸 친구 요청이 상대의 승인을 기다리고 있습니다.",
-  REQUEST_RECEIVED: "상대방이 보낸 친구 요청이 대기 중입니다.",
-  NONE: "아직 친구 요청이 오가거나 수락된 내역이 없습니다.",
-};
-
-const FRIENDSHIP_BADGE_STYLE: Record<FriendshipState, string> = {
-  FRIEND: "bg-emerald-600 text-white",
-  REQUEST_SENT: "bg-blue-600 text-white",
-  REQUEST_RECEIVED: "bg-amber-500 text-black",
-  NONE: "bg-gray-600 text-white",
-};
-
-const normaliseNumericId = (value: unknown): number | null => {
-  if (typeof value === "number" && Number.isFinite(value)) {
-    return value;
-  }
-
-  if (typeof value === "string" && value.trim().length > 0) {
-    const parsed = Number.parseInt(value, 10);
-    if (!Number.isNaN(parsed)) {
-      return parsed;
-    }
-  }
-
-  return null;
-};
-
 type ActiveTab = "1v1" | "friends" | "group" | "ai";
-type MemberListItem = (MemberPresenceSummaryResp | FriendSummary) & {
-  name?: string | null;
-  lastSeenAt?: string | null;
-  profileImageUrl?: string | null;
-};
 const DEFAULT_PAGE_SIZE = 15;
 
 function FindPageContent() {
@@ -186,6 +40,7 @@ function FindPageContent() {
   const displayedPageNumber = isRefetching
     ? currentPage
     : (memberPage?.pageIndex ?? pageIndex) + 1;
+
   const [friendPage, setFriendPage] = useState(1);
   const friendPageIndex = Math.max(friendPage - 1, 0);
   const {
@@ -209,18 +64,11 @@ function FindPageContent() {
   })();
   const canFriendGoPrev = friendHasPrevPage && !isFriendInitialLoading;
   const canFriendGoNext = friendHasNextPage && !isFriendInitialLoading;
-  const [selectedUser, setSelectedUser] = useState<MemberListItem | null>(null);
-  const [selectedSource, setSelectedSource] = useState<"members" | "friends" | null>(null);
+
   const searchParams = useSearchParams();
   const router = useRouter();
-  const skipAutoSelectRef = useRef<number | null>(null);
-  const requestedMemberId = useMemo(() => {
-    const raw = searchParams.get("memberId");
-    return normaliseNumericId(raw);
-  }, [searchParams]);
   const [activeTab, setActiveTab] = useState<ActiveTab>("1v1");
-  const [isGroupModalOpen, setIsGroupModalOpen] = useState(false); // Renamed for clarity
-  // New state for AI modals
+  const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
   const [isAIRoomTypeModalOpen, setIsAIRoomTypeModalOpen] = useState(false);
   const [isAISituationModalOpen, setIsAISituationModalOpen] = useState(false);
   const [isAIScenarioModalOpen, setIsAIScenarioModalOpen] = useState(false);
@@ -228,6 +76,7 @@ function FindPageContent() {
   const [selectedRoomType, setSelectedRoomType] = useState<AiChatRoomType | null>(null);
   const [selectedAICategory, setSelectedAICategory] = useState<AICategory | null>(null);
   const [selectedAIScenario, setSelectedAIScenario] = useState<AIScenario | null>(null);
+
   const {
     data: promptList,
     isLoading: isPromptLoading,
@@ -238,7 +87,6 @@ function FindPageContent() {
   const aiPromptModalTitle = selectedRoomType
     ? `${formatAiRoomTypeLabel(selectedRoomType)} 프롬프트 선택`
     : undefined;
-
 
   useEffect(() => {
     const tab = searchParams.get("tab");
@@ -273,19 +121,18 @@ function FindPageContent() {
     setIsAISituationModalOpen(true);
   };
 
-  // Handlers for AI modals
   const handleSelectAICategory = (category: AICategory) => {
     setSelectedAICategory(category);
-    setIsAISituationModalOpen(false); // Close first modal
-    setIsAIScenarioModalOpen(true); // Open second modal
+    setIsAISituationModalOpen(false);
+    setIsAIScenarioModalOpen(true);
   };
 
   const handleBackToCategories = () => {
-    setIsAIScenarioModalOpen(false); // Close second modal
-    setIsAISituationModalOpen(true); // Open first modal
-    setSelectedAICategory(null); // Clear selected category
-    setSelectedAIScenario(null); // Clear selected scenario
-    setIsAICreateModalOpen(false); // Close creation modal
+    setIsAIScenarioModalOpen(false);
+    setIsAISituationModalOpen(true);
+    setSelectedAICategory(null);
+    setSelectedAIScenario(null);
+    setIsAICreateModalOpen(false);
   };
 
   const handleSelectAIScenario = (scenario: AIScenario) => {
@@ -294,8 +141,8 @@ function FindPageContent() {
       return;
     }
     setSelectedAIScenario(scenario);
-    setIsAIScenarioModalOpen(false); // Close second modal
-    setIsAICreateModalOpen(true); // Open creation modal
+    setIsAIScenarioModalOpen(false);
+    setIsAICreateModalOpen(true);
   };
 
   const closeAllAIModals = () => {
@@ -326,281 +173,16 @@ function FindPageContent() {
         onSuccess: () => {
           closeAllAIModals();
         },
-      }
+      },
     );
   };
 
-
-  useEffect(() => {
-    const shouldSkipAutoSelect =
-      requestedMemberId != null && skipAutoSelectRef.current === requestedMemberId;
-    if (shouldSkipAutoSelect) {
-      return;
-    }
-
-    if (skipAutoSelectRef.current !== null && skipAutoSelectRef.current !== requestedMemberId) {
-      skipAutoSelectRef.current = null;
-    }
-
-    if (!requestedMemberId) {
-      return;
-    }
-
-    const currentSelectedId = normaliseNumericId((selectedUser as { id?: number | string } | null)?.id);
-    if (currentSelectedId === requestedMemberId) {
-      return;
-    }
-
-    const candidateLists: Array<{ source: "members" | "friends"; list: MemberListItem[] }> = [
-      { source: "members", list: members },
-      { source: "friends", list: friendMembers },
-    ];
-
-    for (const { source, list } of candidateLists) {
-      if (!list || list.length === 0) {
-        continue;
-      }
-
-      const matched = list.find((user) => normaliseNumericId(user.id) === requestedMemberId);
-      if (matched) {
-        setSelectedSource(source);
-        setSelectedUser(matched);
-        break;
-      }
-    }
-  }, [requestedMemberId, members, friendMembers, selectedUser]);
   const createChatMutation = useCreateDirectChat();
   const createAiChatMutation = useCreateAiChat();
-  const {
-    sendFriendRequest: mutateSendFriendRequest,
-    acceptFriendRequest: mutateAcceptFriendRequest,
-    rejectFriendRequest: mutateRejectFriendRequest,
-    deleteFriend: mutateDeleteFriend,
-    status: friendshipActionStatus,
-  } = useFriendshipActions();
-  const { isSending, isAccepting, isRejecting, isDeleting } = friendshipActionStatus;
+
   const viewUserPosts = (user: MemberListItem) => {
     alert(`${user.nickname}님의 게시글 보기 기능은 추후 제공될 예정입니다.`);
   };
-
-  const selectedUserId = useMemo(() => {
-    if (!selectedUser) {
-      return null;
-    }
-
-    return normaliseNumericId((selectedUser as { id?: number | string }).id);
-  }, [selectedUser]);
-
-  const isFriendSelection = selectedSource === "friends";
-
-  const selectedFriendMemberId = useMemo(() => {
-    if (!isFriendSelection || !selectedUser) {
-      return null;
-    }
-
-    const candidateIds = [
-      (selectedUser as { memberId?: number | string }).memberId,
-      (selectedUser as { id?: number | string }).id,
-    ];
-
-    for (const candidate of candidateIds) {
-      const normalised = normaliseNumericId(candidate);
-      if (normalised != null) {
-        return normalised;
-      }
-    }
-
-    return null;
-  }, [isFriendSelection, selectedUser]);
-
-  const {
-    data: selectedFriendDetail,
-    isLoading: isFriendDetailLoading,
-    isFetching: isFriendDetailFetching,
-    error: selectedFriendDetailError,
-  } = useFriendDetailQuery(selectedFriendMemberId ?? undefined);
-
-  const effectiveProfileMemberId = selectedUserId ?? requestedMemberId ?? undefined;
-  const {
-    data: selectedProfile,
-    isLoading: isProfileLoading,
-    isFetching: isProfileFetching,
-    error: selectedProfileError,
-  } = useMemberProfileQuery(effectiveProfileMemberId);
-
-  useEffect(() => {
-    const shouldSkipAutoSelect =
-      requestedMemberId != null && skipAutoSelectRef.current === requestedMemberId;
-    if (shouldSkipAutoSelect) {
-      return;
-    }
-
-    if (skipAutoSelectRef.current !== null && skipAutoSelectRef.current !== requestedMemberId) {
-      skipAutoSelectRef.current = null;
-    }
-
-    if (selectedUser || !requestedMemberId || !selectedProfile) {
-      return;
-    }
-
-    const fallbackId =
-      normaliseNumericId(selectedProfile.memberId) ??
-      normaliseNumericId(selectedProfile.id) ??
-      requestedMemberId;
-
-    if (!fallbackId) {
-      return;
-    }
-
-    const fallbackMember: MemberListItem = {
-      id: fallbackId,
-      memberId: fallbackId,
-      nickname:
-        selectedProfile.nickname ??
-        selectedProfile.name ??
-        selectedProfile.email ??
-        `member-${fallbackId}`,
-      name: selectedProfile.name ?? selectedProfile.nickname ?? null,
-      description: selectedProfile.description ?? "",
-      lastSeenAt: selectedProfile.lastSeenAt ?? undefined,
-      interests: Array.isArray(selectedProfile.interests) ? selectedProfile.interests : [],
-      country: selectedProfile.countryName ?? selectedProfile.country ?? "",
-      englishLevel: selectedProfile.englishLevel ?? "BEGINNER",
-      isOnline: false,
-      profileImageUrl: selectedProfile.profileImageUrl ?? "",
-    } as MemberListItem;
-
-    setSelectedSource("members");
-    setSelectedUser(fallbackMember);
-  }, [requestedMemberId, selectedProfile, selectedUser]);
-
-  const selectedProfileMemberId = useMemo(() => {
-    const friendDetailId = normaliseNumericId(selectedFriendDetail?.memberId);
-    if (friendDetailId != null) {
-      return friendDetailId;
-    }
-
-    if (selectedProfile) {
-      return (
-        normaliseNumericId(selectedProfile.memberId) ??
-        normaliseNumericId(selectedProfile.id) ??
-        selectedUserId ??
-        selectedFriendMemberId
-      );
-    }
-
-    return selectedUserId ?? selectedFriendMemberId;
-  }, [selectedFriendDetail, selectedProfile, selectedUserId, selectedFriendMemberId]);
-
-  const opponentPendingRequestId = useMemo(
-    () =>
-      normaliseNumericId(
-        selectedProfile?.receivedFriendRequestId ??
-        selectedProfile?.pendingFriendRequestIdFromOpponent,
-      ),
-    [selectedProfile],
-  );
-
-  const myPendingRequestId = useMemo(
-    () => normaliseNumericId(selectedProfile?.pendingFriendRequestIdFromMe),
-    [selectedProfile],
-  );
-
-  const friendshipRelationId = useMemo(
-    () => normaliseNumericId(selectedProfile?.friendshipId),
-    [selectedProfile],
-  );
-
-  const normaliseInterests = (value?: string[] | null) => {
-    if (!Array.isArray(value)) {
-      return [];
-    }
-    return value
-      .map((item) => (typeof item === "string" ? item.trim() : String(item ?? "").trim()))
-      .filter((item) => item.length > 0);
-  };
-
-  const modalNickname = selectedFriendDetail?.nickname ?? selectedProfile?.nickname ?? selectedUser?.nickname ?? "";
-  const modalName = selectedProfile?.name ?? selectedUser?.name ?? "";
-  const modalEnglishLevel =
-    selectedFriendDetail?.englishLevel ??
-    selectedProfile?.englishLevel ??
-    selectedUser?.englishLevel ??
-    "";
-  const modalDescription =
-    selectedFriendDetail?.description ??
-    selectedProfile?.description ??
-    selectedUser?.description ??
-    "";
-  const modalCountryMeta = normaliseCountryValue(
-    selectedFriendDetail?.country ??
-    selectedProfile?.country ??
-    selectedProfile?.countryName ??
-    selectedUser?.country ??
-    "",
-  );
-  const modalCountryDisplay = modalCountryMeta.name || "-";
-  const modalCountryFlag = getCountryFlagEmoji(modalCountryMeta.code);
-
-  const englishLevelMeta = resolveEnglishLevelMeta(modalEnglishLevel);
-  const modalEnglishLevelDisplay = englishLevelMeta.label;
-  const modalEnglishLevelBadgeClass = englishLevelMeta.badgeClass;
-  const modalEnglishLevelIcon = englishLevelMeta.icon;
-
-  const modalInterests = selectedFriendDetail
-    ? normaliseInterests(selectedFriendDetail.interests)
-    : selectedProfile
-      ? normaliseInterests(selectedProfile.interests)
-      : normaliseInterests(selectedUser?.interests);
-  const modalDisplayName =
-    (modalName ? `${modalNickname} (${modalName})` : modalNickname) ||
-    selectedUser?.nickname ||
-    "회원 정보";
-  const modalDescriptionDisplay = modalDescription || "소개 정보가 아직 없습니다.";
-  const fallbackModalNickname = modalNickname || selectedUser?.nickname || "member";
-  const modalAvatarSrc =
-    resolveProfileImageUrl(selectedFriendDetail?.profileImageUrl) ??
-    resolveProfileImageUrl(selectedProfile?.profileImageUrl) ??
-    resolveProfileImageUrl(selectedUser?.profileImageUrl) ??
-    getAvatar(fallbackModalNickname);
-  const resolveIsOnline = (user?: MemberListItem | null) => {
-    if (!user) {
-      return undefined;
-    }
-
-    return "isOnline" in user ? (user as MemberPresenceSummaryResp).isOnline : undefined;
-  };
-
-  const modalPresence = getPresenceMeta(resolveIsOnline(selectedUser));
-  const modalLastSeenSource =
-    selectedFriendDetail?.lastSeenAt ??
-    selectedProfile?.lastSeenAt ??
-    (selectedUser as { lastSeenAt?: string } | null)?.lastSeenAt ??
-    null;
-  const isCurrentlyOnline = resolveIsOnline(selectedUser) === true;
-  const modalLastSeenDisplay = !isCurrentlyOnline && modalLastSeenSource ? formatLastSeen(modalLastSeenSource) : null;
-  const isFriendDetailPending = isFriendSelection && (isFriendDetailLoading || isFriendDetailFetching);
-  const friendDetailErrorMessage = isFriendSelection && selectedFriendDetailError ? selectedFriendDetailError.message : null;
-  const friendSinceDisplay = isFriendSelection && selectedFriendDetail?.createdAt
-    ? formatFriendSince(selectedFriendDetail.createdAt)
-    : null;
-  const isProfilePending = Boolean(selectedUser) && (isProfileLoading || isProfileFetching);
-  const hasIncomingFriendRequest = Boolean(
-    opponentPendingRequestId ??
-    selectedProfile?.receivedFriendRequestId ??
-    (typeof selectedProfile?.isPendingFriendRequestFromOpponent === "boolean" &&
-      selectedProfile.isPendingFriendRequestFromOpponent),
-  );
-
-  const modalFriendshipState: FriendshipState | undefined = selectedProfile
-    ? selectedProfile.isFriend
-      ? "FRIEND"
-      : selectedProfile.isFriendRequestSent || selectedProfile.isPendingFriendRequestFromMe
-        ? "REQUEST_SENT"
-        : hasIncomingFriendRequest
-          ? "REQUEST_RECEIVED"
-          : "NONE"
-    : undefined;
 
   const startChat = (user: MemberListItem) => {
     if (window.confirm(`${user.nickname}님과 채팅을 시작하시겠습니까?`)) {
@@ -608,292 +190,15 @@ function FindPageContent() {
     }
   };
 
-  const handleSendFriendRequest = async () => {
-    if (selectedProfileMemberId == null) {
-      alert("친구 요청 대상을 찾을 수 없습니다. 잠시 후 다시 시도해 주세요.");
-      return;
-    }
-
-    try {
-      await mutateSendFriendRequest({ receiverId: selectedProfileMemberId });
-      alert("친구 요청을 전송했습니다.");
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "친구 요청 전송 중 문제가 발생했습니다.";
-      alert(message);
-    }
-  };
-
-  const handleAcceptFriendRequest = async () => {
-    if (opponentPendingRequestId == null) {
-      alert("수락할 친구 요청 정보를 찾지 못했습니다. 새로고침 후 다시 시도해 주세요.");
-      return;
-    }
-
-    try {
-      await mutateAcceptFriendRequest({
-        requestId: opponentPendingRequestId,
-        opponentMemberId: selectedProfileMemberId ?? undefined,
-      });
-      alert("친구 요청을 수락했습니다.");
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "친구 요청 수락 중 문제가 발생했습니다.";
-      alert(message);
-    }
-  };
-
-  const handleRejectFriendRequest = async () => {
-    if (opponentPendingRequestId == null) {
-      alert("거절할 친구 요청 정보를 찾지 못했습니다. 새로고침 후 다시 시도해 주세요.");
-      return;
-    }
-
-    try {
-      await mutateRejectFriendRequest({
-        requestId: opponentPendingRequestId,
-        opponentMemberId: selectedProfileMemberId ?? undefined,
-      });
-      alert("친구 요청을 거절했습니다.");
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "친구 요청 거절 중 문제가 발생했습니다.";
-      alert(message);
-    }
-  };
-
-  const handleRemoveFriend = async () => {
-    const friendId = friendshipRelationId ?? selectedProfileMemberId;
-    if (friendId == null) {
-      alert("친구 정보를 찾을 수 없습니다. 잠시 후 다시 시도해 주세요.");
-      return;
-    }
-
-    const targetName = modalNickname || selectedUser?.nickname || "해당 회원";
-    const confirmed = window.confirm(`${targetName}님과 친구를 해제하시겠습니까?`);
-    if (!confirmed) {
-      return;
-    }
-
-    try {
-      await mutateDeleteFriend({
-        friendId,
-        opponentMemberId: selectedProfileMemberId ?? undefined,
-      });
-      alert("친구 관계를 해제했습니다.");
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "친구 관계 해제 중 문제가 발생했습니다.";
-      alert(message);
-    }
-  };
-
-  const renderFriendshipStatus = () => {
-    if (!selectedUser) {
-      return null;
-    }
-
-    if (isProfilePending) {
-      return <span className="text-xs text-gray-300">친구 상태를 불러오는 중입니다...</span>;
-    }
-
-    if (selectedProfileError) {
-      return (
-        <span className="text-xs text-red-400">
-          친구 상태 정보를 불러오지 못했습니다.
-          {selectedProfileError.message ? ` (${selectedProfileError.message})` : ""}
-        </span>
-      );
-    }
-
-    if (!modalFriendshipState) {
-      return <span className="text-xs text-gray-400">친구 상태 정보를 가져올 수 없습니다.</span>;
-    }
-
-    return (
-      <>
-        <span
-          className={`px-3 py-1 text-xs font-semibold rounded-full ${FRIENDSHIP_BADGE_STYLE[modalFriendshipState]}`}
-        >
-          {FRIENDSHIP_STATUS_LABELS[modalFriendshipState]}
-        </span>
-        <span className="text-xs text-gray-300">
-          {FRIENDSHIP_STATUS_DESCRIPTIONS[modalFriendshipState]}
-        </span>
-      </>
-    );
-  };
-
-  const renderFriendshipActions = () => {
-    if (!selectedUser || isProfilePending || selectedProfileError || !modalFriendshipState) {
-      return null;
-    }
-
-    if (modalFriendshipState === "REQUEST_SENT") {
-      return (
-        <p className="text-sm text-blue-300 text-center bg-blue-900/40 px-4 py-3 rounded">
-          친구 요청 대기중입니다{myPendingRequestId ? ` (요청 ID: ${myPendingRequestId})` : ""}.
-        </p>
-      );
-    }
-
-    if (modalFriendshipState === "REQUEST_RECEIVED") {
-      if (!opponentPendingRequestId) {
-        return (
-          <p className="text-sm text-red-300 text-center bg-red-900/40 px-4 py-3 rounded">
-            처리할 친구 요청 정보를 찾지 못했습니다. 새로고침 후 다시 시도해 주세요.
-          </p>
-        );
-      }
-
-      const isProcessing = isAccepting || isRejecting;
-
-      return (
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              void handleAcceptFriendRequest();
-            }}
-            disabled={isProcessing}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-700/70 disabled:cursor-not-allowed text-white px-4 py-3 rounded font-medium transition-colors"
-          >
-            {isAccepting ? "수락 중..." : "수락"}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              void handleRejectFriendRequest();
-            }}
-            disabled={isProcessing}
-            className="w-full bg-red-600 hover:bg-red-700 disabled:bg-red-700/70 disabled:cursor-not-allowed text-white px-4 py-3 rounded font-medium transition-colors"
-          >
-            {isRejecting ? "거절 중..." : "거절"}
-          </button>
-        </div>
-      );
-    }
-
-    if (modalFriendshipState === "FRIEND") {
-      return (
-        <button
-          type="button"
-          onClick={() => {
-            void handleRemoveFriend();
-          }}
-          disabled={isDeleting}
-          className="w-full bg-red-700 hover:bg-red-800 disabled:bg-red-800/70 disabled:cursor-not-allowed text-white px-4 py-3 rounded font-medium transition-colors"
-        >
-          {isDeleting ? "친구 제거 중..." : "친구 제거"}
-        </button>
-      );
-    }
-
-    if (modalFriendshipState === "NONE") {
-      return (
-        <button
-          type="button"
-          onClick={() => {
-            void handleSendFriendRequest();
-          }}
-          disabled={isSending}
-          className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-700/70 disabled:cursor-not-allowed text-white px-4 py-3 rounded font-medium transition-colors"
-        >
-          {isSending ? "요청 보내는 중..." : "친구 요청 보내기"}
-        </button>
-      );
-    }
-
-    return null;
-  };
-
-  const renderMemberGrid = (list: MemberListItem[], source: "members" | "friends") => (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {list.map((user) => {
-        const presence = getPresenceMeta(resolveIsOnline(user));
-        const interests = Array.isArray(user.interests) ? user.interests : [];
-        const description = user.description ?? "소개 정보가 아직 없습니다.";
-        const fallbackNickname = user.nickname || "member";
-        const avatarSrc = resolveProfileImageUrl(user.profileImageUrl) ?? getAvatar(fallbackNickname);
-
-        return (
-          <div
-            key={user.id}
-            className="bg-gray-800 border border-gray-600 rounded-lg p-6 hover:border-emerald-500 transition-all duration-300 cursor-pointer"
-            onClick={() => {
-              setSelectedSource(source);
-              setSelectedUser(user);
-            }}
-          >
-            <div className="flex items-center mb-4">
-              <div className="relative w-16 h-16">
-                <Image
-                  src={avatarSrc}
-                  alt={user.nickname || "사용자 아바타"}
-                  width={64}
-                  height={64}
-                  unoptimized
-                  className="rounded-full object-cover w-16 h-16"
-                />
-                <div className={`absolute -bottom-1 -right-1 w-5 h-5 border-2 border-gray-800 rounded-full ${presence.badgeClass}`}></div>
-              </div>
-              <div className="ml-4">
-                <h3 className="text-lg font-semibold text-white">
-                  {user.nickname}
-                </h3>
-                <p className="text-gray-400 text-sm">{user.country}</p>
-              </div>
-            </div>
-
-            <p className="text-gray-300 text-sm mb-3 line-clamp-2">
-              {description}
-            </p>
-
-            <div className="mb-3">
-              <p className="text-xs font-semibold text-gray-400 mb-1">
-                INTERESTS
-              </p>
-              <div className="flex flex-wrap gap-1">
-                {interests.slice(0, 3).map((interest, index) => (
-                  <span
-                    key={`${user.id}-interest-${index}`}
-                    className="px-2 py-1 bg-emerald-600 text-white text-xs rounded-full"
-                  >
-                    {interest.trim()}
-                  </span>
-                ))}
-                {interests.length === 0 && (
-                  <span className="text-xs text-gray-400">등록된 관심사가 없습니다.</span>
-                )}
-              </div>
-            </div>
-
-            <div className="flex gap-2">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  startChat(user);
-                }}
-                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors"
-              >
-                Start Chat
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  viewUserPosts(user);
-                }}
-                className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors"
-              >
-                게시글 보러가기
-              </button>
-            </div>
-          </div>
-        );
-      })}
-    </div>
+  const renderMemberGrid = (list: MemberListItem[], source: MemberSource) => (
+    <MemberGrid members={list} source={source} onStartChat={startChat} onViewPosts={viewUserPosts} />
   );
 
   const renderPeopleContent = () => {
     const totalPages = memberPage?.totalPages ?? null;
     const isFirstPage = memberPage?.isFirst ?? currentPage <= 1;
-    const isLastPage = memberPage?.isLast ?? (typeof totalPages === "number" ? currentPage >= totalPages : members.length < DEFAULT_PAGE_SIZE);
+    const isLastPage =
+      memberPage?.isLast ?? (typeof totalPages === "number" ? currentPage >= totalPages : members.length < DEFAULT_PAGE_SIZE);
     const canGoPrev = !isFirstPage && !isInitialLoading;
     const canGoNext = !isLastPage && !isInitialLoading;
 
@@ -1098,21 +403,12 @@ function FindPageContent() {
     return renderPeopleContent();
   };
 
-  const TabButton = ({
-    tab,
-    label,
-    Icon,
-  }: {
-    tab: ActiveTab;
-    label: string;
-    Icon: React.ElementType;
-  }) => (
+  const TabButton = ({ tab, label, Icon }: { tab: ActiveTab; label: string; Icon: React.ElementType }) => (
     <button
       onClick={() => setActiveTab(tab)}
-      className={`flex items-center gap-2 px-4 py-2 rounded-t-lg transition-colors ${activeTab === tab
-        ? "bg-gray-800 text-emerald-400"
-        : "text-gray-400 hover:bg-gray-700/50 hover:text-white"
-        }`}
+      className={`flex items-center gap-2 px-4 py-2 rounded-t-lg transition-colors ${
+        activeTab === tab ? "bg-gray-800 text-emerald-400" : "text-gray-400 hover:bg-gray-700/50 hover:text-white"
+      }`}
     >
       <Icon size={18} />
       <span className="font-medium">{label}</span>
@@ -1124,12 +420,9 @@ function FindPageContent() {
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2 text-white">Find</h1>
-          <p className="text-gray-300">
-            Discover new people, groups, and AI to practice English with.
-          </p>
+          <p className="text-gray-300">Discover new people, groups, and AI to practice English with.</p>
         </div>
 
-        {/* Tabs */}
         <div className="border-b border-gray-700 mb-8">
           <div className="flex justify-between items-center">
             <div className="flex gap-2">
@@ -1140,6 +433,7 @@ function FindPageContent() {
             </div>
             {(activeTab === "group" || activeTab === "ai") && (
               <button
+                type="button"
                 onClick={handlePlusClick}
                 className="text-gray-400 hover:text-white transition-colors"
               >
@@ -1150,143 +444,12 @@ function FindPageContent() {
         </div>
 
         {renderContent()}
-
-        {/* User Profile Modal */}
-        {selectedUser && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6">
-                <div className="flex justify-between items-start mb-6">
-                  <div className="flex items-center">
-                    <div className="relative w-20 h-20">
-                      <Image
-                        src={modalAvatarSrc}
-                        alt={modalDisplayName || selectedUser.nickname || "회원 아바타"}
-                        width={80}
-                        height={80}
-                        unoptimized
-                        className="rounded-full object-cover w-20 h-20"
-                      />
-                      <div className={`absolute -bottom-1 -right-1 w-6 h-6 border-2 border-gray-800 rounded-full ${modalPresence.badgeClass}`}></div>
-                    </div>
-                    <div className="ml-4">
-                      <h2 className="text-2xl font-bold text-white">{modalDisplayName}</h2>
-                      <div className="flex items-center gap-2 text-gray-300">
-                        {modalCountryFlag ? (
-                          <span className="text-xl" aria-hidden>
-                            {modalCountryFlag}
-                          </span>
-                        ) : null}
-                        <span className="text-gray-400">{modalCountryDisplay}</span>
-                      </div>
-                      {modalLastSeenDisplay && (
-                        <p className="text-gray-400 text-xs mt-1">
-                          마지막 접속: {modalLastSeenDisplay}
-                        </p>
-                      )}
-                      <div
-                        className={`mt-2 inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold ${modalEnglishLevelBadgeClass}`}
-                      >
-                        <span aria-hidden>{modalEnglishLevelIcon}</span>
-                        <span>{modalEnglishLevelDisplay}</span>
-                      </div>
-                      <div className="mt-3 flex flex-wrap items-center gap-2">
-                        {renderFriendshipStatus()}
-                      </div>
-                      {friendSinceDisplay && (
-                        <p className="mt-2 text-xs text-gray-300">
-                          친구가 된 날짜: <span className="text-white">{friendSinceDisplay}</span>
-                        </p>
-                      )}
-                      {isFriendDetailPending && (
-                        <p className="mt-2 text-xs text-gray-300">친구 상세 정보를 불러오는 중입니다...</p>
-                      )}
-                      {friendDetailErrorMessage && (
-                        <p className="mt-2 text-xs text-red-400">
-                          친구 상세 정보를 불러오지 못했습니다.
-                          {friendDetailErrorMessage ? ` (${friendDetailErrorMessage})` : ""}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => {
-                      skipAutoSelectRef.current = requestedMemberId ?? null;
-                      setSelectedUser(null);
-                      setSelectedSource(null);
-                      const params = new URLSearchParams(searchParams.toString());
-                      if (params.has("memberId")) {
-                        params.delete("memberId");
-                        router.replace(`?${params.toString()}`, { scroll: false });
-                      }
-                    }}
-                    className="text-gray-400 hover:text-white text-2xl"
-                  >
-                    ×
-                  </button>
-                </div>
-
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="text-lg font-semibold text-white mb-2">
-                      About
-                    </h3>
-                    <p className="text-gray-300">{modalDescriptionDisplay}</p>
-                  </div>
-
-                  <div>
-                    <h3 className="text-lg font-semibold text-white mb-2">
-                      Interests
-                    </h3>
-                    <div className="flex flex-wrap gap-2">
-                      {modalInterests.map((interest, index) => (
-                        <span
-                          key={index}
-                          className="px-3 py-1 bg-emerald-600 text-white rounded-full text-sm"
-                        >
-                          {interest}
-                        </span>
-                      ))}
-                      {modalInterests.length === 0 && (
-                        <span className="text-sm text-gray-400">등록된 관심사가 없습니다.</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-8 space-y-4">
-                  <button
-                    onClick={() => startChat(selectedUser)}
-                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-3 rounded font-medium transition-colors"
-                  >
-                    1:1 대화하기
-                  </button>
-                  {renderFriendshipActions()}
-                  <button
-                    onClick={() => viewUserPosts(selectedUser)}
-                    className="w-full bg-gray-600 hover:bg-gray-700 text-white px-4 py-3 rounded font-medium transition-colors"
-                  >
-                    게시글 보러가기
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
-      <NewGroupChatModal
-        isOpen={isGroupModalOpen} // Use renamed state
-        onClose={() => setIsGroupModalOpen(false)} // Use renamed state
-      />
+      <NewGroupChatModal isOpen={isGroupModalOpen} onClose={() => setIsGroupModalOpen(false)} />
 
-      <AIRoomTypeModal
-        isOpen={isAIRoomTypeModalOpen}
-        onClose={closeAllAIModals}
-        onSelect={handleSelectAIRoomType}
-      />
+      <AIRoomTypeModal isOpen={isAIRoomTypeModalOpen} onClose={closeAllAIModals} onSelect={handleSelectAIRoomType} />
 
-      {/* New AI Situation Modals */}
       <AISituationModal
         isOpen={isAISituationModalOpen}
         onClose={closeAllAIModals}
