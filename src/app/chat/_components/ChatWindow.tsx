@@ -245,7 +245,19 @@ export default function ChatWindow({
   ];
 
   const menuItems = roomDetails.type === 'group' ? groupMenuItems : directMenuItems;
-  const isOwner = member?.memberId === roomDetails?.ownerId;
+  const resolvedMemberId = (() => {
+    if (!member) {
+      return null;
+    }
+
+    const rawMemberId = (member as { memberId?: unknown }).memberId;
+    if (typeof rawMemberId === "number") {
+      return rawMemberId;
+    }
+
+    return typeof member.id === "number" ? member.id : null;
+  })();
+  const isOwner = typeof roomDetails?.ownerId === "number" && resolvedMemberId === roomDetails.ownerId;
   // --- End Dynamic Menu Items ---
 
   return (
@@ -349,7 +361,7 @@ export default function ChatWindow({
                             );
                           }
                         
-                          const isUser = msg.senderId === member?.memberId;
+                          const isUser = resolvedMemberId !== null && msg.senderId === resolvedMemberId;
                           const hasTranslation = !!msg.translatedContent;
                           // If it has translation, show translation by default. If user toggled, show original.
                           // If no translation, always show original (msg.content).
@@ -488,7 +500,7 @@ export default function ChatWindow({
           roomId={roomDetails.id}
           members={roomDetails.members || []}
           ownerId={roomDetails.ownerId || 0}
-          currentUserId={member?.memberId ?? 0}
+          currentUserId={resolvedMemberId ?? 0}
           isOwner={isOwner}
         />
       )}
@@ -507,7 +519,8 @@ export default function ChatWindow({
       {/* Report Modal (Direct Chat Only) */}
       {roomDetails?.type === 'direct' && member && (() => {
         // Find the partner (the other person in the direct chat)
-        const partnerId = messages.find(msg => msg.senderId !== member.memberId)?.senderId;
+        const safeMemberId = resolvedMemberId ?? undefined;
+        const partnerId = messages.find(msg => safeMemberId === undefined || msg.senderId !== safeMemberId)?.senderId;
         return partnerId ? (
           <ReportModal
             isOpen={isReportModalOpen}
@@ -524,7 +537,7 @@ export default function ChatWindow({
           isOpen={!!selectedMemberForProfile}
           onClose={() => setSelectedMemberForProfile(null)}
           member={selectedMemberForProfile}
-          isCurrentUser={member?.memberId === selectedMemberForProfile.id}
+          isCurrentUser={resolvedMemberId !== null && resolvedMemberId === selectedMemberForProfile.id}
         />
       )}
 
@@ -534,7 +547,7 @@ export default function ChatWindow({
         onClose={() => setIsRoomInfoModalOpen(false)}
         onOpenMembersModal={() => setIsMembersModalOpen(true)}
         roomDetails={roomDetails}
-        currentUserId={member?.memberId}
+        currentUserId={resolvedMemberId ?? undefined}
         subscriberCount={subscriberCount}
         totalMemberCount={totalMemberCount}
       />

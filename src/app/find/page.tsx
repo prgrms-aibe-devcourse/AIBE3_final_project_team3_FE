@@ -28,6 +28,17 @@ export const dynamic = "force-dynamic";
 // A simple utility to generate a placeholder avatar
 const getAvatar = (name: string) => `https://i.pravatar.cc/150?u=${name}`;
 
+const resolveProfileImageUrl = (value?: string | null) => {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (trimmed.length > 0) {
+      return trimmed;
+    }
+  }
+
+  return null;
+};
+
 const getPresenceMeta = (isOnline?: boolean) => ({
   badgeClass: isOnline ? "bg-green-500" : "bg-gray-500",
   textClass: isOnline ? "text-emerald-400" : "text-gray-400",
@@ -151,7 +162,11 @@ const normaliseNumericId = (value: unknown): number | null => {
 };
 
 type ActiveTab = "1v1" | "friends" | "group" | "ai";
-type MemberListItem = (MemberPresenceSummaryResp | FriendSummary) & { name?: string | null; lastSeenAt?: string | null };
+type MemberListItem = (MemberPresenceSummaryResp | FriendSummary) & {
+  name?: string | null;
+  lastSeenAt?: string | null;
+  profileImageUrl?: string | null;
+};
 const DEFAULT_PAGE_SIZE = 15;
 
 function FindPageContent() {
@@ -368,10 +383,6 @@ function FindPageContent() {
     alert(`${user.nickname}님의 게시글 보기 기능은 추후 제공될 예정입니다.`);
   };
 
-  const startGroupChat = (user: MemberListItem) => {
-    alert(`${user.nickname}님과 그룹 챗 기능은 추후 제공될 예정입니다.`);
-  };
-
   const selectedUserId = useMemo(() => {
     if (!selectedUser) {
       return null;
@@ -456,6 +467,7 @@ function FindPageContent() {
       country: selectedProfile.countryName ?? selectedProfile.country ?? "",
       englishLevel: selectedProfile.englishLevel ?? "BEGINNER",
       isOnline: false,
+      profileImageUrl: selectedProfile.profileImageUrl ?? "",
     } as MemberListItem;
 
     setSelectedSource("members");
@@ -545,10 +557,12 @@ function FindPageContent() {
     selectedUser?.nickname ||
     "회원 정보";
   const modalDescriptionDisplay = modalDescription || "소개 정보가 아직 없습니다.";
+  const fallbackModalNickname = modalNickname || selectedUser?.nickname || "member";
   const modalAvatarSrc =
-    selectedFriendDetail?.profileImageUrl && selectedFriendDetail.profileImageUrl.length > 0
-      ? selectedFriendDetail.profileImageUrl
-      : getAvatar(modalNickname || selectedUser?.nickname || "member");
+    resolveProfileImageUrl(selectedFriendDetail?.profileImageUrl) ??
+    resolveProfileImageUrl(selectedProfile?.profileImageUrl) ??
+    resolveProfileImageUrl(selectedUser?.profileImageUrl) ??
+    getAvatar(fallbackModalNickname);
   const resolveIsOnline = (user?: MemberListItem | null) => {
     if (!user) {
       return undefined;
@@ -795,6 +809,8 @@ function FindPageContent() {
         const presence = getPresenceMeta(resolveIsOnline(user));
         const interests = Array.isArray(user.interests) ? user.interests : [];
         const description = user.description ?? "소개 정보가 아직 없습니다.";
+        const fallbackNickname = user.nickname || "member";
+        const avatarSrc = resolveProfileImageUrl(user.profileImageUrl) ?? getAvatar(fallbackNickname);
 
         return (
           <div
@@ -808,7 +824,7 @@ function FindPageContent() {
             <div className="flex items-center mb-4">
               <div className="relative w-16 h-16">
                 <Image
-                  src={getAvatar(user.nickname)}
+                  src={avatarSrc}
                   alt={user.nickname || "사용자 아바타"}
                   width={64}
                   height={64}
@@ -1239,21 +1255,19 @@ function FindPageContent() {
                 </div>
 
                 <div className="mt-8 space-y-4">
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => startChat(selectedUser)}
-                      className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-3 rounded font-medium transition-colors"
-                    >
-                      1:1 대화하기
-                    </button>
-                    <button
-                      onClick={() => startGroupChat(selectedUser)}
-                      className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-4 py-3 rounded font-medium transition-colors"
-                    >
-                      그룹챗 시작하기
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => startChat(selectedUser)}
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-3 rounded font-medium transition-colors"
+                  >
+                    1:1 대화하기
+                  </button>
                   {renderFriendshipActions()}
+                  <button
+                    onClick={() => viewUserPosts(selectedUser)}
+                    className="w-full bg-gray-600 hover:bg-gray-700 text-white px-4 py-3 rounded font-medium transition-colors"
+                  >
+                    게시글 보러가기
+                  </button>
                 </div>
               </div>
             </div>
