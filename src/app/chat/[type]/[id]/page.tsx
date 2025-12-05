@@ -36,6 +36,8 @@ export default function ChatRoomPage() {
   const [subscriberCount, setSubscriberCount] = useState<number>(0);
   const [totalMemberCount, setTotalMemberCount] = useState<number>(0);
 
+  // useRoomClosedRedirect();
+
   // When message data is successfully loaded, it means markAsReadOnEnter was called on the backend.
   // We can now invalidate the room list query to update the unread count badge.
   useEffect(() => {
@@ -71,6 +73,10 @@ export default function ChatRoomPage() {
           avatar: '👥',
           members: room.members,
           ownerId: room.ownerId,
+          description: room.description,
+          topic: room.topic,
+          hasPassword: room.hasPassword,
+          createdAt: room.createdAt,
         };
       }
     } else if (chatRoomType === 'ai' && aiRoomsData) {
@@ -100,7 +106,9 @@ export default function ChatRoomPage() {
     if (data?.pages) {
       const allMessages = data.pages
         .filter(page => page?.messages)
-        .flatMap(page => page.messages);
+        .flatMap(page => page.messages)
+        // 전체를 한번 정렬해서 순서 뒤섞임 방지 (오래된 → 최신)
+        .sort((a, b) => (a.sequence || 0) - (b.sequence || 0));
       console.log(`[Data] Loaded ${allMessages.length} messages from ${data.pages.length} pages`);
       setMessages(allMessages);
     }
@@ -154,8 +162,26 @@ export default function ChatRoomPage() {
                 );
              }
           }
-          // 2. 구독자 수 업데이트 이벤트 처리
+          // 2. 멤버 업데이트 이벤트 처리 (JOIN, LEAVE, KICK)
+          else if (['JOIN', 'LEAVE', 'KICK'].includes(payload.type)) {
+             console.log(`[WebSocket] Received member update:`, payload);
+             if (payload.subscriberCount !== undefined) setSubscriberCount(payload.subscriberCount);
+             if (payload.totalMemberCount !== undefined) setTotalMemberCount(payload.totalMemberCount);
+             
+             // 멤버 목록 갱신
+             if (chatRoomType === 'group') {
+                queryClient.invalidateQueries({ queryKey: ['chatRooms', 'group'] });
+             }
+          }
+          // 3. 구독자 수 업데이트 이벤트 처리
           else if (payload.subscriberCount !== undefined && payload.totalMemberCount !== undefined) {
+            const countEvent = payload as SubscriberCountUpdateResp;
+            console.log(`[WebSocket] Received subscriber count event:`, countEvent);
+            setSubscriberCount(countEvent.subscriberCount);
+            setTotalMemberCount(countEvent.totalMemberCount);
+          }
+          // 3. UnreadCount 업데이트 이벤트 처리
+          else if (payload.updates !== undefined) {
             const countEvent = payload as SubscriberCountUpdateResp;
             console.log(`[WebSocket] Received subscriber count event:`, countEvent);
             setSubscriberCount(countEvent.subscriberCount);
@@ -181,7 +207,23 @@ export default function ChatRoomPage() {
           else {
             const receivedMessage = payload as MessageResp;
             console.log(`[WebSocket] Received message:`, receivedMessage);
-            setMessages((prevMessages) => [...prevMessages, receivedMessage]);
+            setMessages((prevMessages) =>
+              [...prevMessages, receivedMessage].sort((a, b) => (a.sequence || 0) - (b.sequence || 0))
+            );
+
+            // 방장 위임 시스템 메시지인 경우 채팅방 정보 업데이트
+            if (receivedMessage.messageType === 'SYSTEM' && receivedMessage.content) {
+              try {
+                const systemMsg = JSON.parse(receivedMessage.content);
+                if (systemMsg.type === 'OWNER_CHANGED') {
+                  console.log('[WebSocket] Owner changed, refetching room info');
+                  queryClient.invalidateQueries({ queryKey: ['chatRooms', chatRoomType] });
+                }
+              } catch (e) {
+                // Not a JSON system message, ignore
+              }
+            }
+            // Note: 방 리스트 업데이트는 layout.tsx의 /user/{userId}/topic/rooms/update 구독에서 처리됨
           }
         }
       );

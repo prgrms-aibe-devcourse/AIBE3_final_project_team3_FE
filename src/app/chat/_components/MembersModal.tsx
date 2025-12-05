@@ -5,6 +5,8 @@ import { Users, UserPlus, MessageSquare, Shield, ShieldAlert, MoreVertical, User
 import { ChatRoomMember } from "@/global/types/chat.types";
 import { useKickMemberMutation, useTransferOwnershipMutation, useCreateDirectChat } from "@/global/api/useChatQuery";
 import { useSendFriendRequest } from "@/global/api/useFriendshipMutation";
+import { useToastStore } from "@/global/stores/useToastStore";
+import ReportModal from "@/components/ReportModal";
 
 interface MembersModalProps {
   isOpen: boolean;
@@ -18,11 +20,13 @@ interface MembersModalProps {
 
 export default function MembersModal({ isOpen, onClose, roomId, members, ownerId, currentUserId, isOwner }: MembersModalProps) {
   const [openMenuId, setOpenMenuId] = useState<number | null>(null);
+  const [reportTargetMember, setReportTargetMember] = useState<ChatRoomMember | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const { mutate: kickMember } = useKickMemberMutation();
   const { mutate: transferOwnership } = useTransferOwnershipMutation();
   const { mutate: createDirectChat } = useCreateDirectChat();
   const { mutate: sendFriendRequest } = useSendFriendRequest();
+  const { addToast } = useToastStore();
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -67,9 +71,28 @@ export default function MembersModal({ isOpen, onClose, roomId, members, ownerId
         createDirectChat({ partnerId: member.id });
         break;
       case '친구추가':
-        sendFriendRequest({ receiverId: member.id });
+        sendFriendRequest(
+          { receiverId: member.id },
+          {
+            onSuccess: () => {
+              addToast(`${member.nickname}님에게 친구 요청을 보냈습니다.`, 'success');
+            },
+            onError: (error) => {
+              const errorMessage = error.message || '';
+              // "해당 요청을 처리할 수 없는 상태입니다" = 이미 친구 요청을 보낸 경우
+              if (errorMessage.includes('처리할 수 없는 상태')) {
+                addToast('이미 친구 신청을 보낸 상태입니다.', 'info');
+              } else {
+                addToast(errorMessage || '친구 요청을 보내지 못했습니다.', 'error');
+              }
+            }
+          }
+        );
         break;
-      // TODO: Implement other actions
+      case '신고하기':
+        setReportTargetMember(member);
+        break;
+      // TODO: Implement other actions (차단하기 등)
       default:
         alert(`${member.nickname}님에게 ${action} 액션을 실행합니다. (구현 필요)`);
         break;
@@ -173,6 +196,14 @@ export default function MembersModal({ isOpen, onClose, roomId, members, ownerId
           </button>
         </div>
       </div>
+
+      {/* Report Modal */}
+      <ReportModal
+        isOpen={!!reportTargetMember}
+        onClose={() => setReportTargetMember(null)}
+        targetMemberId={reportTargetMember?.id || 0}
+        targetNickname={reportTargetMember?.nickname || ""}
+      />
     </div>
   );
 }

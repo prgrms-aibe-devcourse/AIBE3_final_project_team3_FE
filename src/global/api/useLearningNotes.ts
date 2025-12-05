@@ -33,6 +33,19 @@ type LearningFilter = "all" | "completed" | "incomplete";
 type LearningTagParam = "GRAMMAR" | "VOCABULARY" | "TRANSLATION";
 type LearningFilterParam = "ALL" | "LEARNED" | "UNLEARNED";
 
+export interface CreateFeedbackReq {
+  tag: string;
+  problem: string;
+  correction: string;
+  extra: string;
+}
+
+export interface CreateNoteReq {
+  originalContent: string;
+  correctedContent: string;
+  feedback: CreateFeedbackReq[];
+}
+
 // -----------------------------
 //  Query Mappers
 // -----------------------------
@@ -135,6 +148,33 @@ export const useLearningNotes = (
     staleTime: 30000,
     placeholderData: (prev) => prev,
   });
+
+// ==========================================
+//   Create Note
+// ==========================================
+
+const createLearningNote = async (req: CreateNoteReq): Promise<number> => {
+  const response = await client.POST("/api/v1/learning-notes", {
+    body: req,
+  });
+  const id = await unwrap<number>(response);
+  if (!id) throw new Error("Failed to create learning note");
+  return id;
+};
+
+export const useCreateLearningNote = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: createLearningNote,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["learningNotes"] });
+    },
+    onError: (error) => {
+      console.error("Failed to create learning note:", error);
+      alert(`학습 노트 저장 실패: ${error.message}`);
+    },
+  });
+};
 
 // ==========================================
 //   Mark Toggle

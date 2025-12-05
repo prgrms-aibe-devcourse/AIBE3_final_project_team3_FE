@@ -176,9 +176,6 @@ export default function ChatSidebar({
                       <h3 className="font-semibold text-sm text-white truncate">
                         {room.name}
                       </h3>
-                      <p className="text-xs text-gray-400 flex-shrink-0">
-                        {room.lastMessageTime}
-                      </p>
                     </div>
                     <div className="flex justify-between items-start">
                       <p className="text-xs text-gray-400 truncate mt-1">

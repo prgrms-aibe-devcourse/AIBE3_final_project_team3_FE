@@ -1,0 +1,14 @@
+{
+  "common": {
+    "language": "Language",
+    "korean": "한국어",
+    "english": "English"
+  },
+  "system": {
+    "MEMBER_JOINED": "{nickname} joined the room.",
+    "MEMBER_LEFT": "{nickname} left the room.",
+    "MEMBER_KICKED": "{nickname} was kicked out.",
+    "OWNER_CHANGED": "{oldOwner} transferred ownership to {newOwner}.",
+    "DIRECT_CHAT_STARTED": "Direct chat started."
+  }
+}

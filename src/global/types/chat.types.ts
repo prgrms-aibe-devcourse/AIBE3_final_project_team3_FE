@@ -4,6 +4,7 @@ export interface ChatRoomMember {
   id: number;
   nickname: string;
   isFriend: boolean;
+  profileImageUrl?: string;
 }
 
 export interface CreateGroupChatReq {
@@ -19,6 +20,8 @@ export interface DirectChatRoomResp {
   user1: ChatRoomMember;
   user2: ChatRoomMember;
   unreadCount: number;
+  lastMessageAt?: string;
+  lastMessageContent?: string;
 }
 
 export interface GroupChatRoomResp {
@@ -32,6 +35,8 @@ export interface GroupChatRoomResp {
   ownerId: number;
   members: ChatRoomMember[];
   unreadCount: number;
+  lastMessageAt?: string;
+  lastMessageContent?: string;
 }
 
 export interface CreateAIChatReq {
@@ -48,6 +53,14 @@ export interface AIChatRoomResp {
   id: number;
   name: string;
   aiPersona: number;
+}
+
+export interface RoomLastMessageUpdateResp {
+  roomId: number;
+  chatRoomType: "DIRECT" | "GROUP" | "AI";
+  lastMessageAt: string;
+  unreadCount: number;
+  lastMessageContent: string;
 }
 
 export interface ChatRoomResp {
@@ -110,4 +123,21 @@ export interface UnreadCountUpdateEvent {
 export interface SubscriberCountUpdateResp {
   subscriberCount: number;
   totalMemberCount: number;
+}
+
+export interface AiFeedbackReq {
+  originalContent: string;
+  translatedContent: string;
+}
+
+export interface AiFeedbackItem {
+  tag: string;
+  problem: string;
+  correction: string;
+  extra: string;
+}
+
+export interface AiFeedbackResp {
+  correctedContent: string;
+  feedback: AiFeedbackItem[];
 }

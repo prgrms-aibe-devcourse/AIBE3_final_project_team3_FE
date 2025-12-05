@@ -1,12 +1,18 @@
 "use client";
 
-import { useLeaveChatRoom, useUploadFileMutation } from "@/global/api/useChatQuery";
+import { useRef, useEffect, useLayoutEffect, useState } from "react";
+import { MessageResp, ChatRoomMember } from "@/global/types/chat.types";
+import { Loader2, MoreVertical, Phone, Video, ShieldAlert, LogOut, Users, LucideIcon, Sparkles } from "lucide-react";
 import { MemberSummaryResp } from "@/global/types/auth.types";
-import { MessageResp } from "@/global/types/chat.types";
-import { Loader2, LogOut, LucideIcon, MoreVertical, Phone, ShieldAlert, Users, Video } from "lucide-react"; // LucideIcon 추가
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useLeaveChatRoom, useUploadFileMutation, useAiFeedbackMutation } from "@/global/api/useChatQuery";
+import { useLanguage } from "@/contexts/LanguageContext";
 import MembersModal from "./MembersModal";
 import MessageInput from "./MessageInput";
+import LearningNoteModal from "./LearningNoteModal";
+import ReportModal from "@/components/ReportModal";
+import MemberProfileModal from "@/components/MemberProfileModal";
+import ChatRoomInfoModal from "@/components/ChatRoomInfoModal";
+import { AiFeedbackResp } from "@/global/types/chat.types";
 
 // Define props for the component
 interface ChatWindowProps {
@@ -30,7 +36,7 @@ interface ChatWindowProps {
   isLoadingMore?: boolean;
 }
 
-type MenuActionItem = { // MenuActionItem 타입 정의도 추가 (만약 누락되었다면)
+type MenuActionItem = {
   label: string;
   icon: LucideIcon;
   action: () => void;
@@ -51,6 +57,7 @@ export default function ChatWindow({
   hasMore = false,
   isLoadingMore = false,
 }: ChatWindowProps) {
+  const { t } = useLanguage();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageContainerRef = useRef<HTMLDivElement>(null);
   const shouldScrollRef = useRef(true);
@@ -59,6 +66,14 @@ export default function ChatWindow({
   // State for dropdown and modals
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [isRoomInfoModalOpen, setIsRoomInfoModalOpen] = useState(false);
+  const [selectedMemberForProfile, setSelectedMemberForProfile] = useState<ChatRoomMember | null>(null);
+
+  // State for Learning Note Modal
+  const [isLearningNoteModalOpen, setIsLearningNoteModalOpen] = useState(false);
+  const [selectedMessageForAnalysis, setSelectedMessageForAnalysis] = useState<{ original: string; translated: string } | null>(null);
+  const [analysisResult, setAnalysisResult] = useState<AiFeedbackResp | null>(null);
 
   // State to track which messages should show original text instead of translation
   const [showOriginalIds, setShowOriginalIds] = useState<Set<string>>(new Set());
@@ -79,6 +94,20 @@ export default function ChatWindow({
 
   const { mutate: leaveRoom, isPending: isLeaving } = useLeaveChatRoom();
   const { mutate: uploadFile, isPending: isUploadingFile } = useUploadFileMutation();
+  const { mutate: analyzeFeedback, isPending: isAnalyzing } = useAiFeedbackMutation();
+
+  const handleAnalyzeClick = (original: string, translated: string) => {
+    setSelectedMessageForAnalysis({ original, translated });
+    analyzeFeedback(
+      { originalContent: original, translatedContent: translated },
+      {
+        onSuccess: (data) => {
+          setAnalysisResult(data);
+          setIsLearningNoteModalOpen(true);
+        },
+      }
+    );
+  };
 
   // --- Dropdown Menu Logic ---
   useEffect(() => {
@@ -112,8 +141,7 @@ export default function ChatWindow({
   };
 
   const handleReportUser = () => {
-    // TODO: Implement report user logic
-    alert("사용자를 신고합니다. (구현 필요)");
+    setIsReportModalOpen(true);
     setIsMenuOpen(false);
   };
 
@@ -130,6 +158,14 @@ export default function ChatWindow({
   // --- End Dropdown Menu Logic ---
 
 
+  // Scroll to bottom helper
+  const scrollToBottom = () => {
+    const container = messageContainerRef.current;
+    if (container) {
+      container.scrollTop = container.scrollHeight;
+    }
+  };
+
   // On initial load or when room changes, scroll to bottom.
   useLayoutEffect(() => {
     if (messageContainerRef.current) {
@@ -142,7 +178,7 @@ export default function ChatWindow({
   useEffect(() => {
     const container = messageContainerRef.current;
     if (container && shouldScrollRef.current) {
-      container.scrollTop = container.scrollHeight;
+      scrollToBottom();
     }
   }, [messages]);
 
@@ -209,24 +245,27 @@ export default function ChatWindow({
   ];
 
   const menuItems = roomDetails.type === 'group' ? groupMenuItems : directMenuItems;
-  const isOwner = member?.id === roomDetails?.ownerId;
+  const isOwner = member?.memberId === roomDetails?.ownerId;
   // --- End Dynamic Menu Items ---
 
   return (
     <main className="flex flex-col bg-gray-850 overflow-hidden h-full">
       {/* Chat Header */}
       <header className="flex items-center justify-between p-4 border-b border-gray-700 flex-shrink-0">
-        <div className="flex items-center min-w-0">
+        <button
+          onClick={() => setIsRoomInfoModalOpen(true)}
+          className="flex items-center min-w-0 hover:bg-gray-700/30 rounded-lg p-2 -m-2 transition-colors group"
+        >
           <div className="relative">
-            <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-lg">
+            <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-lg group-hover:ring-2 group-hover:ring-emerald-400 transition-all">
               {roomDetails.avatar}
             </div>
             {roomDetails.type === "direct" && (
               <span className="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full bg-green-500 border-2 border-gray-850"></span>
             )}
           </div>
-          <div className="ml-4 min-w-0">
-            <h2 className="font-semibold text-white truncate">{roomDetails.name}</h2>
+          <div className="ml-4 min-w-0 text-left">
+            <h2 className="font-semibold text-white truncate group-hover:text-emerald-400 transition-colors">{roomDetails.name}</h2>
             <p className="text-xs text-gray-400">
               {roomDetails.type === "direct"
                 ? (subscriberCount === 2 ? "온라인" : "오프라인")
@@ -234,7 +273,7 @@ export default function ChatWindow({
               }
             </p>
           </div>
-        </div>
+        </button>
         <div className="flex items-center space-x-4">
           <button className="text-gray-400 hover:text-white"><Video size={20} /></button>
           <button className="text-gray-400 hover:text-white"><Phone size={20} /></button>
@@ -287,63 +326,149 @@ export default function ChatWindow({
             {!hasMore && messages.length > 0 && (
               <div className="text-center text-xs text-gray-500 py-2">대화의 시작입니다.</div>
             )}
-            {messages.map((msg) => {
-              if (msg.messageType === 'SYSTEM') {
-                return (
-                  <div key={msg.id} className="text-center my-2">
-                    <p className="text-xs text-gray-500 italic px-4 py-1 bg-gray-800 rounded-full inline-block">
-                      {msg.content}
-                    </p>
+                        {messages.map((msg) => {
+                          if (msg.messageType === 'SYSTEM') {
+                            let systemMessage = msg.content;
+                            try {
+                              const parsed = JSON.parse(msg.content);
+                              if (parsed.type && parsed.params) {
+                                systemMessage = t(`system.${parsed.type}`, parsed.params);
+                              } else if (parsed.fallback) {
+                                systemMessage = parsed.fallback;
+                              }
+                            } catch (e) {
+                              // Fallback to original content if not JSON
+                            }
+
+                            return (
+                              <div key={msg.id} className="text-center my-2">
+                                <p className="text-xs text-gray-500 italic px-4 py-1 bg-gray-800 rounded-full inline-block">
+                                  {systemMessage}
+                                </p>
+                              </div>
+                            );
+                          }
+                        
+                          const isUser = msg.senderId === member?.memberId;
+                          const hasTranslation = !!msg.translatedContent;
+                          // If it has translation, show translation by default. If user toggled, show original.
+                          // If no translation, always show original (msg.content).
+                          const isShowingOriginal = !hasTranslation || showOriginalIds.has(msg.id);
+                          const displayContent = isShowingOriginal ? msg.content : msg.translatedContent;
+            
+                          return (
+                            <div key={msg.id} className={`flex items-start gap-2 ${isUser ? "justify-end" : "justify-start"}`}>
+                              {!isUser && (() => {
+                                const senderMember = roomDetails?.members?.find((m: ChatRoomMember) => m.id === msg.senderId);
+                                const hasProfileImage = senderMember?.profileImageUrl && senderMember.profileImageUrl.trim() !== '';
+                                return (
+                                  <button
+                                    onClick={() => senderMember && setSelectedMemberForProfile(senderMember)}
+                                    className="w-8 h-8 rounded-full bg-gray-600 flex-shrink-0 flex items-center justify-center text-white font-semibold text-sm hover:ring-2 hover:ring-gray-400 transition-all overflow-hidden cursor-pointer mt-5"
+                                    title={`${msg.sender}님의 프로필 보기`}
+                                  >
+                                    {hasProfileImage ? (
+                                      <img
+                                        src={senderMember.profileImageUrl}
+                                        alt={msg.sender}
+                                        className="w-full h-full object-cover"
+                                        onError={(e) => {
+                                          e.currentTarget.style.display = 'none';
+                                          e.currentTarget.parentElement!.textContent = msg.sender.charAt(0).toUpperCase();
+                                        }}
+                                      />
+                                    ) : (
+                                      msg.sender.charAt(0).toUpperCase()
+                                    )}
+                                  </button>
+                                );
+                              })()}
+                              <div className="flex flex-col gap-1 max-w-md">
+                                {!isUser && (
+                                  <p className="text-xs font-semibold text-gray-400 px-1">{msg.sender}</p>
+                                )}
+                                <div className={`flex items-end gap-2 ${isUser ? "flex-row-reverse" : "flex-row"}`}>
+                                  <div
+                                    className={`p-3 rounded-lg relative group ${
+                                      isUser ? "bg-emerald-600 text-white" : "bg-gray-700 text-gray-200"
+                                    } ${hasTranslation ? "cursor-pointer hover:opacity-90 transition-opacity" : ""}`}
+                                    onClick={() => hasTranslation && toggleOriginal(msg.id)}
+                                    title={hasTranslation ? "클릭하여 원문/번역 전환" : ""}
+                                  >
+                                  
+                                  {msg.messageType === 'IMAGE' ? (
+                                    <img 
+                                      src={msg.content} 
+                                      alt="Sent image" 
+                                      className="max-w-full max-h-64 rounded-lg cursor-pointer object-contain bg-black/20"
+                                      onLoad={() => shouldScrollRef.current && scrollToBottom()}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        window.open(msg.content, '_blank');
+                                      }}
+                                    />
+                                  ) : msg.messageType === 'FILE' ? (
+                                    <a 
+                                      href={msg.content} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="flex items-center gap-2 text-blue-300 underline break-all"
+                                    >
+                                      <span className="text-xl">📁</span>
+                                      {decodeURIComponent(msg.content.split('/').pop() || 'File')}
+                                    </a>
+                                  ) : (
+                                    <p className="text-sm whitespace-pre-wrap">{displayContent}</p>
+                                  )}
+                                  
+                                  {hasTranslation && (
+                                    <>
+                                      <div className="flex justify-end mt-1">
+                                        <span className="text-[10px] opacity-60 border border-white/20 rounded px-1">
+                                          {isShowingOriginal ? "Original" : "Translated"}
+                                        </span>
+                                      </div>
+                                      {/* Learning Note Analysis Button */}
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation(); // Prevent bubble click (toggle translation)
+                                          if (msg.translatedContent) {
+                                              handleAnalyzeClick(msg.content, msg.translatedContent);
+                                          }
+                                        }}
+                                        disabled={isAnalyzing}
+                                        className={`absolute top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-gray-800 text-yellow-400 shadow-lg hover:bg-gray-600 transition-all opacity-0 group-hover:opacity-100 z-10 ${
+                                          isUser ? "-left-10" : "-right-10"
+                                        } ${isAnalyzing ? "opacity-50 cursor-wait" : ""}`}
+                                        title="AI 분석 및 Learning Note 저장"
+                                      >
+                                        {isAnalyzing && selectedMessageForAnalysis?.original === msg.content ? (
+                                            <Loader2 size={16} className="animate-spin" />
+                                        ) : (
+                                            <Sparkles size={16} />
+                                        )}
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
+                                <div className="flex flex-col items-center space-y-1">
+                                  {msg.unreadCount > 0 && (
+                                    <p className="text-xs text-yellow-400 font-semibold">
+                                      {msg.unreadCount}
+                                    </p>
+                                  )}
+                                  <p className="text-xs text-gray-500">{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                                </div>
+                              </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </>
+                    )}
+                    <div ref={messagesEndRef} />
                   </div>
-                );
-              }
-
-              const isUser = msg.senderId === member?.id;
-              const hasTranslation = !!msg.translatedContent;
-              // If it has translation, show translation by default. If user toggled, show original.
-              // If no translation, always show original (msg.content).
-              const isShowingOriginal = !hasTranslation || showOriginalIds.has(msg.id);
-              const displayContent = isShowingOriginal ? msg.content : msg.translatedContent;
-
-              return (
-                <div key={msg.id} className={`flex items-end gap-2 ${isUser ? "justify-end" : "justify-start"}`}>
-                  {!isUser && (
-                    <div className="w-8 h-8 rounded-full bg-gray-600 flex-shrink-0" />
-                  )}
-                  <div className={`flex items-end gap-2 ${isUser ? "flex-row-reverse" : "flex-row"}`}>
-                    <div
-                      className={`max-w-md p-3 rounded-lg relative group ${isUser ? "bg-emerald-600 text-white" : "bg-gray-700 text-gray-200"
-                        } ${hasTranslation ? "cursor-pointer hover:opacity-90 transition-opacity" : ""}`}
-                      onClick={() => hasTranslation && toggleOriginal(msg.id)}
-                      title={hasTranslation ? "클릭하여 원문/번역 전환" : ""}
-                    >
-                      {!isUser && <p className="text-xs font-semibold pb-1">{msg.sender}</p>}
-                      <p className="text-sm whitespace-pre-wrap">{displayContent}</p>
-
-                      {hasTranslation && (
-                        <div className="flex justify-end mt-1">
-                          <span className="text-[10px] opacity-60 border border-white/20 rounded px-1">
-                            {isShowingOriginal ? "Original" : "Translated"}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex flex-col items-center space-y-1">
-                      {msg.unreadCount > 0 && (
-                        <p className="text-xs text-yellow-400 font-semibold">
-                          {msg.unreadCount}
-                        </p>
-                      )}
-                      <p className="text-xs text-gray-500">{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </>
-        )}
-        <div ref={messagesEndRef} />
-      </div>
 
       {/* Message Input */}
       <MessageInput
@@ -363,10 +488,56 @@ export default function ChatWindow({
           roomId={roomDetails.id}
           members={roomDetails.members || []}
           ownerId={roomDetails.ownerId || 0}
-          currentUserId={member?.id ?? 0}
+          currentUserId={member?.memberId ?? 0}
           isOwner={isOwner}
         />
       )}
+
+      {/* Learning Note Modal */}
+      {selectedMessageForAnalysis && (
+        <LearningNoteModal
+          isOpen={isLearningNoteModalOpen}
+          onClose={() => setIsLearningNoteModalOpen(false)}
+          originalContent={selectedMessageForAnalysis.original}
+          translatedContent={selectedMessageForAnalysis.translated}
+          feedbackData={analysisResult}
+        />
+      )}
+
+      {/* Report Modal (Direct Chat Only) */}
+      {roomDetails?.type === 'direct' && member && (() => {
+        // Find the partner (the other person in the direct chat)
+        const partnerId = messages.find(msg => msg.senderId !== member.memberId)?.senderId;
+        return partnerId ? (
+          <ReportModal
+            isOpen={isReportModalOpen}
+            onClose={() => setIsReportModalOpen(false)}
+            targetMemberId={partnerId}
+            targetNickname={roomDetails.name}
+          />
+        ) : null;
+      })()}
+
+      {/* Member Profile Modal */}
+      {selectedMemberForProfile && (
+        <MemberProfileModal
+          isOpen={!!selectedMemberForProfile}
+          onClose={() => setSelectedMemberForProfile(null)}
+          member={selectedMemberForProfile}
+          isCurrentUser={member?.memberId === selectedMemberForProfile.id}
+        />
+      )}
+
+      {/* Chat Room Info Modal */}
+      <ChatRoomInfoModal
+        isOpen={isRoomInfoModalOpen}
+        onClose={() => setIsRoomInfoModalOpen(false)}
+        onOpenMembersModal={() => setIsMembersModalOpen(true)}
+        roomDetails={roomDetails}
+        currentUserId={member?.memberId}
+        subscriberCount={subscriberCount}
+        totalMemberCount={totalMemberCount}
+      />
     </main>
   );
 }

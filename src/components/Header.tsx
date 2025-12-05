@@ -13,6 +13,7 @@ import {
   useMarkNotificationRead,
   useNotificationsQuery,
 } from "@/global/api/useNotificationQuery";
+import { useLanguage } from "@/contexts/LanguageContext";
 import apiClient from "@/global/backend/client";
 import { useLoginStore } from "@/global/stores/useLoginStore";
 import { useNotificationStore } from "@/global/stores/useNotificationStore";
@@ -97,7 +98,9 @@ const resolveFriendRequestId = async (notification: NotificationItem): Promise<n
 };
 
 export default function Header() {
+  const { language, setLanguage } = useLanguage();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [friendRequestActionId, setFriendRequestActionId] = useState<number | null>(null);
@@ -122,6 +125,9 @@ export default function Header() {
       const target = event.target as Element;
       if (!target.closest(".notifications-dropdown")) {
         setShowNotifications(false);
+      }
+      if (!target.closest(".language-dropdown")) {
+        setIsLangMenuOpen(false);
       }
     };
 
@@ -355,7 +361,7 @@ export default function Header() {
 
   return (
     <header className="fixed top-0 left-0 right-0 bg-gray-800/95 backdrop-blur-sm shadow-lg border-b border-gray-600 z-50">
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-4 relative">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link href="/" className="text-xl font-bold text-emerald-400">
@@ -363,7 +369,7 @@ export default function Header() {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex space-x-6">
+          <nav className="hidden md:flex space-x-6 absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
             <Link
               href="/"
               className="text-gray-200 hover:text-emerald-400 transition-colors"
@@ -406,6 +412,38 @@ export default function Header() {
 
           {/* Auth Buttons */}
           <div className="hidden md:flex items-center space-x-4">
+            {/* Language Dropdown */}
+            <div className="relative language-dropdown">
+              <button
+                onClick={() => setIsLangMenuOpen(!isLangMenuOpen)}
+                className="flex items-center space-x-1 text-gray-200 hover:text-emerald-400 transition-colors p-2 rounded-lg hover:bg-gray-700/50"
+              >
+                <span className="text-xl">{language === 'ko' ? '🇰🇷' : '🇺🇸'}</span>
+                <svg className={`w-4 h-4 transition-transform ${isLangMenuOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {isLangMenuOpen && (
+                <div className="absolute right-0 mt-2 w-32 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-50 py-1">
+                  <button
+                    onClick={() => { setLanguage('ko'); setIsLangMenuOpen(false); }}
+                    className={`w-full text-left px-4 py-2 text-sm flex items-center space-x-2 hover:bg-gray-700 ${language === 'ko' ? 'text-emerald-400 bg-gray-700/50' : 'text-gray-300'}`}
+                  >
+                    <span>🇰🇷</span>
+                    <span>한국어</span>
+                  </button>
+                  <button
+                    onClick={() => { setLanguage('en'); setIsLangMenuOpen(false); }}
+                    className={`w-full text-left px-4 py-2 text-sm flex items-center space-x-2 hover:bg-gray-700 ${language === 'en' ? 'text-emerald-400 bg-gray-700/50' : 'text-gray-300'}`}
+                  >
+                    <span>🇺🇸</span>
+                    <span>English</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
             {/* Notifications */}
             <div className="relative notifications-dropdown">
               <button

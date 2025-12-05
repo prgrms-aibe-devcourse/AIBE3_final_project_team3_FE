@@ -1,0 +1,14 @@
+{
+  "common": {
+    "language": "언어",
+    "korean": "한국어",
+    "english": "English"
+  },
+  "system": {
+    "MEMBER_JOINED": "{nickname}님이 입장했습니다.",
+    "MEMBER_LEFT": "{nickname}님이 나갔습니다.",
+    "MEMBER_KICKED": "{nickname}님이 강퇴되었습니다.",
+    "OWNER_CHANGED": "{oldOwner}님이 {newOwner}님에게 방장을 위임했습니다.",
+    "DIRECT_CHAT_STARTED": "1:1 채팅이 시작되었습니다."
+  }
+}
