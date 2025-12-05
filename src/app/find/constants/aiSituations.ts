@@ -1,14 +1,153 @@
+import { PromptListItem } from "@/global/types/prompt.types";
+
 export interface AIScenario {
-  id: string;
+  id: number | string;
   title: string;
   description?: string;
+  promptType?: string;
+  rolePlayType?: string;
 }
 
 export interface AICategory {
   id: string;
   title: string;
+  promptType?: string;
+  rolePlayType?: string;
   scenarios: AIScenario[];
 }
+
+const ROLE_PLAY_TYPE_KEYS = [
+  "DAILY_SERVICE",
+  "WORK_COMPANY",
+  "SCHOOL_ACADEMIC",
+  "TRAVEL_IMMIGRATION",
+  "HOSPITAL_EMERGENCY",
+  "ONLINE_DIGITAL",
+  "RELATION_EMOTION",
+  "META_LEARNING",
+  "FREE_TALK",
+] as const;
+
+type RolePlayTypeKey = (typeof ROLE_PLAY_TYPE_KEYS)[number];
+
+const ROLE_PLAY_TYPE_LABELS: Record<RolePlayTypeKey, string> = {
+  DAILY_SERVICE: "일상 & 서비스 상황",
+  WORK_COMPANY: "회사/직장 상황",
+  SCHOOL_ACADEMIC: "학교/학습 상황",
+  TRAVEL_IMMIGRATION: "여행 & 공항/이민 상황",
+  HOSPITAL_EMERGENCY: "병원 & 긴급 상황",
+  ONLINE_DIGITAL: "온라인/디지털 상황",
+  RELATION_EMOTION: "인간관계 & 감정/갈등 상황",
+  META_LEARNING: "영어 학습 앱 특화 메타 상황",
+  FREE_TALK: "자유 대화 (Free Talk)",
+};
+
+const ROLE_PLAY_TYPE_KEY_SET = new Set<string>(ROLE_PLAY_TYPE_KEYS);
+
+const FALLBACK_CATEGORY_KEY = "UNCATEGORIZED";
+
+const toTitleCaseLabel = (value: string) =>
+  value
+    .toLowerCase()
+    .split("_")
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+
+const normaliseRolePlayTypeKey = (rolePlayType?: string | null) => {
+  if (typeof rolePlayType !== "string") {
+    return FALLBACK_CATEGORY_KEY;
+  }
+
+  const trimmed = rolePlayType.trim();
+  if (!trimmed) {
+    return FALLBACK_CATEGORY_KEY;
+  }
+
+  const upper = trimmed.toUpperCase();
+  return upper;
+};
+
+export const formatRolePlayTypeLabel = (rolePlayType?: string | null) => {
+  const normalised = normaliseRolePlayTypeKey(rolePlayType);
+  if (normalised === FALLBACK_CATEGORY_KEY) {
+    return "기타 상황극 프롬프트";
+  }
+
+  if (ROLE_PLAY_TYPE_KEY_SET.has(normalised as RolePlayTypeKey)) {
+    return ROLE_PLAY_TYPE_LABELS[normalised as RolePlayTypeKey];
+  }
+
+  return toTitleCaseLabel(normalised);
+};
+
+export const buildCategoriesFromPromptList = (
+  promptList?: PromptListItem[] | null,
+): AICategory[] => {
+  if (!Array.isArray(promptList) || promptList.length === 0) {
+    return [];
+  }
+
+  const scenarioMap = new Map<string, AIScenario[]>();
+  ROLE_PLAY_TYPE_KEYS.forEach((key) => {
+    scenarioMap.set(key, []);
+  });
+  scenarioMap.set(FALLBACK_CATEGORY_KEY, []);
+
+  for (const prompt of promptList) {
+    const normalisedKey = normaliseRolePlayTypeKey(prompt.rolePlayType);
+    if (!scenarioMap.has(normalisedKey)) {
+      scenarioMap.set(normalisedKey, []);
+    }
+
+    const slot = scenarioMap.get(normalisedKey);
+    if (!slot) {
+      continue;
+    }
+
+    slot.push({
+      id: prompt.id,
+      title: prompt.title,
+      promptType: prompt.promptType,
+      rolePlayType: normalisedKey === FALLBACK_CATEGORY_KEY ? undefined : normalisedKey,
+    });
+  }
+
+  const categories: AICategory[] = ROLE_PLAY_TYPE_KEYS.map((key, index) => ({
+    id: `${key.toLowerCase()}-${index + 1}`,
+    title: ROLE_PLAY_TYPE_LABELS[key],
+    rolePlayType: key,
+    scenarios: scenarioMap.get(key) ?? [],
+  }));
+
+  const fallbackScenarios = scenarioMap.get(FALLBACK_CATEGORY_KEY) ?? [];
+  if (fallbackScenarios.length > 0) {
+    categories.push({
+      id: `others-${categories.length + 1}`,
+      title: formatRolePlayTypeLabel(FALLBACK_CATEGORY_KEY),
+      rolePlayType: undefined,
+      scenarios: fallbackScenarios,
+    });
+  }
+
+  scenarioMap.forEach((scenarios, key) => {
+    if (
+      key === FALLBACK_CATEGORY_KEY ||
+      ROLE_PLAY_TYPE_KEY_SET.has(key as RolePlayTypeKey)
+    ) {
+      return;
+    }
+
+    categories.push({
+      id: `${key.toLowerCase()}-${categories.length + 1}`,
+      title: formatRolePlayTypeLabel(key),
+      rolePlayType: key,
+      scenarios,
+    });
+  });
+
+  return categories;
+};
 
 export const AI_SITUATION_CATEGORIES: AICategory[] = [
   {

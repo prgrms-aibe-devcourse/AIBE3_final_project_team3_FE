@@ -1,21 +1,25 @@
 "use client";
 
-import { useCreateDirectChat } from "@/global/api/useChatQuery";
+import { useCreateAiChat, useCreateDirectChat } from "@/global/api/useChatQuery";
 import { useFriendDetailQuery, useFriendsQuery, useMemberProfileQuery, useMembersQuery } from "@/global/api/useMemberQuery";
+import { usePromptListQuery } from "@/global/api/usePromptQuery";
 import { useFriendshipActions } from "@/global/hooks/useFriendshipActions";
 import { getCountryFlagEmoji, normaliseCountryValue } from "@/global/lib/countries";
 import { MemberPresenceSummaryResp } from "@/global/types/auth.types";
+import { AiChatRoomType } from "@/global/types/chat.types";
 import { FriendSummary } from "@/global/types/member.types";
 import { Bot, MessageSquare, Plus, UserRoundCheck, Users } from "lucide-react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
-import GroupRoomList from "./components/GroupRoomList";
-import NewGroupChatModal from "./components/NewGroupChatModal";
-// Import new AI modal components and types
+import AICreateRoomModal from "./components/AICreateRoomModal";
+import AIRoomTypeModal from "./components/AIRoomTypeModal";
 import AIScenarioModal from "./components/AIScenarioModal";
 import AISituationModal from "./components/AISituationModal";
-import { AICategory, AIScenario } from "./constants/aiSituations";
+import GroupRoomList from "./components/GroupRoomList";
+import NewGroupChatModal from "./components/NewGroupChatModal";
+import { AI_ROOM_TYPE_OPTIONS, formatAiRoomTypeLabel } from "./constants/aiRoomTypes";
+import { AICategory, AIScenario, buildCategoriesFromPromptList } from "./constants/aiSituations";
 
 
 export const dynamic = "force-dynamic";
@@ -202,9 +206,23 @@ function FindPageContent() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("1v1");
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false); // Renamed for clarity
   // New state for AI modals
+  const [isAIRoomTypeModalOpen, setIsAIRoomTypeModalOpen] = useState(false);
   const [isAISituationModalOpen, setIsAISituationModalOpen] = useState(false);
   const [isAIScenarioModalOpen, setIsAIScenarioModalOpen] = useState(false);
+  const [isAICreateModalOpen, setIsAICreateModalOpen] = useState(false);
+  const [selectedRoomType, setSelectedRoomType] = useState<AiChatRoomType | null>(null);
   const [selectedAICategory, setSelectedAICategory] = useState<AICategory | null>(null);
+  const [selectedAIScenario, setSelectedAIScenario] = useState<AIScenario | null>(null);
+  const {
+    data: promptList,
+    isLoading: isPromptLoading,
+    error: promptError,
+    refetch: refetchPromptList,
+  } = usePromptListQuery();
+  const aiCategories = useMemo(() => buildCategoriesFromPromptList(promptList), [promptList]);
+  const aiPromptModalTitle = selectedRoomType
+    ? `${formatAiRoomTypeLabel(selectedRoomType)} 프롬프트 선택`
+    : undefined;
 
 
   useEffect(() => {
@@ -214,12 +232,30 @@ function FindPageContent() {
     }
   }, [searchParams]);
 
+  const openAiCreationFlow = () => {
+    setSelectedRoomType(null);
+    setSelectedAICategory(null);
+    setSelectedAIScenario(null);
+    setIsAISituationModalOpen(false);
+    setIsAIScenarioModalOpen(false);
+    setIsAICreateModalOpen(false);
+    setIsAIRoomTypeModalOpen(true);
+  };
+
   const handlePlusClick = () => {
     if (activeTab === "group") {
       setIsGroupModalOpen(true);
     } else if (activeTab === "ai") {
-      setIsAISituationModalOpen(true); // Open the first AI modal
+      openAiCreationFlow();
     }
+  };
+
+  const handleSelectAIRoomType = (roomType: AiChatRoomType) => {
+    setSelectedRoomType(roomType);
+    setSelectedAICategory(null);
+    setSelectedAIScenario(null);
+    setIsAIRoomTypeModalOpen(false);
+    setIsAISituationModalOpen(true);
   };
 
   // Handlers for AI modals
@@ -233,19 +269,50 @@ function FindPageContent() {
     setIsAIScenarioModalOpen(false); // Close second modal
     setIsAISituationModalOpen(true); // Open first modal
     setSelectedAICategory(null); // Clear selected category
+    setSelectedAIScenario(null); // Clear selected scenario
+    setIsAICreateModalOpen(false); // Close creation modal
   };
 
   const handleSelectAIScenario = (scenario: AIScenario) => {
-    // TODO: Implement logic to create AI chat room with this scenario
-    alert(`AI 채팅방 생성 요청: ${selectedAICategory?.title} - ${scenario.title}`);
+    if (!selectedRoomType) {
+      alert("AI 채팅방 유형을 먼저 선택해 주세요.");
+      return;
+    }
+    setSelectedAIScenario(scenario);
     setIsAIScenarioModalOpen(false); // Close second modal
-    setSelectedAICategory(null); // Clear selected category
+    setIsAICreateModalOpen(true); // Open creation modal
   };
 
   const closeAllAIModals = () => {
+    setIsAIRoomTypeModalOpen(false);
     setIsAISituationModalOpen(false);
     setIsAIScenarioModalOpen(false);
+    setIsAICreateModalOpen(false);
+    setSelectedRoomType(null);
     setSelectedAICategory(null);
+    setSelectedAIScenario(null);
+  };
+
+  const handleCreateAiRoom = (roomName: string) => {
+    if (!selectedRoomType || !selectedAIScenario) {
+      alert("AI 채팅방 유형과 프롬프트를 먼저 선택해 주세요.");
+      return;
+    }
+
+    const personaId = Number(selectedAIScenario.id);
+    if (!Number.isFinite(personaId)) {
+      alert("선택한 프롬프트 ID가 올바르지 않습니다. 다시 시도해 주세요.");
+      return;
+    }
+
+    createAiChatMutation.mutate(
+      { roomName, personaId, roomType: selectedRoomType },
+      {
+        onSuccess: () => {
+          closeAllAIModals();
+        },
+      }
+    );
   };
 
 
@@ -288,6 +355,7 @@ function FindPageContent() {
     }
   }, [requestedMemberId, members, friendMembers, selectedUser]);
   const createChatMutation = useCreateDirectChat();
+  const createAiChatMutation = useCreateAiChat();
   const {
     sendFriendRequest: mutateSendFriendRequest,
     acceptFriendRequest: mutateAcceptFriendRequest,
@@ -953,8 +1021,60 @@ function FindPageContent() {
 
     if (activeTab === "ai") {
       return (
-        <div className="text-center text-gray-400 mt-10">
-          <p className="text-xl">Content for {activeTab} tab is coming soon!</p>
+        <div className="space-y-10">
+          <div className="bg-gradient-to-r from-gray-800 via-emerald-900/30 to-gray-800 border border-emerald-800/50 rounded-2xl p-8 flex flex-col gap-4">
+            <div>
+              <p className="text-emerald-300 text-sm font-semibold uppercase tracking-[0.2em]">AI ENGLISH LAB</p>
+              <h2 className="text-3xl font-bold text-white mt-2">3가지 AI 튜터로 상황극부터 맞춤 피드백까지</h2>
+              <p className="text-gray-300 mt-3 max-w-3xl">
+                역할놀이로 말하기 감각을 깨우고, 내 학습노트 기반 코칭과 유사 학습자 사례까지 한 번에 연결해 보세요. 선택 즉시 프롬프트 카테고리를 열어 원하는 시나리오를 고를 수 있습니다.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={openAiCreationFlow}
+                className="px-6 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-semibold transition-colors"
+              >
+                AI 대화방 만들기
+              </button>
+              <button
+                type="button"
+                onClick={() => router.push("/learning-notes")}
+                className="px-6 py-3 rounded-xl border border-gray-600 text-white font-semibold hover:bg-gray-800/60 transition-colors"
+              >
+                학습노트 살펴보기
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {AI_ROOM_TYPE_OPTIONS.map((option) => (
+              <div key={option.type} className="bg-gray-800 border border-gray-700 rounded-2xl p-6 flex flex-col gap-4">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-xl font-semibold text-white">{option.title}</h3>
+                  {option.badge ? (
+                    <span className="px-2 py-0.5 text-xs rounded-full bg-emerald-600 text-white">{option.badge}</span>
+                  ) : null}
+                </div>
+                <p className="text-gray-200 text-sm leading-relaxed">{option.description}</p>
+                <p className="text-gray-400 text-xs leading-relaxed flex-1">{option.details}</p>
+                <button
+                  type="button"
+                  onClick={() => handleSelectAIRoomType(option.type)}
+                  className="mt-auto inline-flex items-center justify-center px-4 py-2 rounded-lg bg-gray-700 hover:bg-emerald-500 text-white font-medium transition-colors"
+                >
+                  프롬프트 선택하기
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6">
+            <p className="text-sm text-gray-300">
+              Tip. 상황극(ROLE_PLAY)은 실전 회화 루틴을 빠르게 만들어 주고, <span className="text-white font-semibold">개인화 튜터</span>와 <span className="text-white font-semibold">유사도 튜터</span>는 학습노트 데이터를 활용해 표현 확장과 피드백을 제공합니다. 하루에 여러 모드를 번갈아 사용해 보면 가장 빠르게 말하기 감각이 올라갑니다.
+            </p>
+          </div>
         </div>
       );
     }
@@ -1146,11 +1266,24 @@ function FindPageContent() {
         onClose={() => setIsGroupModalOpen(false)} // Use renamed state
       />
 
+      <AIRoomTypeModal
+        isOpen={isAIRoomTypeModalOpen}
+        onClose={closeAllAIModals}
+        onSelect={handleSelectAIRoomType}
+      />
+
       {/* New AI Situation Modals */}
       <AISituationModal
         isOpen={isAISituationModalOpen}
         onClose={closeAllAIModals}
         onSelectCategory={handleSelectAICategory}
+        categories={aiCategories}
+        isLoading={isPromptLoading}
+        errorMessage={promptError?.message}
+        onRetry={() => {
+          void refetchPromptList();
+        }}
+        headerTitle={aiPromptModalTitle}
       />
 
       <AIScenarioModal
@@ -1159,6 +1292,15 @@ function FindPageContent() {
         onBack={handleBackToCategories}
         selectedCategory={selectedAICategory}
         onSelectScenario={handleSelectAIScenario}
+      />
+
+      <AICreateRoomModal
+        isOpen={isAICreateModalOpen}
+        onClose={closeAllAIModals}
+        selectedRoomType={selectedRoomType}
+        selectedPrompt={selectedAIScenario}
+        onSubmit={handleCreateAiRoom}
+        isSubmitting={createAiChatMutation.isPending}
       />
     </>
   );

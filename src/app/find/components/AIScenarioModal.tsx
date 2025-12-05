@@ -1,7 +1,7 @@
 // src/app/find/components/AIScenarioModal.tsx
+import { ArrowLeft, X } from "lucide-react";
 import React from "react";
-import { AICategory, AIScenario } from "../constants/aiSituations";
-import { X, ArrowLeft } from "lucide-react";
+import { AICategory, AIScenario, formatRolePlayTypeLabel } from "../constants/aiSituations";
 
 interface AIScenarioModalProps {
   isOpen: boolean;
@@ -36,20 +36,31 @@ const AIScenarioModal: React.FC<AIScenarioModalProps> = ({
             </button>
           </div>
 
-          <div className="grid grid-cols-1 gap-4">
-            {selectedCategory.scenarios.map((scenario) => (
-              <button
-                key={scenario.id}
-                onClick={() => onSelectScenario(scenario)}
-                className="bg-gray-700 hover:bg-gray-600 text-white p-4 rounded-lg text-left transition-colors"
-              >
-                <h3 className="text-lg font-semibold">{scenario.title}</h3>
-                {scenario.description && (
-                  <p className="text-gray-400 text-sm mt-1">{scenario.description}</p>
-                )}
-              </button>
-            ))}
-          </div>
+          {selectedCategory.scenarios.length > 0 ? (
+            <div className="grid grid-cols-1 gap-4">
+              {selectedCategory.scenarios.map((scenario) => (
+                <button
+                  key={scenario.id}
+                  onClick={() => onSelectScenario(scenario)}
+                  className="bg-gray-700 hover:bg-gray-600 text-white p-4 rounded-lg text-left transition-colors"
+                >
+                  <h3 className="text-lg font-semibold">{scenario.title}</h3>
+                  {scenario.description && (
+                    <p className="text-gray-400 text-sm mt-1">{scenario.description}</p>
+                  )}
+                  {!scenario.description && (
+                    <p className="text-gray-400 text-sm mt-1">
+                      {formatRolePlayTypeLabel(scenario.rolePlayType ?? selectedCategory.rolePlayType ?? null)}
+                    </p>
+                  )}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center text-gray-300 py-8">
+              현재 선택한 카테고리에 등록된 프롬프트가 없습니다.
+            </div>
+          )}
         </div>
       </div>
     </div>
