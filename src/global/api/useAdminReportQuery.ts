@@ -2,6 +2,13 @@ import apiClient from "@/global/backend/client";
 import { unwrap } from "@/global/backend/unwrap";
 import type { AdminReport, ReportStatus } from "@/global/types/report.types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { API_BASE_URL } from "@/global/consts";
+import { useLoginStore } from "@/global/stores/useLoginStore";
+
+type PageQueryOptions = {
+  page?: number;
+  size?: number;
+};
 
 type AdminReportListResponse = {
   content: AdminReport[];
@@ -12,24 +19,45 @@ type AdminReportListResponse = {
 // =======================
 // GET 신고 목록
 // =======================
-export const fetchReportList = async (page: number) => {
-  const res = await apiClient.GET("/api/v1/admin/reports", {
-    params: {
-      query: {
-        page,
-        size: 20,
-      }
+export const fetchReportList = async (options?: PageQueryOptions) => {
+  const { accessToken } = useLoginStore.getState();
+
+  const page = typeof options?.page === "number" ? Math.max(options.page, 0) : 0;
+  const size = typeof options?.size === "number" ? Math.max(options.size, 1) : 20;
+
+  const url = new URL("/api/v1/admin/reports", API_BASE_URL);
+  url.searchParams.set("page", String(page));
+  url.searchParams.set("size", String(size));
+
+  const response = await fetch(url.toString(), {
+    method: "GET",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
     },
   });
 
-  return unwrap<AdminReportListResponse>(res); // Page<AdminReport>
+  if (!response.ok) {
+    throw new Error(`신고 목록 조회 실패: ${response.status}`);
+  }
+
+  const json = (await response.json()) as { data?: AdminReportListResponse };
+  const data = json.data ?? {
+    content: [],
+    totalPages: 0,
+    number: page,
+  };
+
+  return data; 
 };
 
-export const useReportQuery = (page: number) =>
+export const useReportQuery = (page: number, size: number = 20) =>
   useQuery({
-    queryKey: ["reportList", page],
-    queryFn: () => fetchReportList(page),
+    queryKey: ["reportList", page, size],
+    queryFn: () => fetchReportList({ page, size }),
   });
+
 // =======================
 // PATCH 상태 변경
 // =======================
@@ -55,7 +83,7 @@ export const useReportStatusMutation = () => {
 
     onSuccess: () => {
       qc.invalidateQueries({
-        predicate: (q) => q.queryKey[0] === "reportList"
+        predicate: (q) => q.queryKey[0] === "reportList",
       });
     },
   });

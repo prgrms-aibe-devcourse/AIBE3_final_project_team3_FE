@@ -4,7 +4,7 @@ import { API_BASE_URL } from "../consts";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useLoginStore } from "../stores/useLoginStore";
-import { AIChatRoomResp, AiFeedbackReq, AiFeedbackResp, ChatRoomPageDataResp, CreateGroupChatReq, DirectChatRoomResp, GroupChatRoomResp, MessageResp } from "../types/chat.types";
+import {  AIChatRoomResp, AiFeedbackReq, AiFeedbackResp, ChatRoomPageDataResp, CreateAIChatReq, CreateGroupChatReq, DirectChatRoomResp, GroupChatRoomResp, MessageResp, } from "../types/chat.types";
 
 // --- Type Definitions ---
 // Types are now imported from chat.types.ts
@@ -221,6 +221,40 @@ export const useCreateGroupChat = () => {
     onError: (error) => {
       console.error("Failed to create group chat room:", error);
       alert(`그룹 채팅방을 만드는 데 실패했습니다: ${error.message}`);
+    },
+  });
+};
+
+const createAiChat = async (variables: CreateAIChatReq): Promise<AIChatRoomResp> => {
+  const response = await apiClient.POST("/api/v1/chats/rooms/ai", {
+    body: variables,
+  });
+
+  const unwrappedResponse = await unwrap<AIChatRoomResp>(response);
+
+  if (!unwrappedResponse) {
+    throw new Error("Failed to create AI chat room: No data received.");
+  }
+
+  return unwrappedResponse;
+};
+
+export const useCreateAiChat = () => {
+  const queryClient = useQueryClient();
+  const router = useRouter();
+
+  return useMutation<AIChatRoomResp, Error, CreateAIChatReq>({
+    mutationFn: createAiChat,
+    onSuccess: async (data) => {
+      await queryClient.invalidateQueries({ queryKey: ["chatRooms", "ai"] });
+
+      if (data && data.id) {
+        router.push(`/chat/ai/${data.id}`);
+      }
+    },
+    onError: (error) => {
+      console.error("Failed to create AI chat room:", error);
+      alert(`AI 채팅방을 만드는 데 실패했습니다: ${error.message}`);
     },
   });
 };

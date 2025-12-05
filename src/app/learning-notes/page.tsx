@@ -148,13 +148,7 @@ export default function LearningNotesPage() {
     setPage(0);
   }, [activeTab, filter]);
 
-  if (isLoading)
-    return <div className="p-8 text-gray-700">로딩 중...</div>;
-
-  if (isError)
-    return <div className="p-8 text-red-600">데이터를 불러오지 못했습니다.</div>;
-
-  const notes: FlattenFeedbackNote[] = data?.content ?? [];
+  const notes: FlattenFeedbackNote[] =!isError && data?.content ? data.content : [];
 
   const totalPages = data?.totalPages ?? 0;
   const currentPage = data?.number ?? 0;

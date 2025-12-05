@@ -111,7 +111,7 @@ export default function ChatLayout({
         avatar: "🤖",
         type: 'ai',
         unreadCount: 0,
-        lastMessage: room.aiPersona || 'AI 채팅을 시작해보세요.',
+        lastMessage: 'AI 튜터와 대화해보세요.',
         lastMessageTime: '',
       };
     });
