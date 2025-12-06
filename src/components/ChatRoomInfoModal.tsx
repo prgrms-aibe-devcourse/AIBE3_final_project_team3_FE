@@ -1,5 +1,6 @@
 "use client";
 
+import Image, { ImageLoaderProps } from "next/image";
 import { X, Users, Lock, Calendar, Crown, UserPlus, MessageSquare, ShieldAlert, Hash } from "lucide-react";
 import { ChatRoomMember } from "@/global/types/chat.types";
 import { useState } from "react";
@@ -7,6 +8,8 @@ import MemberProfileModal from "./MemberProfileModal";
 import { useSendFriendRequest } from "@/global/api/useFriendshipMutation";
 import { useToastStore } from "@/global/stores/useToastStore";
 import ReportModal from "./ReportModal";
+
+const remoteImageLoader = ({ src }: ImageLoaderProps) => src;
 
 interface ChatRoomInfoModalProps {
   isOpen: boolean;
@@ -40,6 +43,8 @@ export default function ChatRoomInfoModal({
 }: ChatRoomInfoModalProps) {
   const [selectedMemberForProfile, setSelectedMemberForProfile] = useState<ChatRoomMember | null>(null);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [failedMemberAvatarIds, setFailedMemberAvatarIds] = useState<Set<number>>(new Set());
+  const [isPartnerAvatarError, setIsPartnerAvatarError] = useState(false);
   const { mutate: sendFriendRequest } = useSendFriendRequest();
   const { addToast } = useToastStore();
 
@@ -76,6 +81,17 @@ export default function ChatRoomInfoModal({
         },
       }
     );
+  };
+
+  const markMemberAvatarFailed = (memberId: number) => {
+    setFailedMemberAvatarIds((prev) => {
+      if (prev.has(memberId)) {
+        return prev;
+      }
+      const next = new Set(prev);
+      next.add(memberId);
+      return next;
+    });
   };
 
   return (
@@ -196,6 +212,8 @@ export default function ChatRoomInfoModal({
                     <div className="flex flex-wrap gap-2">
                       {roomDetails.members.slice(0, 8).map((member) => {
                         const isOwner = member.id === roomDetails.ownerId;
+                        const hasProfileImage = Boolean(member.profileImageUrl && member.profileImageUrl.trim() !== "");
+                        const shouldShowInitial = !hasProfileImage || failedMemberAvatarIds.has(member.id);
                         return (
                           <div key={member.id} className="relative">
                             <button
@@ -203,14 +221,19 @@ export default function ChatRoomInfoModal({
                               className="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center text-white font-semibold text-sm hover:ring-2 hover:ring-emerald-400 transition-all overflow-hidden"
                               title={member.nickname}
                             >
-                              {member.profileImageUrl && member.profileImageUrl.trim() !== "" ? (
-                                <img
-                                  src={member.profileImageUrl}
-                                  alt={member.nickname}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
+                              {shouldShowInitial ? (
                                 member.nickname.charAt(0).toUpperCase()
+                              ) : (
+                                <Image
+                                  loader={remoteImageLoader}
+                                  unoptimized
+                                  src={member.profileImageUrl as string}
+                                  alt={member.nickname}
+                                  width={40}
+                                  height={40}
+                                  className="w-full h-full object-cover"
+                                  onError={() => markMemberAvatarFailed(member.id)}
+                                />
                               )}
                             </button>
                             {isOwner && (
@@ -238,14 +261,19 @@ export default function ChatRoomInfoModal({
                 {/* Partner Profile */}
                 <div className="flex flex-col items-center">
                   <div className="w-24 h-24 rounded-full bg-gray-600 flex items-center justify-center text-3xl font-bold text-white mb-4 shadow-lg overflow-hidden">
-                    {partner.profileImageUrl && partner.profileImageUrl.trim() !== "" ? (
-                      <img
+                    {!partner.profileImageUrl || partner.profileImageUrl.trim() === "" || isPartnerAvatarError ? (
+                      partner.nickname.charAt(0).toUpperCase()
+                    ) : (
+                      <Image
+                        loader={remoteImageLoader}
+                        unoptimized
                         src={partner.profileImageUrl}
                         alt={partner.nickname}
+                        width={96}
+                        height={96}
                         className="w-full h-full object-cover"
+                        onError={() => setIsPartnerAvatarError(true)}
                       />
-                    ) : (
-                      partner.nickname.charAt(0).toUpperCase()
                     )}
                   </div>
                   <h3 className="text-2xl font-bold text-white mb-2">{partner.nickname}</h3>

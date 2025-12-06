@@ -1,5 +1,7 @@
 "use client";
 
+import Image, { ImageLoaderProps } from "next/image";
+
 import { useRef, useEffect, useLayoutEffect, useState } from "react";
 import { MessageResp, ChatRoomMember } from "@/global/types/chat.types";
 import { Loader2, MoreVertical, Phone, Video, ShieldAlert, LogOut, Users, LucideIcon, Sparkles } from "lucide-react";
@@ -13,6 +15,8 @@ import ReportModal from "@/components/ReportModal";
 import MemberProfileModal from "@/components/MemberProfileModal";
 import ChatRoomInfoModal from "@/components/ChatRoomInfoModal";
 import { AiFeedbackResp } from "@/global/types/chat.types";
+
+const remoteImageLoader = ({ src }: ImageLoaderProps) => src;
 
 // Define props for the component
 interface ChatWindowProps {
@@ -77,6 +81,7 @@ export default function ChatWindow({
 
   // State to track which messages should show original text instead of translation
   const [showOriginalIds, setShowOriginalIds] = useState<Set<string>>(new Set());
+  const [failedAvatarIds, setFailedAvatarIds] = useState<Set<number>>(new Set());
 
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -89,6 +94,17 @@ export default function ChatWindow({
         newSet.add(messageId);
       }
       return newSet;
+    });
+  };
+
+  const markAvatarAsFailed = (memberId: number) => {
+    setFailedAvatarIds((prev) => {
+      if (prev.has(memberId)) {
+        return prev;
+      }
+      const next = new Set(prev);
+      next.add(memberId);
+      return next;
     });
   };
 
@@ -157,7 +173,6 @@ export default function ChatWindow({
   };
   // --- End Dropdown Menu Logic ---
 
-
   // Scroll to bottom helper
   const scrollToBottom = () => {
     const container = messageContainerRef.current;
@@ -214,7 +229,6 @@ export default function ChatWindow({
       }
     }
   };
-
 
   if (!roomDetails) {
     return (
@@ -372,25 +386,29 @@ export default function ChatWindow({
                             <div key={msg.id} className={`flex items-start gap-2 ${isUser ? "justify-end" : "justify-start"}`}>
                               {!isUser && (() => {
                                 const senderMember = roomDetails?.members?.find((m: ChatRoomMember) => m.id === msg.senderId);
-                                const hasProfileImage = senderMember?.profileImageUrl && senderMember.profileImageUrl.trim() !== '';
+                                const hasProfileImage = Boolean(senderMember?.profileImageUrl && senderMember.profileImageUrl.trim() !== "");
+                                const senderMemberId = typeof senderMember?.id === "number" ? senderMember.id : null;
+                                const shouldShowFallback = !hasProfileImage || (senderMemberId != null && failedAvatarIds.has(senderMemberId));
+                                const senderInitial = msg.sender.charAt(0).toUpperCase();
                                 return (
                                   <button
                                     onClick={() => senderMember && setSelectedMemberForProfile(senderMember)}
                                     className="w-8 h-8 rounded-full bg-gray-600 flex-shrink-0 flex items-center justify-center text-white font-semibold text-sm hover:ring-2 hover:ring-gray-400 transition-all overflow-hidden cursor-pointer mt-5"
                                     title={`${msg.sender}님의 프로필 보기`}
                                   >
-                                    {hasProfileImage ? (
-                                      <img
-                                        src={senderMember.profileImageUrl}
-                                        alt={msg.sender}
-                                        className="w-full h-full object-cover"
-                                        onError={(e) => {
-                                          e.currentTarget.style.display = 'none';
-                                          e.currentTarget.parentElement!.textContent = msg.sender.charAt(0).toUpperCase();
-                                        }}
-                                      />
+                                    {shouldShowFallback || !senderMemberId ? (
+                                      senderInitial
                                     ) : (
-                                      msg.sender.charAt(0).toUpperCase()
+                                      <Image
+                                        loader={remoteImageLoader}
+                                        unoptimized
+                                        src={senderMember!.profileImageUrl}
+                                        alt={msg.sender}
+                                        width={32}
+                                        height={32}
+                                        className="w-full h-full object-cover"
+                                        onError={() => markAvatarAsFailed(senderMemberId)}
+                                      />
                                     )}
                                   </button>
                                 );
@@ -409,16 +427,25 @@ export default function ChatWindow({
                                   >
                                   
                                   {msg.messageType === 'IMAGE' ? (
-                                    <img 
-                                      src={msg.content} 
-                                      alt="Sent image" 
-                                      className="max-w-full max-h-64 rounded-lg cursor-pointer object-contain bg-black/20"
-                                      onLoad={() => shouldScrollRef.current && scrollToBottom()}
+                                    <div
+                                      className="max-w-full max-h-64 cursor-pointer"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         window.open(msg.content, '_blank');
                                       }}
-                                    />
+                                    >
+                                      <Image
+                                        loader={remoteImageLoader}
+                                        unoptimized
+                                        src={msg.content}
+                                        alt="Sent image"
+                                        width={512}
+                                        height={512}
+                                        className="rounded-lg object-contain bg-black/20 max-h-64 w-auto"
+                                        sizes="(max-width: 768px) 80vw, 400px"
+                                        onLoadingComplete={() => shouldScrollRef.current && scrollToBottom()}
+                                      />
+                                    </div>
                                   ) : msg.messageType === 'FILE' ? (
                                     <a 
                                       href={msg.content} 

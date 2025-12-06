@@ -1,5 +1,6 @@
 "use client";
 
+import Image, { ImageLoaderProps } from "next/image";
 import { X, UserPlus, MessageSquare, ShieldAlert, UserMinus } from "lucide-react";
 import { ChatRoomMember } from "@/global/types/chat.types";
 import { useState } from "react";
@@ -7,6 +8,8 @@ import { useSendFriendRequest } from "@/global/api/useFriendshipMutation";
 import { useCreateDirectChat } from "@/global/api/useChatQuery";
 import { useToastStore } from "@/global/stores/useToastStore";
 import ReportModal from "./ReportModal";
+
+const remoteImageLoader = ({ src }: ImageLoaderProps) => src;
 
 interface MemberProfileModalProps {
   isOpen: boolean;
@@ -22,6 +25,7 @@ export default function MemberProfileModal({
   isCurrentUser,
 }: MemberProfileModalProps) {
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [isAvatarError, setIsAvatarError] = useState(false);
   const { mutate: sendFriendRequest } = useSendFriendRequest();
   const { mutate: createDirectChat } = useCreateDirectChat();
   const { addToast } = useToastStore();
@@ -81,18 +85,19 @@ export default function MemberProfileModal({
           <div className="p-6 flex flex-col items-center">
             {/* Profile Image */}
             <div className="w-24 h-24 rounded-full bg-gray-600 flex items-center justify-center text-3xl font-bold text-white mb-4 shadow-lg overflow-hidden">
-              {member.profileImageUrl && member.profileImageUrl.trim() !== '' ? (
-                <img
+              {!member.profileImageUrl || member.profileImageUrl.trim() === '' || isAvatarError ? (
+                member.nickname.charAt(0).toUpperCase()
+              ) : (
+                <Image
+                  loader={remoteImageLoader}
+                  unoptimized
                   src={member.profileImageUrl}
                   alt={member.nickname}
+                  width={96}
+                  height={96}
                   className="w-full h-full object-cover"
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                    e.currentTarget.parentElement!.textContent = member.nickname.charAt(0).toUpperCase();
-                  }}
+                  onError={() => setIsAvatarError(true)}
                 />
-              ) : (
-                member.nickname.charAt(0).toUpperCase()
               )}
             </div>
 

@@ -7,11 +7,9 @@ import { useFindProfileModal } from "./FindProfileProvider";
 interface MemberGridProps {
   members?: MemberListItem[];
   source: MemberSource;
-  onStartChat?: (user: MemberListItem) => void;
-  onViewPosts?: (user: MemberListItem) => void;
 }
 
-export default function MemberGrid({ members = [], source, onStartChat, onViewPosts }: MemberGridProps) {
+export default function MemberGrid({ members = [], source }: MemberGridProps) {
   const { openProfile } = useFindProfileModal();
 
   if (!members.length) {
@@ -68,29 +66,6 @@ export default function MemberGrid({ members = [], source, onStartChat, onViewPo
                   <span className="text-xs text-gray-400">등록된 관심사가 없습니다.</span>
                 )}
               </div>
-            </div>
-
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onStartChat?.(user);
-                }}
-                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors"
-              >
-                Start Chat
-              </button>
-              <button
-                type="button"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onViewPosts?.(user);
-                }}
-                className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors"
-              >
-                게시글 보러가기
-              </button>
             </div>
           </div>
         );

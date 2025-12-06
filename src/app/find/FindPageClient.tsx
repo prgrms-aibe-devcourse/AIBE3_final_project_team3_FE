@@ -1,6 +1,6 @@
 "use client";
 
-import { useCreateAiChat, useCreateDirectChat } from "@/global/api/useChatQuery";
+import { useCreateAiChat } from "@/global/api/useChatQuery";
 import { useFriendsQuery, useMembersQuery } from "@/global/api/useMemberQuery";
 import { usePromptListQuery } from "@/global/api/usePromptQuery";
 import { AiChatRoomType } from "@/global/types/chat.types";
@@ -175,21 +175,10 @@ function FindPageContent() {
     );
   };
 
-  const createChatMutation = useCreateDirectChat();
   const createAiChatMutation = useCreateAiChat();
 
-  const viewUserPosts = (user: MemberListItem) => {
-    alert(`${user.nickname}님의 게시글 보기 기능은 추후 제공될 예정입니다.`);
-  };
-
-  const startChat = (user: MemberListItem) => {
-    if (window.confirm(`${user.nickname}님과 채팅을 시작하시겠습니까?`)) {
-      createChatMutation.mutate({ partnerId: user.id });
-    }
-  };
-
   const renderMemberGrid = (list: MemberListItem[], source: MemberSource) => (
-    <MemberGrid members={list} source={source} onStartChat={startChat} onViewPosts={viewUserPosts} />
+    <MemberGrid members={list} source={source} />
   );
 
   const renderPeopleContent = () => {
