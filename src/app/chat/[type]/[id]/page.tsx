@@ -182,13 +182,6 @@ export default function ChatRoomPage() {
           }
           // 3. UnreadCount 업데이트 이벤트 처리
           else if (payload.updates !== undefined) {
-            const countEvent = payload as SubscriberCountUpdateResp;
-            console.log(`[WebSocket] Received subscriber count event:`, countEvent);
-            setSubscriberCount(countEvent.subscriberCount);
-            setTotalMemberCount(countEvent.totalMemberCount);
-          }
-          // 3. UnreadCount 업데이트 이벤트 처리
-          else if (payload.updates !== undefined) {
             const updateEvent = payload as UnreadCountUpdateEvent;
             console.log(`🔔 [WebSocket UNREAD UPDATE] Received ${updateEvent.updates.length} updates`);
 
@@ -265,8 +258,10 @@ export default function ChatRoomPage() {
         body: JSON.stringify(messagePayload),
       });
     } else {
-      console.error("Client is not connected.");
-      alert("웹소켓 연결이 활성화되지 않았습니다. 페이지를 새로고침 해주세요.");
+      console.error("Client is not connected. Attempting to reconnect...");
+      connect(accessToken, () => {
+        alert("채팅 서버와 다시 연결되었습니다. 메시지를 다시 전송해주세요.");
+      });
     }
   };
 

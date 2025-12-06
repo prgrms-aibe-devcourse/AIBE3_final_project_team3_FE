@@ -13,6 +13,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 type ChatSidebarProps = {
   activeTab: "direct" | "group" | "ai";
@@ -29,6 +30,7 @@ export default function ChatSidebar({
   selectedRoomId,
   setSelectedRoomId,
 }: ChatSidebarProps) {
+  const { t } = useLanguage();
   const router = useRouter();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -179,7 +181,18 @@ export default function ChatSidebar({
                     </div>
                     <div className="flex justify-between items-start">
                       <p className="text-xs text-gray-400 truncate mt-1">
-                        {room.lastMessage}
+                        {(() => {
+                          try {
+                            if (!room.lastMessage) return "";
+                            const parsed = JSON.parse(room.lastMessage);
+                            if (parsed.type && parsed.params) {
+                              return t(`system.${parsed.type}`, parsed.params);
+                            }
+                            return room.lastMessage;
+                          } catch (e) {
+                            return room.lastMessage;
+                          }
+                        })()}
                       </p>
                       {room.type !== "ai" && room.unreadCount && room.unreadCount > 0 ? (
                         <span className="ml-2 mt-1 bg-emerald-500 text-white text-xs font-bold rounded-full h-5 min-w-[1.25rem] px-1 flex items-center justify-center flex-shrink-0">

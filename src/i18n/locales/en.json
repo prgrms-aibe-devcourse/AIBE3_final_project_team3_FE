@@ -8,6 +8,7 @@
     "MEMBER_JOINED": "{nickname} joined the room.",
     "MEMBER_LEFT": "{nickname} left the room.",
     "MEMBER_KICKED": "{nickname} was kicked out.",
+    "MEMBER_INVITED": "{inviter} invited {invitee}.",
     "OWNER_CHANGED": "{oldOwner} transferred ownership to {newOwner}.",
     "DIRECT_CHAT_STARTED": "Direct chat started."
   }

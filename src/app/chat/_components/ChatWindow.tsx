@@ -4,11 +4,12 @@ import Image, { ImageLoaderProps } from "next/image";
 
 import { useRef, useEffect, useLayoutEffect, useState } from "react";
 import { MessageResp, ChatRoomMember } from "@/global/types/chat.types";
-import { Loader2, MoreVertical, Phone, Video, ShieldAlert, LogOut, Users, LucideIcon, Sparkles } from "lucide-react";
+import { Loader2, MoreVertical, Phone, Video, ShieldAlert, LogOut, Users, LucideIcon, Sparkles, UserPlus } from "lucide-react";
 import { MemberSummaryResp } from "@/global/types/auth.types";
 import { useLeaveChatRoom, useUploadFileMutation, useAiFeedbackMutation } from "@/global/api/useChatQuery";
 import { useLanguage } from "@/contexts/LanguageContext";
 import MembersModal from "./MembersModal";
+import InviteFriendModal from "./InviteFriendModal";
 import MessageInput from "./MessageInput";
 import LearningNoteModal from "./LearningNoteModal";
 import ReportModal from "@/components/ReportModal";
@@ -70,6 +71,7 @@ export default function ChatWindow({
   // State for dropdown and modals
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [isRoomInfoModalOpen, setIsRoomInfoModalOpen] = useState(false);
   const [selectedMemberForProfile, setSelectedMemberForProfile] = useState<ChatRoomMember | null>(null);
@@ -248,6 +250,7 @@ export default function ChatWindow({
 
   // --- Dynamic Menu Items ---
   const groupMenuItems = [
+    { label: "친구 초대", icon: UserPlus, action: () => { setIsMenuOpen(false); setIsInviteModalOpen(true); } },
     { label: "멤버 보기", icon: Users, action: () => { setIsMenuOpen(false); setIsMembersModalOpen(true); } },
     { label: "채팅방 나가기", icon: LogOut, action: handleLeaveRoom, danger: true, disabled: isLeaving },
   ];
@@ -521,15 +524,23 @@ export default function ChatWindow({
 
       {/* Member List Modal */}
       {roomDetails && roomDetails.type === 'group' && (
-        <MembersModal
-          isOpen={isMembersModalOpen}
-          onClose={() => setIsMembersModalOpen(false)}
-          roomId={roomDetails.id}
-          members={roomDetails.members || []}
-          ownerId={roomDetails.ownerId || 0}
-          currentUserId={resolvedMemberId ?? 0}
-          isOwner={isOwner}
-        />
+        <>
+          <MembersModal
+            isOpen={isMembersModalOpen}
+            onClose={() => setIsMembersModalOpen(false)}
+            roomId={roomDetails.id}
+            members={roomDetails.members || []}
+            ownerId={roomDetails.ownerId || 0}
+            currentUserId={resolvedMemberId ?? 0}
+            isOwner={isOwner}
+          />
+          <InviteFriendModal
+            isOpen={isInviteModalOpen}
+            onClose={() => setIsInviteModalOpen(false)}
+            roomId={roomDetails.id}
+            existingMembers={roomDetails.members || []}
+          />
+        </>
       )}
 
       {/* Learning Note Modal */}

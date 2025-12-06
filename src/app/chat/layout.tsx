@@ -4,7 +4,7 @@ import { useGetAiChatRoomsQuery, useGetDirectChatRoomsQuery, useGetGroupChatRoom
 import { ChatRoom, useChatStore } from "@/global/stores/useChatStore";
 import { useLoginStore } from '@/global/stores/useLoginStore';
 import { AIChatRoomResp, DirectChatRoomResp, GroupChatRoomResp, RoomLastMessageUpdateResp } from '@/global/types/chat.types';
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo } from "react";
 import ChatSidebar from "./_components/ChatSidebar";
 import { connect, getStompClient } from "@/global/stomp/stompClient";
@@ -47,6 +47,17 @@ export default function ChatLayout({
   const currentMemberId = resolveStoreMemberId(member);
   const { accessToken } = useLoginStore();
   const queryClient = useQueryClient();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    if (pathname.includes('/chat/group')) {
+      setActiveTab('group');
+    } else if (pathname.includes('/chat/direct')) {
+      setActiveTab('direct');
+    } else if (pathname.includes('/chat/ai')) {
+      setActiveTab('ai');
+    }
+  }, [pathname, setActiveTab]);
 
   const { data: directRoomsData } = useGetDirectChatRoomsQuery();
   const { data: groupRoomsData } = useGetGroupChatRoomsQuery();
@@ -124,7 +135,7 @@ export default function ChatLayout({
         avatar: '/img/group-chat-fallback.png',
         type: 'group',
         unreadCount: room.unreadCount,
-        lastMessage: room.lastMessageContent || '그룹 채팅방입니다.',
+        lastMessage: room.lastMessageContent || '',
         lastMessageTime: room.lastMessageAt ?? '',
       };
     });
