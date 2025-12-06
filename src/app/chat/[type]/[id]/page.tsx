@@ -242,7 +242,7 @@ export default function ChatRoomPage() {
       }
       console.log(`[WebSocket Cleanup] Unsubscribed successfully from room ${roomId}`);
     };
-  }, [roomId, member, chatRoomType, accessToken]);
+  }, [roomId, member, chatRoomType, accessToken, queryClient]);
 
   const handleSendMessage = (message: { text: string; isTranslateEnabled: boolean }) => {
     if (message.text.trim() === "" || !member) {

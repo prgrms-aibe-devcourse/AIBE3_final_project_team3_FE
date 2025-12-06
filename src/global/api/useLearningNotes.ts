@@ -34,7 +34,7 @@ type LearningTagParam = "GRAMMAR" | "VOCABULARY" | "TRANSLATION";
 type LearningFilterParam = "ALL" | "LEARNED" | "UNLEARNED";
 
 export interface CreateFeedbackReq {
-  tag: string;
+  tag: LearningTagParam;
   problem: string;
   correction: string;
   extra: string;

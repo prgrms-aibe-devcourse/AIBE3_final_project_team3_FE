@@ -11,6 +11,31 @@ import { connect, getStompClient } from "@/global/stomp/stompClient";
 import type { IMessage } from "@stomp/stompjs";
 import { useQueryClient } from "@tanstack/react-query";
 
+type CachedRoomSummary = {
+  id: string | number;
+  lastMessageAt?: string | null;
+  unreadCount?: number;
+  lastMessageContent?: string | null;
+  [key: string]: unknown;
+};
+
+const resolveStoreMemberId = (value: unknown): number | undefined => {
+  if (!value || typeof value !== "object") {
+    return undefined;
+  }
+
+  const record = value as Record<string, unknown>;
+  const candidates = [record.memberId, record.id];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === "number" && Number.isFinite(candidate)) {
+      return candidate;
+    }
+  }
+
+  return undefined;
+};
+
 export default function ChatLayout({
   children,
 }: {
@@ -19,6 +44,7 @@ export default function ChatLayout({
   const { activeTab, setActiveTab, setSelectedRoomId, selectedRoomId } = useChatStore();
   const router = useRouter();
   const member = useLoginStore((state) => state.member);
+  const currentMemberId = resolveStoreMemberId(member);
   const { accessToken } = useLoginStore();
   const queryClient = useQueryClient();
 
@@ -45,9 +71,9 @@ export default function ChatLayout({
           const roomType = payload.chatRoomType.toLowerCase();
           const cacheKey: (string | number)[] = ['chatRooms', roomType];
 
-          queryClient.setQueryData<any>(cacheKey, (prev) => {
-            if (!prev) return prev;
-            return prev.map((room: any) =>
+          queryClient.setQueryData<CachedRoomSummary[] | undefined>(cacheKey, (prevRooms) => {
+            if (!prevRooms) return prevRooms;
+            return prevRooms.map((room) =>
               room.id === payload.roomId
                 ? {
                     ...room,
@@ -78,7 +104,7 @@ export default function ChatLayout({
     }
 
     const directRooms: ChatRoom[] = (directRoomsData || []).map((room: DirectChatRoomResp) => {
-      const partner = room.user1.id === member.memberId ? room.user2 : room.user1;
+      const partner = currentMemberId && room.user1.id === currentMemberId ? room.user2 : room.user1;
       return {
         id: `direct-${room.id}`,
         name: partner.nickname,
@@ -129,7 +155,7 @@ export default function ChatLayout({
       group: sortByLastMessage(groupRooms),
       ai: sortByLastMessage(aiRooms),
     };
-  }, [directRoomsData, groupRoomsData, aiRoomsData, member]);
+  }, [directRoomsData, groupRoomsData, aiRoomsData, member, currentMemberId]);
 
   const handleSetSelectedRoom = (roomId: string | null) => {
     setSelectedRoomId(roomId);

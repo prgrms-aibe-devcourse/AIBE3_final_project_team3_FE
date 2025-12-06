@@ -27,8 +27,11 @@ const createEmptyListPage = <T>(): PaginatedListPage<T> => ({
     isLast: true,
 });
 
-type MemberListPage = PaginatedListPage<MemberPresenceSummaryResp>;
-type FriendListPage = PaginatedListPage<FriendSummary>;
+type MemberListItem = MemberPresenceSummaryResp & { profileImageUrl?: string | null };
+type FriendListItem = FriendSummary & { profileImageUrl?: string | null };
+
+type MemberListPage = PaginatedListPage<MemberListItem>;
+type FriendListPage = PaginatedListPage<FriendListItem>;
 
 const normaliseInteger = (value: unknown, fallback: number | null): number | null => {
     if (typeof value === "number" && Number.isFinite(value)) {
@@ -181,7 +184,8 @@ const fetchMembers = async (options?: MemberQueryOptions): Promise<MemberListPag
     }
 
     const apiResponse = await response.json();
-    return extractPaginatedPayload<MemberPresenceSummaryResp>(apiResponse);
+    const pagePayload = extractPaginatedPayload<MemberPresenceSummaryResp>(apiResponse);
+    return normaliseProfileImagesInPage(pagePayload);
 };
 
 const fetchFriends = async (options?: MemberQueryOptions): Promise<FriendListPage> => {
@@ -206,7 +210,8 @@ const fetchFriends = async (options?: MemberQueryOptions): Promise<FriendListPag
     }
 
     const apiResponse = await response.json();
-    return extractPaginatedPayload<FriendSummary>(apiResponse);
+    const pagePayload = extractPaginatedPayload<FriendSummary>(apiResponse);
+    return normaliseProfileImagesInPage(pagePayload);
 };
 
 const fetchFriendDetail = async (friendId: number): Promise<FriendDetail> => {
@@ -528,13 +533,22 @@ const deleteMyAccount = async () => {
     }
 };
 
-const extractProfileImageUrl = (payload: unknown): string | null => {
+function trimProfileImageUrl(value: unknown): string | null {
+    if (typeof value !== "string") {
+        return null;
+    }
+
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
+}
+
+function extractProfileImageUrl(payload: unknown): string | null {
     if (!payload) {
         return null;
     }
 
     if (typeof payload === "string") {
-        return payload;
+        return trimProfileImageUrl(payload);
     }
 
     if (typeof payload !== "object") {
@@ -542,33 +556,49 @@ const extractProfileImageUrl = (payload: unknown): string | null => {
     }
 
     const record = payload as Record<string, unknown>;
-    const candidateKeys = ["profileImageUrl", "url", "imageUrl"] as const;
+    const candidateKeys = ["profileImageUrl", "profileImageURL", "url", "imageUrl"] as const;
 
     for (const key of candidateKeys) {
-        const value = record[key];
-        if (typeof value === "string" && value.length > 0) {
-            return value;
+        const resolved = trimProfileImageUrl(record[key]);
+        if (resolved) {
+            return resolved;
+        }
+    }
+
+    const nestedProfileImage = record.profileImage;
+    if (nestedProfileImage && typeof nestedProfileImage === "object") {
+        const nestedRecord = nestedProfileImage as Record<string, unknown>;
+        const nestedResolved =
+            trimProfileImageUrl(nestedRecord.url) ?? trimProfileImageUrl(nestedRecord.imageUrl);
+        if (nestedResolved) {
+            return nestedResolved;
         }
     }
 
     const dataField = record.data;
-
-    if (typeof dataField === "string" && dataField.length > 0) {
-        return dataField;
-    }
-
-    if (dataField && typeof dataField === "object") {
-        const nested = dataField as Record<string, unknown>;
-        for (const key of candidateKeys) {
-            const value = nested[key];
-            if (typeof value === "string" && value.length > 0) {
-                return value;
-            }
+    if (dataField) {
+        const nested = extractProfileImageUrl(dataField);
+        if (nested) {
+            return nested;
         }
     }
 
     return null;
-};
+}
+
+function normaliseProfileImagesInPage<T extends object>(
+    page: PaginatedListPage<T>,
+): PaginatedListPage<T & { profileImageUrl: string | null }> {
+    const items = page.items.map((item) => ({
+        ...item,
+        profileImageUrl: extractProfileImageUrl(item) ?? null,
+    }));
+
+    return {
+        ...page,
+        items,
+    };
+}
 
 const uploadProfileImage = async (file: File): Promise<string | null> => {
     const formData = new FormData();
