@@ -111,6 +111,12 @@ export function FindProfileProvider({ children }: { children: React.ReactNode })
       id: requestedMemberId,
       memberId: requestedMemberId,
       nickname: `member-${requestedMemberId}`,
+      country: "-",
+      englishLevel: "BEGINNER",
+      interests: [],
+      description: "",
+      profileImageUrl: "",
+      isOnline: false,
     } as MemberListItem);
   }, [requestedMemberId, selectedUser]);
 

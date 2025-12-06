@@ -43,6 +43,14 @@ export default function LearningNoteModal({
     setSelectedIndices(newSet);
   };
 
+  const toLearningTagParam = (value: string): "GRAMMAR" | "VOCABULARY" | "TRANSLATION" => {
+    const upper = typeof value === "string" ? value.toUpperCase() : "";
+    if (upper === "VOCABULARY" || upper === "TRANSLATION") {
+      return upper;
+    }
+    return "GRAMMAR";
+  };
+
   const handleSave = () => {
     const selectedFeedback = feedbackData.feedback.filter((_, index) => selectedIndices.has(index));
 
@@ -50,8 +58,8 @@ export default function LearningNoteModal({
       {
         originalContent: originalContent,
         correctedContent: feedbackData.correctedContent,
-        feedback: selectedFeedback.map(item => ({
-          tag: item.tag,
+        feedback: selectedFeedback.map((item) => ({
+          tag: toLearningTagParam(item.tag),
           problem: item.problem,
           correction: item.correction,
           extra: item.extra
