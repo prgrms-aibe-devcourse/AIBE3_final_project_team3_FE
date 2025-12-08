@@ -58,6 +58,31 @@ const resolveFriendLevel = (friend: FriendListItem) => {
   return friend.englishLevel || "-";
 };
 
+const resolveFriendInitial = (friend: FriendListItem, index: number) => {
+  const source = resolveFriendName(friend, index);
+  const letter = source.trim().charAt(0);
+  return letter ? letter.toUpperCase() : "?";
+};
+
+const formatLastSeen = (timestamp?: string | null) => {
+  if (!timestamp) {
+    return "-";
+  }
+
+  const parsed = new Date(timestamp);
+  if (Number.isNaN(parsed.getTime())) {
+    return "-";
+  }
+
+  const year = parsed.getFullYear();
+  const month = String(parsed.getMonth() + 1).padStart(2, "0");
+  const day = String(parsed.getDate()).padStart(2, "0");
+  const hours = String(parsed.getHours()).padStart(2, "0");
+  const minutes = String(parsed.getMinutes()).padStart(2, "0");
+
+  return `${year}-${month}-${day} ${hours}:${minutes}`;
+};
+
 export function FriendRelationshipsPanel() {
   const { friendsQuery, friendPage, friendPageSize, setFriendPage } = useProfileTabs();
   const { data, isLoading, isFetching, error, refetch } = friendsQuery;
@@ -178,7 +203,7 @@ export function FriendRelationshipsPanel() {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-xl font-semibold text-white">Friend Relationships</h2>
-          <p className="text-sm text-gray-400">친구 API를 provider에서 선로드해 탭 전환에 즉시 활용해요.</p>
+          <p className="text-sm text-gray-400">친구 목록과 온라인 상태를 한눈에 확인해요.</p>
         </div>
         <div className="text-right">
           <p className="text-sm text-gray-400">총 {totalCount ?? 0}명</p>
@@ -210,11 +235,25 @@ export function FriendRelationshipsPanel() {
                   tabIndex={0}
                 >
                   <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <p className="text-white font-medium">{resolveFriendName(friend, index)}</p>
-                      <p className="text-xs text-gray-400">
-                        {resolveFriendCountry(friend)} · {resolveFriendLevel(friend)}
-                      </p>
+                    <div className="flex items-center gap-3">
+                      {friend.profileImageUrl ? (
+                        <img
+                          src={friend.profileImageUrl}
+                          alt={`${resolveFriendName(friend, index)} 프로필 이미지`}
+                          className="h-10 w-10 rounded-full object-cover border border-gray-700"
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <div className="h-10 w-10 rounded-full bg-gray-700 text-white text-sm font-semibold flex items-center justify-center border border-gray-600">
+                          {resolveFriendInitial(friend, index)}
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-white font-medium">{resolveFriendName(friend, index)}</p>
+                        <p className="text-xs text-gray-400">
+                          {resolveFriendCountry(friend)} · {resolveFriendLevel(friend)}
+                        </p>
+                      </div>
                     </div>
                     <span className={`text-xs ${friend.isOnline ? "text-emerald-400" : "text-gray-400"}`}>
                       {friend.isOnline ? "온라인" : "오프라인"}
@@ -265,8 +304,8 @@ export function FriendRelationshipsPanel() {
                       type="button"
                       onClick={() => handlePageSelect(pageNumber)}
                       className={`min-w-[2.5rem] px-3 py-1.5 rounded-lg border text-sm transition-colors ${isActive
-                          ? "border-emerald-500 text-white bg-emerald-500/10"
-                          : "border-gray-600 text-gray-300 hover:border-emerald-400"
+                        ? "border-emerald-500 text-white bg-emerald-500/10"
+                        : "border-gray-600 text-gray-300 hover:border-emerald-400"
                         }`}
                     >
                       {pageNumber}
@@ -320,7 +359,6 @@ function FriendDetailModal({ friendId, isOpen, onClose }: FriendDetailModalProps
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-lg font-semibold text-white">친구 상세 정보</h3>
-            <p className="text-sm text-gray-400">모달에서 즉시 상세 API 응답을 확인할 수 있어요.</p>
           </div>
           <button type="button" onClick={onClose} className="text-gray-400 hover:text-white">
             <X className="h-5 w-5" />
@@ -333,9 +371,23 @@ function FriendDetailModal({ friendId, isOpen, onClose }: FriendDetailModalProps
           <p className="text-red-400">상세 정보를 불러오지 못했습니다: {error.message}</p>
         ) : data ? (
           <div className="space-y-4">
-            <div>
-              <p className="text-sm text-gray-400">닉네임</p>
-              <p className="text-lg text-white font-semibold">{data.nickname || "-"}</p>
+            <div className="flex flex-col items-center text-center gap-3">
+              {data.profileImageUrl ? (
+                <img
+                  src={data.profileImageUrl}
+                  alt={`${data.nickname ?? "친구"} 프로필 이미지`}
+                  className="h-20 w-20 rounded-full object-cover border-2 border-emerald-500/60"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <div className="h-20 w-20 rounded-full bg-gray-700 text-white text-2xl font-semibold flex items-center justify-center border border-gray-600">
+                  {resolveFriendInitial(data, 0)}
+                </div>
+              )}
+              <div>
+                <p className="text-sm text-gray-400">닉네임</p>
+                <p className="text-xl text-white font-semibold">{data.nickname || "-"}</p>
+              </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -348,7 +400,7 @@ function FriendDetailModal({ friendId, isOpen, onClose }: FriendDetailModalProps
               </div>
               <div>
                 <p className="text-sm text-gray-400">최근 온라인</p>
-                <p className="text-gray-200">{data.lastSeenAt ?? "-"}</p>
+                <p className="text-gray-200">{formatLastSeen(data.lastSeenAt)}</p>
               </div>
             </div>
             <div>

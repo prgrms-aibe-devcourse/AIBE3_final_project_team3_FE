@@ -19,13 +19,13 @@ const TAB_ITEMS: Array<{ id: ProfileTabKey; label: string; description: string; 
   {
     id: "friends",
     label: "친구 관계",
-    description: "친구 API 응답 미리보기",
+    description: "친구 목록과 상태를 한눈에 확인해요",
     icon: Users,
   },
   {
     id: "notifications",
     label: "알림",
-    description: "알림 API 응답 미리보기",
+    description: "받은 알림을 최신 순으로 살펴봐요",
     icon: Bell,
   },
 ];
@@ -50,7 +50,7 @@ export function ProfileTabsLayout() {
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-white mb-2">My Page</h1>
         <p className="text-gray-400 text-sm">
-          프로필, 친구, 알림 데이터를 하나의 provider에서 미리 준비해 두고 탭으로 전환할 수 있도록 구성했습니다.
+          프로필, 친구, 알림 정보를 한곳에서 관리해 탭을 바꿔도 빠르게 확인할 수 있어요.
         </p>
       </div>
 

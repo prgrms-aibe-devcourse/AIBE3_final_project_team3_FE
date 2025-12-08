@@ -15,6 +15,9 @@ interface ProfileTabsContextValue {
   friendPage: number;
   friendPageSize: number;
   setFriendPage: (page: number) => void;
+  notificationPage: number;
+  notificationPageSize: number;
+  setNotificationPage: (page: number) => void;
 }
 
 const ProfileTabsContext = createContext<ProfileTabsContextValue | null>(null);
@@ -30,7 +33,9 @@ export const useProfileTabs = () => {
 export function ProfileTabsProvider({ children }: { children: React.ReactNode }) {
   const [activeTab, setActiveTab] = useState<ProfileTabKey>("profile");
   const [friendPage, setFriendPage] = useState(0);
+  const [notificationPage, setNotificationPage] = useState(0);
   const friendPageSize = 10;
+  const notificationPageSize = 10;
   const profileQuery = useMyProfile();
   const friendsQuery = useFriendsQuery({ page: friendPage, size: friendPageSize });
   const notificationsQuery = useNotificationsQuery({ enabled: activeTab === "notifications" });
@@ -45,8 +50,20 @@ export function ProfileTabsProvider({ children }: { children: React.ReactNode })
       friendPage,
       friendPageSize,
       setFriendPage,
+      notificationPage,
+      notificationPageSize,
+      setNotificationPage,
     }),
-    [activeTab, profileQuery, friendsQuery, notificationsQuery, friendPage, friendPageSize],
+    [
+      activeTab,
+      profileQuery,
+      friendsQuery,
+      notificationsQuery,
+      friendPage,
+      friendPageSize,
+      notificationPage,
+      notificationPageSize,
+    ],
   );
 
   return <ProfileTabsContext.Provider value={value}>{children}</ProfileTabsContext.Provider>;
