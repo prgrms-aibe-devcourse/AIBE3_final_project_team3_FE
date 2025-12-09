@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "npx openapi-typescript src/global/backend/openapi.json --output src/global/backend/schema.d.ts",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
