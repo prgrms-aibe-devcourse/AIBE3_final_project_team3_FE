@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 import { useLoginStore } from "@/global/stores/useLoginStore";
 import { ProfileTabsLayout } from "./_components/ProfileTabsLayout";
