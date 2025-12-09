@@ -327,8 +327,8 @@ export default function ProfilePage() {
       ? ((profileData as { interest?: string[] }).interest ?? [])
       : undefined;
     const interests = (legacyInterests ?? profileData.interests ?? [])
-      .map((item) => item?.trim?.() ?? String(item ?? "").trim())
-      .filter((item) => item.length > 0);
+      .map((item: any) => item?.trim?.() ?? String(item ?? "").trim())
+      .filter((item: string) => item.length > 0);
     const countryCodeRaw = profileData.country ?? "";
     const countryCode = countryCodeRaw ? countryCodeRaw.toUpperCase() : "";
     const countryName = profileData.countryName ?? getCountryLabel(countryCode);
