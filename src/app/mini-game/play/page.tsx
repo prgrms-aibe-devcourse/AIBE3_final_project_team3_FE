@@ -28,7 +28,7 @@ function MiniGamePlayContent() {
 
   // 🔥 WrongItem 타입 자동 추론
   type WrongItem = {
-    question: typeof questions[number];
+    question: typeof questions[number] & { correctedContent: string };
     feedbacks: {
       tag?: string;
       problem?: string;
@@ -78,7 +78,10 @@ function MiniGamePlayContent() {
             setWrongList((prev) => [
               ...prev,
               {
-                question: q,
+                question: {
+                  ...q,
+                  correctedContent: resp.correctedContent,
+                },
                 feedbacks: resp.feedbacks ?? [],
               },
             ]);
@@ -194,9 +197,8 @@ function MiniGamePlayContent() {
                         <button
                           key={p}
                           onClick={() => setPage(p)}
-                          className={`px-3 py-1 border rounded ${
-                            page === p ? "bg-indigo-600 text-white" : ""
-                          }`}
+                          className={`px-3 py-1 border rounded ${page === p ? "bg-indigo-600 text-white" : ""
+                            }`}
                         >
                           {p}
                         </button>

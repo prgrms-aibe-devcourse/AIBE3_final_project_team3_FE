@@ -7,7 +7,15 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 
 type SentenceGameCountResp = components["schemas"]["SentenceGameCountResp"];
 type SentenceGameStartResp = components["schemas"]["SentenceGameStartResp"];
-type SentenceGameSubmitResp = components["schemas"]["SentenceGameSubmitResp"];
+type SentenceGameFeedback = {
+  tag?: string;
+  problem?: string;
+  correction?: string;
+  extra?: string;
+};
+type SentenceGameSubmitResp = components["schemas"]["SentenceGameSubmitResp"] & {
+  feedbacks?: SentenceGameFeedback[];
+};
 
 // -------------------------------
 // 🔥 1) 전체 문제 수 조회

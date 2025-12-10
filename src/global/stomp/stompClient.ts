@@ -106,7 +106,14 @@ export const connect = (accessToken: string, onConnectCallback: () => void) => {
   }
 
   if (client.active && !needsTokenRefresh) {
-    console.log("STOMP client is already attempting to connect with the latest access token.");
+    console.log("STOMP client is already attempting to connect with the latest access token. Appending callback.");
+    const previousOnConnect = client.onConnect;
+    client.onConnect = (frame) => {
+      if (previousOnConnect) {
+        previousOnConnect(frame);
+      }
+      onConnectCallback();
+    };
     return;
   }
 

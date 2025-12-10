@@ -12,6 +12,7 @@ import {
   ChatRoomResp,
   CreateAIChatReq,
   CreateGroupChatReq,
+  InviteGroupChatReq,
   DirectChatRoomResp,
   GroupChatRoomResp,
   MessageResp,
@@ -317,6 +318,38 @@ export const useJoinGroupChat = () => {
   });
 };
 
+interface InviteMemberVariables {
+  roomId: number;
+  targetMemberId: number;
+}
+
+const inviteMember = async ({ roomId, targetMemberId }: InviteMemberVariables): Promise<void> => {
+  const response = await apiClient.POST("/api/v1/chats/rooms/group/{roomId}/invite", {
+    params: {
+      path: { roomId },
+    },
+    body: { targetMemberId },
+  });
+
+  await unwrap(response);
+};
+
+export const useInviteMemberMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, InviteMemberVariables>({
+    mutationFn: inviteMember,
+    onSuccess: () => {
+      // Invalidate queries related to group chat rooms to refetch member lists
+      queryClient.invalidateQueries({ queryKey: ["chatRooms", "group"] });
+      alert("멤버를 초대했습니다.");
+    },
+    onError: (error) => {
+      console.error("Failed to invite member:", error);
+      alert(`멤버 초대에 실패했습니다: ${error.message}`);
+    },
+  });
+};
+
 interface LeaveChatRoomVariables {
   roomId: number;
   chatRoomType: string;
@@ -464,6 +497,37 @@ export const useTransferOwnershipMutation = () => {
     onError: (error) => {
       console.error("Failed to transfer ownership:", error);
       alert(`방장 위임에 실패했습니다: ${error.message}`);
+    },
+  });
+};
+
+interface UpdateGroupChatPasswordVariables {
+  roomId: number;
+  newPassword: string;
+}
+
+const updateGroupChatPassword = async ({ roomId, newPassword }: UpdateGroupChatPasswordVariables): Promise<void> => {
+  const response = await apiClient.PATCH("/api/v1/chats/rooms/group/{roomId}/password", {
+    params: {
+      path: { roomId },
+    },
+    body: { newPassword },
+  });
+  await unwrap(response);
+};
+
+export const useUpdateGroupChatPasswordMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, UpdateGroupChatPasswordVariables>({
+    mutationFn: updateGroupChatPassword,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["chatRooms", "group"] });
+      queryClient.invalidateQueries({ queryKey: ["chatRooms", "group", "public"] });
+      alert("비밀번호가 변경되었습니다.");
+    },
+    onError: (error) => {
+      console.error("Failed to update password:", error);
+      alert(`비밀번호 변경에 실패했습니다: ${error.message}`);
     },
   });
 };

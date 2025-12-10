@@ -45,6 +45,10 @@ export interface CreateAIChatReq {
   roomType: AiChatRoomType;
 }
 
+export interface InviteGroupChatReq {
+  targetMemberId: number;
+}
+
 export interface JoinGroupChatReq {
   password?: string;
 }
