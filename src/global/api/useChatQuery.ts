@@ -12,6 +12,7 @@ import {
   ChatRoomResp,
   CreateAIChatReq,
   CreateGroupChatReq,
+  InviteGroupChatReq,
   DirectChatRoomResp,
   GroupChatRoomResp,
   MessageResp,
@@ -313,6 +314,38 @@ export const useJoinGroupChat = () => {
     onError: (error) => {
       console.error("Failed to join group chat room:", error);
       alert(`그룹 채팅방 참가에 실패했습니다: ${error.message}`);
+    },
+  });
+};
+
+interface InviteMemberVariables {
+  roomId: number;
+  targetMemberId: number;
+}
+
+const inviteMember = async ({ roomId, targetMemberId }: InviteMemberVariables): Promise<void> => {
+  const response = await apiClient.POST("/api/v1/chats/rooms/group/{roomId}/invite", {
+    params: {
+      path: { roomId },
+    },
+    body: { targetMemberId },
+  });
+
+  await unwrap(response);
+};
+
+export const useInviteMemberMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, InviteMemberVariables>({
+    mutationFn: inviteMember,
+    onSuccess: () => {
+      // Invalidate queries related to group chat rooms to refetch member lists
+      queryClient.invalidateQueries({ queryKey: ["chatRooms", "group"] });
+      alert("멤버를 초대했습니다.");
+    },
+    onError: (error) => {
+      console.error("Failed to invite member:", error);
+      alert(`멤버 초대에 실패했습니다: ${error.message}`);
     },
   });
 };

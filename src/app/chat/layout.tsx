@@ -4,7 +4,7 @@ import { useGetAiChatRoomsQuery, useGetDirectChatRoomsQuery, useGetGroupChatRoom
 import { ChatRoom, useChatStore } from "@/global/stores/useChatStore";
 import { useLoginStore } from '@/global/stores/useLoginStore';
 import { AIChatRoomResp, DirectChatRoomResp, GroupChatRoomResp, RoomLastMessageUpdateResp } from '@/global/types/chat.types';
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo } from "react";
 import ChatSidebar from "./_components/ChatSidebar";
 import { connect, getStompClient } from "@/global/stomp/stompClient";
@@ -45,8 +45,32 @@ export default function ChatLayout({
   const router = useRouter();
   const member = useLoginStore((state) => state.member);
   const currentMemberId = resolveStoreMemberId(member);
-  const { accessToken } = useLoginStore();
+  const { accessToken, hasHydrated } = useLoginStore();
   const queryClient = useQueryClient();
+  const pathname = usePathname();
+
+  // 인증 체크: Hydration 완료 후 토큰이 없으면 로그인 페이지로 리다이렉트
+  useEffect(() => {
+    if (hasHydrated && !accessToken) {
+      router.replace("/auth/login");
+    }
+  }, [accessToken, hasHydrated, router]);
+
+  useEffect(() => {
+    const parts = pathname.split('/');
+    // pathname format: /chat/[type]/[id] or /chat
+    // parts: ["", "chat", "type", "id", ...]
+
+    const type = parts[2] as 'direct' | 'group' | 'ai' | undefined;
+    const id = parts[3];
+
+    if (type && ['direct', 'group', 'ai'].includes(type)) {
+      setActiveTab(type);
+      if (id) {
+        setSelectedRoomId(`${type}-${id}`);
+      }
+    }
+  }, [pathname, setActiveTab, setSelectedRoomId]);
 
   const { data: directRoomsData } = useGetDirectChatRoomsQuery();
   const { data: groupRoomsData } = useGetGroupChatRoomsQuery();
@@ -60,7 +84,7 @@ export default function ChatLayout({
 
     const setupSubscription = () => {
       const client = getStompClient();
-      const destination = `/user/topic/rooms/update`;
+      const destination = `/user/queue/rooms/update`;
 
       subscription = client.subscribe(
         destination,
@@ -124,7 +148,7 @@ export default function ChatLayout({
         avatar: '/img/group-chat-fallback.png',
         type: 'group',
         unreadCount: room.unreadCount,
-        lastMessage: room.lastMessageContent || '그룹 채팅방입니다.',
+        lastMessage: room.lastMessageContent || '',
         lastMessageTime: room.lastMessageAt ?? '',
       };
     });
@@ -172,6 +196,11 @@ export default function ChatLayout({
     setSelectedRoomId(null);
     router.push('/chat');
   };
+
+  // Hydration 중이거나 토큰이 없는 동안에는 아무것도 렌더링하지 않음
+  if (!hasHydrated || !accessToken) {
+    return null;
+  }
 
   return (
     <div className="h-[calc(100vh-4rem)] w-full lg:w-3/5 lg:mx-auto">

@@ -1,0 +1,132 @@
+import { useState } from "react";
+import { X, Search, Check, UserPlus } from "lucide-react";
+import { useFriendsQuery } from "@/global/api/useMemberQuery";
+import { useInviteMemberMutation } from "@/global/api/useChatQuery";
+import Image from "next/image";
+import { ChatRoomMember } from "@/global/types/chat.types";
+
+interface InviteFriendModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  roomId: number;
+  existingMembers: ChatRoomMember[];
+}
+
+export default function InviteFriendModal({ isOpen, onClose, roomId, existingMembers }: InviteFriendModalProps) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const { data: friendsPage, isLoading } = useFriendsQuery({ page: 0, size: 100 }); // Load up to 100 friends for now
+  const { mutate: inviteMember, isPending } = useInviteMemberMutation();
+  const [invitedIds, setInvitedIds] = useState<Set<number>>(new Set());
+
+  if (!isOpen) return null;
+
+  const friends = friendsPage?.items || [];
+  const existingMemberIds = new Set(existingMembers.map(m => m.id));
+
+  const filteredFriends = friends.filter(friend => 
+    friend.nickname.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleInvite = (friendId: number) => {
+    inviteMember(
+      { roomId, targetMemberId: friendId },
+      {
+        onSuccess: () => {
+          setInvitedIds(prev => {
+            const next = new Set(prev);
+            next.add(friendId);
+            return next;
+          });
+        }
+      }
+    );
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="bg-gray-800 rounded-xl shadow-xl w-full max-w-md border border-gray-700 flex flex-col max-h-[80vh]">
+        <div className="flex items-center justify-between p-4 border-b border-gray-700">
+          <h2 className="text-lg font-semibold text-white">친구 초대</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="p-4 border-b border-gray-700">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+            <input
+              type="text"
+              placeholder="친구 검색..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-gray-700 text-white pl-10 pr-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 border border-gray-600 placeholder-gray-400"
+            />
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-2 space-y-1">
+          {isLoading ? (
+            <div className="text-center py-8 text-gray-400">친구 목록을 불러오는 중...</div>
+          ) : filteredFriends.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              {searchTerm ? "검색 결과가 없습니다." : "친구 목록이 비어있습니다."}
+            </div>
+          ) : (
+            filteredFriends.map((friend) => {
+              const isAlreadyMember = existingMemberIds.has(friend.id);
+              const isInvited = invitedIds.has(friend.id);
+              
+              return (
+                <div key={friend.id} className="flex items-center justify-between p-3 hover:bg-gray-700/50 rounded-lg transition-colors group">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-full bg-gray-600 flex-shrink-0 overflow-hidden">
+                      {friend.profileImageUrl ? (
+                        <Image 
+                          src={friend.profileImageUrl} 
+                          alt={friend.nickname} 
+                          width={40} 
+                          height={40} 
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-white font-medium">
+                          {friend.nickname.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-medium text-gray-200 truncate">{friend.nickname}</p>
+                      {friend.description && (
+                        <p className="text-xs text-gray-500 truncate">{friend.description}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {isAlreadyMember ? (
+                    <span className="text-xs text-gray-500 font-medium px-3 py-1.5 bg-gray-700 rounded-md">
+                      참여 중
+                    </span>
+                  ) : isInvited ? (
+                    <span className="flex items-center text-emerald-400 font-medium px-3 py-1.5">
+                      <Check size={16} className="mr-1" /> 초대됨
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => handleInvite(friend.id)}
+                      disabled={isPending}
+                      className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-500 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <UserPlus size={16} />
+                      초대
+                    </button>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

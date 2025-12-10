@@ -13,6 +13,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 type ChatSidebarProps = {
   activeTab: "direct" | "group" | "ai";
@@ -29,6 +30,7 @@ export default function ChatSidebar({
   selectedRoomId,
   setSelectedRoomId,
 }: ChatSidebarProps) {
+  const { t } = useLanguage();
   const router = useRouter();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -135,7 +137,6 @@ export default function ChatSidebar({
                 <Link
                   href={href}
                   key={room.id}
-                  onClick={() => setSelectedRoomId(room.id)}
                   className={`flex items-center p-3 rounded-lg cursor-pointer transition-colors ${selectedRoomId === room.id
                     ? "bg-emerald-600/20"
                     : "hover:bg-gray-700/50"
@@ -167,9 +168,6 @@ export default function ChatSidebar({
                         </div>
                       );
                     })()}
-                    {room.type === "direct" && (
-                      <span className="absolute bottom-0 right-0 block h-3 w-3 rounded-full bg-green-500 border-2 border-gray-800"></span>
-                    )}
                   </div>
                   <div className="ml-4 flex-1 min-w-0">
                     <div className="flex justify-between items-center">
@@ -179,7 +177,18 @@ export default function ChatSidebar({
                     </div>
                     <div className="flex justify-between items-start">
                       <p className="text-xs text-gray-400 truncate mt-1">
-                        {room.lastMessage}
+                        {(() => {
+                          try {
+                            if (!room.lastMessage) return "";
+                            const parsed = JSON.parse(room.lastMessage);
+                            if (parsed.type && parsed.params) {
+                              return t(`system.${parsed.type}`, parsed.params);
+                            }
+                            return room.lastMessage;
+                          } catch (e) {
+                            return room.lastMessage;
+                          }
+                        })()}
                       </p>
                       {room.type !== "ai" && room.unreadCount && room.unreadCount > 0 ? (
                         <span className="ml-2 mt-1 bg-emerald-500 text-white text-xs font-bold rounded-full h-5 min-w-[1.25rem] px-1 flex items-center justify-center flex-shrink-0">
