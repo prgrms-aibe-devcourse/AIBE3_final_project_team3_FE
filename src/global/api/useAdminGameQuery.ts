@@ -62,10 +62,7 @@ export async function fetchSentenceGameNoteList(page: number) {
 }
 
 // 2) 문장게임 문장 등록 (그대로 apiClient 사용)
-export async function createSentenceGame(data: {
-  originalContent: string;
-  correctedContent: string;
-}) {
+export async function createSentenceGame(data: { learningNoteId: number }) {
   const res = await apiClient.POST("/api/v1/admin/sentence-game", { body: data });
 
   return unwrap(res);
