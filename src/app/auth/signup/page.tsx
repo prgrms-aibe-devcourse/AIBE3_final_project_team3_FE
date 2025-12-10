@@ -4,31 +4,49 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useSignup } from "@/global/api/useAuthQuery";
 import type { CountryCode } from "@/global/lib/countries";
 import { COUNTRY_OPTIONS, isSupportedCountryCode } from "@/global/lib/countries";
 
+const ENGLISH_LEVEL_OPTIONS = ["BEGINNER", "INTERMEDIATE", "ADVANCED", "NATIVE"] as const;
+type EnglishLevel = (typeof ENGLISH_LEVEL_OPTIONS)[number];
+
+interface SignupFormState {
+  name: string;
+  nickname: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  country: CountryCode | "";
+  level: EnglishLevel | "";
+  interests: string;
+  description: string;
+}
+
 export default function SignupPage() {
   const router = useRouter();
   const { mutate: signup, isPending } = useSignup();
+  const { t } = useLanguage();
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<SignupFormState>({
     name: "",
     nickname: "",
     email: "",
     password: "",
     confirmPassword: "",
-    country: "" as CountryCode | "",
-    level: "BEGINNER",
+    country: "",
+    level: "",
     interests: "",
     description: "",
   });
+  const [isLevelTooltipOpen, setIsLevelTooltipOpen] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (formData.password !== formData.confirmPassword) {
-      alert("Passwords do not match");
+      alert(t("auth.signup.alerts.passwordMismatch"));
       return;
     }
 
@@ -38,14 +56,21 @@ export default function SignupPage() {
       .filter((interest) => interest.length > 0);
 
     if (interests.length === 0) {
-      alert("Please enter at least one interest.");
+      alert(t("auth.signup.alerts.interestsRequired"));
       return;
     }
 
     const countryCode = formData.country.trim().toUpperCase();
 
     if (!isSupportedCountryCode(countryCode)) {
-      alert("Please select your country.");
+      alert(t("auth.signup.alerts.countryRequired"));
+      return;
+    }
+
+    const englishLevel = formData.level;
+
+    if (!englishLevel) {
+      alert(t("auth.signup.alerts.levelRequired"));
       return;
     }
 
@@ -57,21 +82,21 @@ export default function SignupPage() {
         name: formData.name,
         country: countryCode,
         nickname: formData.nickname,
-        englishLevel: formData.level as "BEGINNER" | "INTERMEDIATE" | "ADVANCED" | "NATIVE",
+        englishLevel,
         interests,
         description: formData.description,
       },
       {
         onSuccess: () => {
-          alert("Account created! Please sign in.");
+          alert(t("auth.signup.alerts.success"));
           router.replace("/auth/login");
         },
         onError: (error) => {
           const message =
-            error instanceof Error
+            error instanceof Error && error.message
               ? error.message
-              : "Signup failed. Please try again.";
-          alert(message);
+              : t("auth.signup.alerts.generic");
+          alert(message || t("auth.signup.alerts.generic"));
         },
       }
     );
@@ -82,16 +107,17 @@ export default function SignupPage() {
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Create your account
+            {t("auth.signup.title")}
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Or{" "}
+            {t("auth.signup.subtitlePrefix")}
             <Link
               href="/auth/login"
               className="font-medium text-blue-600 hover:text-blue-500"
             >
-              sign in to your existing account
+              {t("auth.signup.subtitleLink")}
             </Link>
+            {t("auth.signup.subtitleSuffix")}
           </p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
@@ -101,7 +127,7 @@ export default function SignupPage() {
                 htmlFor="name"
                 className="block text-sm font-medium text-gray-700"
               >
-                Full Name
+                {t("auth.signup.fields.name")}
               </label>
               <input
                 id="name"
@@ -109,7 +135,7 @@ export default function SignupPage() {
                 type="text"
                 required
                 className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="Enter your full name"
+                placeholder={t("auth.signup.placeholders.name")}
                 value={formData.name}
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
@@ -122,7 +148,7 @@ export default function SignupPage() {
                 htmlFor="nickname"
                 className="block text-sm font-medium text-gray-700"
               >
-                Nickname
+                {t("auth.signup.fields.nickname")}
               </label>
               <input
                 id="nickname"
@@ -130,7 +156,7 @@ export default function SignupPage() {
                 type="text"
                 required
                 className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="Enter a nickname"
+                placeholder={t("auth.signup.placeholders.nickname")}
                 value={formData.nickname}
                 onChange={(e) =>
                   setFormData({ ...formData, nickname: e.target.value })
@@ -143,7 +169,7 @@ export default function SignupPage() {
                 htmlFor="email"
                 className="block text-sm font-medium text-gray-700"
               >
-                Email Address
+                {t("auth.signup.fields.email")}
               </label>
               <input
                 id="email"
@@ -152,7 +178,7 @@ export default function SignupPage() {
                 autoComplete="email"
                 required
                 className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="Enter your email"
+                placeholder={t("auth.signup.placeholders.email")}
                 value={formData.email}
                 onChange={(e) =>
                   setFormData({ ...formData, email: e.target.value })
@@ -165,7 +191,7 @@ export default function SignupPage() {
                 htmlFor="country"
                 className="block text-sm font-medium text-gray-700"
               >
-                Country
+                {t("auth.signup.fields.country")}
               </label>
               <select
                 id="country"
@@ -180,7 +206,7 @@ export default function SignupPage() {
                   })
                 }
               >
-                <option value="">Select your country</option>
+                <option value="">{t("auth.signup.placeholders.country")}</option>
                 {COUNTRY_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
@@ -190,25 +216,58 @@ export default function SignupPage() {
             </div>
 
             <div>
-              <label
-                htmlFor="level"
-                className="block text-sm font-medium text-gray-700"
+              <div
+                className="flex items-center gap-2 relative"
+                onMouseEnter={() => setIsLevelTooltipOpen(true)}
+                onMouseLeave={() => setIsLevelTooltipOpen(false)}
               >
-                English Level
-              </label>
+                <label
+                  htmlFor="level"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  {t("auth.signup.fields.level")}
+                </label>
+                <button
+                  type="button"
+                  className="w-5 h-5 flex items-center justify-center rounded-full border border-blue-200 text-xs font-semibold text-blue-600 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                  aria-label={t("auth.signup.helpers.levelTooltipLabel")}
+                  onFocus={() => setIsLevelTooltipOpen(true)}
+                  onBlur={() => setIsLevelTooltipOpen(false)}
+                >
+                  !
+                </button>
+                {isLevelTooltipOpen && (
+                  <div
+                    role="tooltip"
+                    className="absolute left-8 top-full z-10 mt-1 w-72 rounded-md bg-gray-900 p-4 text-xs text-white shadow-lg"
+                  >
+                    <p className="font-semibold mb-2">
+                      {t("auth.signup.helpers.levelTooltipLabel")}
+                    </p>
+                    <p className="leading-relaxed whitespace-pre-line">
+                      {t("auth.signup.helpers.levelTooltip")}
+                    </p>
+                  </div>
+                )}
+              </div>
               <select
                 id="level"
                 name="level"
+                required
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white text-gray-900 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 value={formData.level}
                 onChange={(e) =>
-                  setFormData({ ...formData, level: e.target.value })
+                  setFormData({ ...formData, level: e.target.value as EnglishLevel })
                 }
               >
-                <option value="BEGINNER">Beginner</option>
-                <option value="INTERMEDIATE">Intermediate</option>
-                <option value="ADVANCED">Advanced</option>
-                <option value="NATIVE">Native</option>
+                <option value="" disabled>
+                  {t("auth.signup.placeholders.level")}
+                </option>
+                {ENGLISH_LEVEL_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {t(`profile.info.englishLevels.${option}`)}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -217,7 +276,7 @@ export default function SignupPage() {
                 htmlFor="interests"
                 className="block text-sm font-medium text-gray-700"
               >
-                Interests
+                {t("auth.signup.fields.interests")}
               </label>
               <input
                 id="interests"
@@ -225,12 +284,15 @@ export default function SignupPage() {
                 type="text"
                 required
                 className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="Separate interests with commas (e.g. travel, food)"
+                placeholder={t("auth.signup.placeholders.interests")}
                 value={formData.interests}
                 onChange={(e) =>
                   setFormData({ ...formData, interests: e.target.value })
                 }
               />
+              <p className="text-xs text-gray-500 mt-1">
+                {t("auth.signup.helpers.interests")}
+              </p>
             </div>
 
             <div>
@@ -238,7 +300,7 @@ export default function SignupPage() {
                 htmlFor="password"
                 className="block text-sm font-medium text-gray-700"
               >
-                Password
+                {t("auth.signup.fields.password")}
               </label>
               <input
                 id="password"
@@ -247,7 +309,7 @@ export default function SignupPage() {
                 autoComplete="new-password"
                 required
                 className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="Enter your password"
+                placeholder={t("auth.signup.placeholders.password")}
                 value={formData.password}
                 onChange={(e) =>
                   setFormData({ ...formData, password: e.target.value })
@@ -260,7 +322,7 @@ export default function SignupPage() {
                 htmlFor="confirmPassword"
                 className="block text-sm font-medium text-gray-700"
               >
-                Confirm Password
+                {t("auth.signup.fields.confirmPassword")}
               </label>
               <input
                 id="confirmPassword"
@@ -269,7 +331,7 @@ export default function SignupPage() {
                 autoComplete="new-password"
                 required
                 className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="Confirm your password"
+                placeholder={t("auth.signup.placeholders.confirmPassword")}
                 value={formData.confirmPassword}
                 onChange={(e) =>
                   setFormData({ ...formData, confirmPassword: e.target.value })
@@ -282,7 +344,7 @@ export default function SignupPage() {
                 htmlFor="description"
                 className="block text-sm font-medium text-gray-700"
               >
-                About You
+                {t("auth.signup.fields.description")}
               </label>
               <textarea
                 id="description"
@@ -290,7 +352,7 @@ export default function SignupPage() {
                 required
                 rows={4}
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="Tell us briefly about yourself"
+                placeholder={t("auth.signup.placeholders.description")}
                 value={formData.description}
                 onChange={(e) =>
                   setFormData({ ...formData, description: e.target.value })
@@ -305,7 +367,9 @@ export default function SignupPage() {
               disabled={isPending}
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isPending ? "Creating account..." : "Create account"}
+              {isPending
+                ? t("auth.signup.buttons.submitting")
+                : t("auth.signup.buttons.submit")}
             </button>
           </div>
 
@@ -316,7 +380,7 @@ export default function SignupPage() {
               </div>
               <div className="relative flex justify-center text-sm">
                 <span className="px-2 bg-gray-50 text-gray-500">
-                  Or continue with
+                  {t("auth.signup.divider")}
                 </span>
               </div>
             </div>
@@ -326,16 +390,16 @@ export default function SignupPage() {
                 type="button"
                 className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
               >
-                <span className="sr-only">Sign up with Google</span>
-                <span>Google</span>
+                <span className="sr-only">{t("auth.signup.buttons.googleSr")}</span>
+                <span>{t("auth.signup.buttons.google")}</span>
               </button>
 
               <button
                 type="button"
                 className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
               >
-                <span className="sr-only">Sign up with GitHub</span>
-                <span>GitHub</span>
+                <span className="sr-only">{t("auth.signup.buttons.githubSr")}</span>
+                <span>{t("auth.signup.buttons.github")}</span>
               </button>
             </div>
           </div>
@@ -343,11 +407,10 @@ export default function SignupPage() {
 
         <div className="mt-8 bg-blue-50 p-4 rounded-lg">
           <h3 className="text-sm font-medium text-blue-800 mb-2">
-            Getting Started
+            {t("auth.signup.helpers.gettingStartedTitle")}
           </h3>
           <p className="text-sm text-blue-700">
-            Fill in all required details and you&apos;ll be redirected to the
-            sign-in page once registration succeeds.
+            {t("auth.signup.helpers.gettingStartedDescription")}
           </p>
         </div>
       </div>

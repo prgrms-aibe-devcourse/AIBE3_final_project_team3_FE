@@ -1,5 +1,6 @@
 "use client";
 
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useLogin } from "@/global/api/useAuthQuery";
 import { useLoginStore } from "@/global/stores/useLoginStore";
 import Link from "next/link";
@@ -12,6 +13,7 @@ export default function LoginPage() {
     password: "",
   });
 
+  const { t } = useLanguage();
   const router = useRouter();
   const { mutate: login, isPending } = useLogin();
   const setAccountEmail = useLoginStore((state) => state.setAccountEmail);
@@ -28,7 +30,7 @@ export default function LoginPage() {
       onError: (error) => {
         // 로그인 실패 시 에러 메시지 표시
         console.error("Login failed:", error);
-        alert(`Login failed: ${error.message}`);
+        alert(`${t("auth.login.alerts.failure")}: ${error.message}`);
       },
     });
   };
@@ -38,23 +40,24 @@ export default function LoginPage() {
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Sign in to your account
+            {t("auth.login.title")}
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Or{" "}
+            {t("auth.login.subtitlePrefix")}
             <Link
               href="/auth/signup"
               className="font-medium text-blue-600 hover:text-blue-500"
             >
-              create a new account
+              {t("auth.login.subtitleLink")}
             </Link>
+            {t("auth.login.subtitleSuffix")}
           </p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-md shadow-sm -space-y-px">
             <div>
               <label htmlFor="email-address" className="sr-only">
-                Email address
+                {t("auth.login.fields.email")}
               </label>
               <input
                 id="email-address"
@@ -63,7 +66,7 @@ export default function LoginPage() {
                 autoComplete="email"
                 required
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="Email address"
+                placeholder={t("auth.login.placeholders.email")}
                 value={formData.email}
                 onChange={(e) =>
                   setFormData({ ...formData, email: e.target.value })
@@ -72,7 +75,7 @@ export default function LoginPage() {
             </div>
             <div>
               <label htmlFor="password" className="sr-only">
-                Password
+                {t("auth.login.fields.password")}
               </label>
               <input
                 id="password"
@@ -81,7 +84,7 @@ export default function LoginPage() {
                 autoComplete="current-password"
                 required
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="Password"
+                placeholder={t("auth.login.placeholders.password")}
                 value={formData.password}
                 onChange={(e) =>
                   setFormData({ ...formData, password: e.target.value })
@@ -102,7 +105,7 @@ export default function LoginPage() {
                 htmlFor="remember-me"
                 className="ml-2 block text-sm text-gray-900"
               >
-                Remember me
+                {t("auth.login.options.remember")}
               </label>
             </div>
 
@@ -111,7 +114,7 @@ export default function LoginPage() {
                 href="#"
                 className="font-medium text-blue-600 hover:text-blue-500"
               >
-                Forgot your password?
+                {t("auth.login.options.forgot")}
               </a>
             </div>
           </div>
@@ -122,7 +125,9 @@ export default function LoginPage() {
               disabled={isPending}
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isPending ? "Signing in..." : "Sign in"}
+              {isPending
+                ? t("auth.login.buttons.submitting")
+                : t("auth.login.buttons.submit")}
             </button>
           </div>
 
@@ -133,7 +138,7 @@ export default function LoginPage() {
               </div>
               <div className="relative flex justify-center text-sm">
                 <span className="px-2 bg-gray-50 text-gray-500">
-                  Or continue with
+                  {t("auth.login.divider")}
                 </span>
               </div>
             </div>
@@ -143,16 +148,20 @@ export default function LoginPage() {
                 type="button"
                 className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
               >
-                <span className="sr-only">Sign in with Google</span>
-                <span>Google</span>
+                <span className="sr-only">
+                  {t("auth.login.buttons.googleSr")}
+                </span>
+                <span>{t("auth.login.buttons.google")}</span>
               </button>
 
               <button
                 type="button"
                 className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
               >
-                <span className="sr-only">Sign in with GitHub</span>
-                <span>GitHub</span>
+                <span className="sr-only">
+                  {t("auth.login.buttons.githubSr")}
+                </span>
+                <span>{t("auth.login.buttons.github")}</span>
               </button>
             </div>
           </div>
