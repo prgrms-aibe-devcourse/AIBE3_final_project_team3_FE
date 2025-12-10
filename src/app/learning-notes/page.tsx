@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 import {
   useLearningNotes,
@@ -85,11 +85,10 @@ function NoteCard({
         <div className="flex flex-col justify-center items-center gap-2 ml-4 mt-6">
           <button
             onClick={() => onToggleCompletion(fb.id, fb.marked)}
-            className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-              isCompleted
+            className={`w-10 h-10 rounded-lg flex items-center justify-center ${isCompleted
                 ? "bg-green-600 text-white"
                 : "bg-gray-700 text-gray-400 hover:bg-gray-600"
-            }`}
+              }`}
           >
             {isCompleted ? "✓" : "○"}
           </button>
@@ -163,7 +162,7 @@ export default function LearningNotesPage() {
   };
 
   return (
-    <div className="p-8 min-h-screen bg-gray-900">
+    <div className="p-8 min-h-screen">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-4xl font-bold text-white mb-2">Learning Notes</h1>
 
@@ -187,11 +186,10 @@ export default function LearningNotesPage() {
               <button
                 key={t}
                 onClick={() => setActiveTab(t as any)}
-                className={`px-4 py-2 rounded-md ${
-                  activeTab === t
+                className={`px-4 py-2 rounded-md ${activeTab === t
                     ? "bg-indigo-600 text-white"
                     : "bg-gray-800 text-gray-300 border border-gray-700"
-                }`}
+                  }`}
               >
                 {t}
               </button>
@@ -208,11 +206,10 @@ export default function LearningNotesPage() {
               <button
                 key={f.key}
                 onClick={() => setFilter(f.key as any)}
-                className={`px-4 py-2 rounded-md ${
-                  filter === f.key
+                className={`px-4 py-2 rounded-md ${filter === f.key
                     ? "bg-green-600 text-white"
                     : "bg-gray-800 text-gray-300 border border-gray-700"
-                }`}
+                  }`}
               >
                 {f.label}
               </button>
@@ -244,11 +241,10 @@ export default function LearningNotesPage() {
             <button
               key={p}
               onClick={() => setPage(p)}
-              className={`px-3 py-1 rounded text-sm ${
-                p === currentPage
+              className={`px-3 py-1 rounded text-sm ${p === currentPage
                   ? "bg-indigo-600 text-white"
                   : "bg-gray-800 text-gray-300 border border-gray-700 hover:bg-gray-700"
-              }`}
+                }`}
             >
               {p + 1}
             </button>
