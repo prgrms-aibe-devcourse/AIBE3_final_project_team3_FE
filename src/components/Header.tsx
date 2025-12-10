@@ -389,6 +389,12 @@ export default function Header() {
               Find
             </Link>
             <Link
+              href="/board"
+              className="text-gray-200 hover:text-emerald-400 transition-colors"
+            >
+              Board
+            </Link>
+            <Link
               href="/learning-notes"
               className="text-gray-200 hover:text-emerald-400 transition-colors"
             >
@@ -813,6 +819,12 @@ export default function Header() {
                 className="text-gray-200 hover:text-emerald-400 transition-colors py-2"
               >
                 Find
+              </Link>
+              <Link
+                href="/board"
+                className="text-gray-200 hover:text-emerald-400 transition-colors py-2"
+              >
+                Board
               </Link>
               <Link
                 href="/learning-notes"
