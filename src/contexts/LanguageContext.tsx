@@ -1,15 +1,40 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import ko from '../i18n/locales/chat/ko.json';
-import en from '../i18n/locales/chat/en.json';
+import { createContext, ReactNode, useContext, useEffect, useState } from "react";
+import chatEn from "../i18n/locales/chat/en.json";
+import chatKo from "../i18n/locales/chat/ko.json";
+import commonEn from "../i18n/locales/common/en.json";
+import commonKo from "../i18n/locales/common/ko.json";
+import findEn from "../i18n/locales/find/en.json";
+import findKo from "../i18n/locales/find/ko.json";
+import learningNotesEn from "../i18n/locales/learningNotes/en.json";
+import learningNotesKo from "../i18n/locales/learningNotes/ko.json";
+import profileEn from "../i18n/locales/profile/en.json";
+import profileKo from "../i18n/locales/profile/ko.json";
 
 type Language = 'ko' | 'en';
-type Translations = typeof ko;
+type Translations = typeof commonKo & {
+  chat: typeof chatKo;
+  find: typeof findKo;
+  learningNotes: typeof learningNotesKo;
+  profile: typeof profileKo;
+};
 
 const translations: Record<Language, Translations> = {
-  ko,
-  en,
+  ko: {
+    ...commonKo,
+    chat: chatKo,
+    find: findKo,
+    learningNotes: learningNotesKo,
+    profile: profileKo,
+  },
+  en: {
+    ...commonEn,
+    chat: chatEn,
+    find: findEn,
+    learningNotes: learningNotesEn,
+    profile: profileEn,
+  },
 };
 
 interface LanguageContextType {

@@ -9,6 +9,7 @@ import {
   type FlattenFeedbackNote,
 } from "@/global/api/useLearningNotes";
 
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useLoginStore } from "@/global/stores/useLoginStore";
 
 // ========================================================
@@ -86,8 +87,8 @@ function NoteCard({
           <button
             onClick={() => onToggleCompletion(fb.id, fb.marked)}
             className={`w-10 h-10 rounded-lg flex items-center justify-center ${isCompleted
-                ? "bg-green-600 text-white"
-                : "bg-gray-700 text-gray-400 hover:bg-gray-600"
+              ? "bg-green-600 text-white"
+              : "bg-gray-700 text-gray-400 hover:bg-gray-600"
               }`}
           >
             {isCompleted ? "✓" : "○"}
@@ -126,6 +127,7 @@ function NoteCard({
 export default function LearningNotesPage() {
   const router = useRouter();
   const { accessToken, hasHydrated } = useLoginStore();
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (hasHydrated && !accessToken) {
@@ -164,10 +166,12 @@ export default function LearningNotesPage() {
   return (
     <div className="p-8 min-h-screen">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-4xl font-bold text-white mb-2">Learning Notes</h1>
+        <h1 className="text-4xl font-bold text-white mb-2">
+          {t("learningNotes.title")}
+        </h1>
 
         <p className="text-gray-400 mb-4">
-          AI 피드백을 받은 학습 노트들을 정리해보세요
+          {t("learningNotes.subtitle")}
         </p>
 
         <div className="flex justify-end mb-6">
@@ -175,23 +179,28 @@ export default function LearningNotesPage() {
             onClick={() => router.push("/mini-game")}
             className="px-5 py-2 bg-emerald-600 text-white rounded-md shadow hover:bg-emerald-700"
           >
-            문장 미니게임 시작하기 →
+            {t("learningNotes.cta")} →
           </button>
         </div>
 
         {/* 태그 탭 */}
         <div className="flex justify-between mb-6">
           <div className="flex gap-3">
-            {["ALL", "Grammar", "Vocabulary", "Translation"].map((t) => (
+            {["ALL", "Grammar", "Vocabulary", "Translation"].map((tagKey) => (
               <button
-                key={t}
-                onClick={() => setActiveTab(t as any)}
-                className={`px-4 py-2 rounded-md ${activeTab === t
-                    ? "bg-indigo-600 text-white"
-                    : "bg-gray-800 text-gray-300 border border-gray-700"
+                key={tagKey}
+                onClick={() => setActiveTab(tagKey as any)}
+                className={`px-4 py-2 rounded-md ${activeTab === tagKey
+                  ? "bg-indigo-600 text-white"
+                  : "bg-gray-800 text-gray-300 border border-gray-700"
                   }`}
               >
-                {t}
+                {{
+                  ALL: t("learningNotes.tags.all"),
+                  Grammar: t("learningNotes.tags.grammar"),
+                  Vocabulary: t("learningNotes.tags.vocabulary"),
+                  Translation: t("learningNotes.tags.translation"),
+                }[tagKey as "ALL" | "Grammar" | "Vocabulary" | "Translation"] ?? tagKey}
               </button>
             ))}
           </div>
@@ -199,16 +208,16 @@ export default function LearningNotesPage() {
           {/* 완료 필터 */}
           <div className="flex gap-3">
             {[
-              { key: "all", label: "전체" },
-              { key: "completed", label: "완료" },
-              { key: "incomplete", label: "미완료" },
+              { key: "all", label: t("learningNotes.filters.all") },
+              { key: "completed", label: t("learningNotes.filters.completed") },
+              { key: "incomplete", label: t("learningNotes.filters.incomplete") },
             ].map((f) => (
               <button
                 key={f.key}
                 onClick={() => setFilter(f.key as any)}
                 className={`px-4 py-2 rounded-md ${filter === f.key
-                    ? "bg-green-600 text-white"
-                    : "bg-gray-800 text-gray-300 border border-gray-700"
+                  ? "bg-green-600 text-white"
+                  : "bg-gray-800 text-gray-300 border border-gray-700"
                   }`}
               >
                 {f.label}
@@ -221,7 +230,7 @@ export default function LearningNotesPage() {
         <div className="space-y-4">
           {notes.length === 0 ? (
             <div className="p-6 bg-gray-800 border border-gray-700 rounded-md text-gray-400">
-              조회된 노트가 없습니다.
+              {t("learningNotes.empty")}
             </div>
           ) : (
             notes.map((n) => (
@@ -242,8 +251,8 @@ export default function LearningNotesPage() {
               key={p}
               onClick={() => setPage(p)}
               className={`px-3 py-1 rounded text-sm ${p === currentPage
-                  ? "bg-indigo-600 text-white"
-                  : "bg-gray-800 text-gray-300 border border-gray-700 hover:bg-gray-700"
+                ? "bg-indigo-600 text-white"
+                : "bg-gray-800 text-gray-300 border border-gray-700 hover:bg-gray-700"
                 }`}
             >
               {p + 1}

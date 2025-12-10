@@ -1,12 +1,13 @@
 "use client";
 
-import Image from "next/image";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useCreateDirectChat } from "@/global/api/useChatQuery";
 import { useFriendDetailQuery, useMemberProfileQuery } from "@/global/api/useMemberQuery";
 import { useFriendshipActions } from "@/global/hooks/useFriendshipActions";
 import { getCountryFlagEmoji, normaliseCountryValue } from "@/global/lib/countries";
+import Image from "next/image";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import {
   FRIENDSHIP_BADGE_STYLE,
   FRIENDSHIP_STATUS_DESCRIPTIONS,
@@ -41,27 +42,33 @@ export const useFindProfileModal = () => {
   return context;
 };
 
-const viewUserPosts = (user: MemberListItem | null) => {
-  if (!user) {
-    return;
-  }
-  alert(`${user.nickname}님의 게시글 보기 기능은 추후 제공될 예정입니다.`);
-};
-
-const startGroupChatInvite = (user: MemberListItem | null) => {
-  if (!user) {
-    return;
-  }
-  alert(`${user.nickname}님을 그룹 챗으로 초대하는 기능은 추후 제공될 예정입니다.`);
-};
-
 export function FindProfileProvider({ children }: { children: React.ReactNode }) {
+  const { t, language } = useLanguage();
   const [selectedUser, setSelectedUser] = useState<MemberListItem | null>(null);
   const [selectedSource, setSelectedSource] = useState<MemberSource | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const skipAutoSelectRef = useRef<number | null>(null);
+
+  const fallbackMemberName = t('find.profile.labels.member');
+  const locale = language === 'ko' ? 'ko-KR' : 'en-US';
+
+  const viewUserPosts = (user: MemberListItem | null) => {
+    if (!user) {
+      return;
+    }
+    const nickname = user.nickname ?? fallbackMemberName;
+    alert(t('find.profile.alerts.viewPosts', { nickname }));
+  };
+
+  const startGroupChatInvite = (user: MemberListItem | null) => {
+    if (!user) {
+      return;
+    }
+    const nickname = user.nickname ?? fallbackMemberName;
+    alert(t('find.profile.alerts.inviteGroup', { nickname }));
+  };
 
   const requestedMemberId = useMemo(() => {
     const raw = searchParams.get("memberId");
@@ -229,7 +236,7 @@ export function FindProfileProvider({ children }: { children: React.ReactNode })
     () =>
       normaliseNumericId(
         selectedProfile?.receivedFriendRequestId ??
-          selectedProfile?.pendingFriendRequestIdFromOpponent,
+        selectedProfile?.pendingFriendRequestIdFromOpponent,
       ),
     [selectedProfile],
   );
@@ -248,9 +255,9 @@ export function FindProfileProvider({ children }: { children: React.ReactNode })
     () =>
       Boolean(
         opponentPendingRequestId ??
-          selectedProfile?.receivedFriendRequestId ??
-          (typeof selectedProfile?.isPendingFriendRequestFromOpponent === "boolean" &&
-            selectedProfile.isPendingFriendRequestFromOpponent),
+        selectedProfile?.receivedFriendRequestId ??
+        (typeof selectedProfile?.isPendingFriendRequestFromOpponent === "boolean" &&
+          selectedProfile.isPendingFriendRequestFromOpponent),
       ),
     [opponentPendingRequestId, selectedProfile],
   );
@@ -276,29 +283,31 @@ export function FindProfileProvider({ children }: { children: React.ReactNode })
   const { isSending, isAccepting, isRejecting, isDeleting } = friendshipActionStatus;
 
   const startChat = (user: MemberListItem) => {
-    if (window.confirm(`${user.nickname}님과 채팅을 시작하시겠습니까?`)) {
+    const nickname = user.nickname ?? fallbackMemberName;
+    if (window.confirm(t('find.profile.alerts.chatConfirm', { nickname }))) {
       createChatMutation.mutate({ partnerId: user.id });
     }
   };
 
   const handleSendFriendRequest = async () => {
     if (selectedProfileMemberId == null) {
-      alert("친구 요청 대상을 찾을 수 없습니다. 잠시 후 다시 시도해 주세요.");
+      alert(t('find.profile.alerts.sendRequestMissingTarget'));
       return;
     }
 
     try {
       await mutateSendFriendRequest({ receiverId: selectedProfileMemberId });
-      alert("친구 요청을 전송했습니다.");
+      alert(t('find.profile.alerts.sendRequestSuccess'));
     } catch (error) {
-      const message = error instanceof Error ? error.message : "친구 요청 전송 중 문제가 발생했습니다.";
-      alert(message);
+      const fallback = t('find.profile.alerts.sendRequestError');
+      const errorMessage = error instanceof Error && error.message ? `: ${error.message}` : "";
+      alert(`${fallback}${errorMessage}`);
     }
   };
 
   const handleAcceptFriendRequest = async () => {
     if (opponentPendingRequestId == null) {
-      alert("수락할 친구 요청 정보를 찾지 못했습니다. 새로고침 후 다시 시도해 주세요.");
+      alert(t('find.profile.alerts.acceptMissingRequest'));
       return;
     }
 
@@ -307,16 +316,17 @@ export function FindProfileProvider({ children }: { children: React.ReactNode })
         requestId: opponentPendingRequestId,
         opponentMemberId: selectedProfileMemberId ?? undefined,
       });
-      alert("친구 요청을 수락했습니다.");
+      alert(t('find.profile.alerts.acceptSuccess'));
     } catch (error) {
-      const message = error instanceof Error ? error.message : "친구 요청 수락 중 문제가 발생했습니다.";
-      alert(message);
+      const fallback = t('find.profile.alerts.acceptError');
+      const errorMessage = error instanceof Error && error.message ? `: ${error.message}` : "";
+      alert(`${fallback}${errorMessage}`);
     }
   };
 
   const handleRejectFriendRequest = async () => {
     if (opponentPendingRequestId == null) {
-      alert("거절할 친구 요청 정보를 찾지 못했습니다. 새로고침 후 다시 시도해 주세요.");
+      alert(t('find.profile.alerts.rejectMissingRequest'));
       return;
     }
 
@@ -325,22 +335,23 @@ export function FindProfileProvider({ children }: { children: React.ReactNode })
         requestId: opponentPendingRequestId,
         opponentMemberId: selectedProfileMemberId ?? undefined,
       });
-      alert("친구 요청을 거절했습니다.");
+      alert(t('find.profile.alerts.rejectSuccess'));
     } catch (error) {
-      const message = error instanceof Error ? error.message : "친구 요청 거절 중 문제가 발생했습니다.";
-      alert(message);
+      const fallback = t('find.profile.alerts.rejectError');
+      const errorMessage = error instanceof Error && error.message ? `: ${error.message}` : "";
+      alert(`${fallback}${errorMessage}`);
     }
   };
 
   const handleRemoveFriend = async () => {
     const friendId = friendshipRelationId ?? selectedProfileMemberId;
     if (friendId == null) {
-      alert("친구 정보를 찾을 수 없습니다. 잠시 후 다시 시도해 주세요.");
+      alert(t('find.profile.alerts.removeMissingFriend'));
       return;
     }
 
-    const targetName = selectedProfile?.nickname || selectedUser?.nickname || "해당 회원";
-    const confirmed = window.confirm(`${targetName}님과 친구를 해제하시겠습니까?`);
+    const targetName = selectedProfile?.nickname || selectedUser?.nickname || fallbackMemberName;
+    const confirmed = window.confirm(t('find.profile.alerts.removeConfirm', { nickname: targetName }));
     if (!confirmed) {
       return;
     }
@@ -350,10 +361,11 @@ export function FindProfileProvider({ children }: { children: React.ReactNode })
         friendId,
         opponentMemberId: selectedProfileMemberId ?? undefined,
       });
-      alert("친구 관계를 해제했습니다.");
+      alert(t('find.profile.alerts.removeSuccess'));
     } catch (error) {
-      const message = error instanceof Error ? error.message : "친구 관계 해제 중 문제가 발생했습니다.";
-      alert(message);
+      const fallback = t('find.profile.alerts.removeError');
+      const errorMessage = error instanceof Error && error.message ? `: ${error.message}` : "";
+      alert(`${fallback}${errorMessage}`);
     }
   };
 
@@ -372,16 +384,16 @@ export function FindProfileProvider({ children }: { children: React.ReactNode })
     "";
   const modalCountryMeta = normaliseCountryValue(
     selectedFriendDetail?.country ??
-      selectedProfile?.country ??
-      selectedProfile?.countryName ??
-      selectedUser?.country ??
-      "",
+    selectedProfile?.country ??
+    selectedProfile?.countryName ??
+    selectedUser?.country ??
+    "",
   );
   const modalCountryDisplay = modalCountryMeta.name || "-";
   const modalCountryFlag = getCountryFlagEmoji(modalCountryMeta.code);
 
   const englishLevelMeta = resolveEnglishLevelMeta(modalEnglishLevel);
-  const modalEnglishLevelDisplay = englishLevelMeta.label;
+  const modalEnglishLevelDisplay = t(englishLevelMeta.labelKey);
   const modalEnglishLevelBadgeClass = englishLevelMeta.badgeClass;
   const modalEnglishLevelIcon = englishLevelMeta.icon;
 
@@ -393,8 +405,8 @@ export function FindProfileProvider({ children }: { children: React.ReactNode })
   const modalDisplayName =
     (modalName ? `${modalNickname} (${modalName})` : modalNickname) ||
     selectedUser?.nickname ||
-    "회원 정보";
-  const modalDescriptionDisplay = modalDescription || "소개 정보가 아직 없습니다.";
+    t('find.profile.labels.memberInfo');
+  const modalDescriptionDisplay = modalDescription || t('find.profile.sections.noDescription');
   const fallbackModalNickname = modalNickname || selectedUser?.nickname || "member";
   const modalAvatarSrc =
     resolveProfileImageUrl(selectedFriendDetail?.profileImageUrl) ??
@@ -410,7 +422,7 @@ export function FindProfileProvider({ children }: { children: React.ReactNode })
     null;
   const isCurrentlyOnline = resolveIsOnline(selectedUser) === true;
   const modalLastSeenDisplay = !isCurrentlyOnline && modalLastSeenSource
-    ? formatLastSeen(modalLastSeenSource)
+    ? formatLastSeen(modalLastSeenSource, locale)
     : null;
   const isFriendDetailPending =
     selectedSource === "friends" && (isFriendDetailLoading || isFriendDetailFetching);
@@ -420,7 +432,7 @@ export function FindProfileProvider({ children }: { children: React.ReactNode })
       : null;
   const friendSinceDisplay =
     selectedSource === "friends" && selectedFriendDetail?.createdAt
-      ? formatFriendSince(selectedFriendDetail.createdAt)
+      ? formatFriendSince(selectedFriendDetail.createdAt, locale)
       : null;
 
   const isProfilePending = Boolean(selectedUser) && (isProfileLoading || isProfileFetching);
@@ -431,28 +443,28 @@ export function FindProfileProvider({ children }: { children: React.ReactNode })
     }
 
     if (isProfilePending) {
-      return <span className="text-xs text-gray-300">친구 상태를 불러오는 중입니다...</span>;
+      return <span className="text-xs text-gray-300">{t('find.profile.friendship.loading')}</span>;
     }
 
     if (selectedProfileError) {
       return (
         <span className="text-xs text-red-400">
-          친구 상태 정보를 불러오지 못했습니다.
+          {t('find.profile.friendship.error')}
           {selectedProfileError.message ? ` (${selectedProfileError.message})` : ""}
         </span>
       );
     }
 
     if (!modalFriendshipState) {
-      return <span className="text-xs text-gray-400">친구 상태 정보를 가져올 수 없습니다.</span>;
+      return <span className="text-xs text-gray-400">{t('find.profile.friendship.unavailable')}</span>;
     }
 
     return (
       <>
         <span className={`px-3 py-1 text-xs font-semibold rounded-full ${FRIENDSHIP_BADGE_STYLE[modalFriendshipState]}`}>
-          {FRIENDSHIP_STATUS_LABELS[modalFriendshipState]}
+          {t(FRIENDSHIP_STATUS_LABELS[modalFriendshipState])}
         </span>
-        <span className="text-xs text-gray-300">{FRIENDSHIP_STATUS_DESCRIPTIONS[modalFriendshipState]}</span>
+        <span className="text-xs text-gray-300">{t(FRIENDSHIP_STATUS_DESCRIPTIONS[modalFriendshipState])}</span>
       </>
     );
   };
@@ -465,7 +477,9 @@ export function FindProfileProvider({ children }: { children: React.ReactNode })
     if (modalFriendshipState === "REQUEST_SENT") {
       return (
         <p className="text-sm text-blue-300 text-center bg-blue-900/40 px-4 py-3 rounded">
-          친구 요청 대기중입니다{myPendingRequestId ? ` (요청 ID: ${myPendingRequestId})` : ""}.
+          {t('find.profile.friendship.pending', {
+            requestId: myPendingRequestId ? ` (#${myPendingRequestId})` : '',
+          })}
         </p>
       );
     }
@@ -474,7 +488,7 @@ export function FindProfileProvider({ children }: { children: React.ReactNode })
       if (!opponentPendingRequestId) {
         return (
           <p className="text-sm text-red-300 text-center bg-red-900/40 px-4 py-3 rounded">
-            처리할 친구 요청 정보를 찾지 못했습니다. 새로고침 후 다시 시도해 주세요.
+            {t('find.profile.friendship.missingRequestInfo')}
           </p>
         );
       }
@@ -491,7 +505,7 @@ export function FindProfileProvider({ children }: { children: React.ReactNode })
             disabled={isProcessing}
             className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-700/70 disabled:cursor-not-allowed text-white px-4 py-3 rounded font-medium transition-colors"
           >
-            {isAccepting ? "수락 중..." : "수락"}
+            {isAccepting ? t('find.profile.buttons.accepting') : t('find.profile.buttons.accept')}
           </button>
           <button
             type="button"
@@ -501,7 +515,7 @@ export function FindProfileProvider({ children }: { children: React.ReactNode })
             disabled={isProcessing}
             className="w-full bg-red-600 hover:bg-red-700 disabled:bg-red-700/70 disabled:cursor-not-allowed text-white px-4 py-3 rounded font-medium transition-colors"
           >
-            {isRejecting ? "거절 중..." : "거절"}
+            {isRejecting ? t('find.profile.buttons.rejecting') : t('find.profile.buttons.reject')}
           </button>
         </div>
       );
@@ -517,7 +531,7 @@ export function FindProfileProvider({ children }: { children: React.ReactNode })
           disabled={isDeleting}
           className="w-full bg-red-700 hover:bg-red-800 disabled:bg-red-800/70 disabled:cursor-not-allowed text-white px-4 py-3 rounded font-medium transition-colors"
         >
-          {isDeleting ? "친구 제거 중..." : "친구 제거"}
+          {isDeleting ? t('find.profile.buttons.removing') : t('find.profile.buttons.remove')}
         </button>
       );
     }
@@ -532,7 +546,7 @@ export function FindProfileProvider({ children }: { children: React.ReactNode })
           disabled={isSending}
           className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-700/70 disabled:cursor-not-allowed text-white px-4 py-3 rounded font-medium transition-colors"
         >
-          {isSending ? "요청 보내는 중..." : "친구 요청 보내기"}
+          {isSending ? t('find.profile.buttons.sending') : t('find.profile.buttons.send')}
         </button>
       );
     }
@@ -552,7 +566,7 @@ export function FindProfileProvider({ children }: { children: React.ReactNode })
                   <div className="relative w-20 h-20">
                     <Image
                       src={modalAvatarSrc}
-                      alt={modalDisplayName || selectedUser.nickname || "회원 아바타"}
+                      alt={modalDisplayName || selectedUser.nickname || t('find.profile.labels.avatarAlt')}
                       width={80}
                       height={80}
                       unoptimized
@@ -572,7 +586,7 @@ export function FindProfileProvider({ children }: { children: React.ReactNode })
                     </div>
                     {modalLastSeenDisplay && (
                       <p className="text-gray-400 text-xs mt-1">
-                        마지막 접속: {modalLastSeenDisplay}
+                        {t('find.profile.details.lastSeen', { time: modalLastSeenDisplay })}
                       </p>
                     )}
                     <div
@@ -586,15 +600,15 @@ export function FindProfileProvider({ children }: { children: React.ReactNode })
                     </div>
                     {friendSinceDisplay && (
                       <p className="mt-2 text-xs text-gray-300">
-                        친구가 된 날짜: <span className="text-white">{friendSinceDisplay}</span>
+                        {t('find.profile.details.friendSince', { date: friendSinceDisplay })}
                       </p>
                     )}
                     {isFriendDetailPending && (
-                      <p className="mt-2 text-xs text-gray-300">친구 상세 정보를 불러오는 중입니다...</p>
+                      <p className="mt-2 text-xs text-gray-300">{t('find.profile.details.loadingFriendDetail')}</p>
                     )}
                     {friendDetailErrorMessage && (
                       <p className="mt-2 text-xs text-red-400">
-                        친구 상세 정보를 불러오지 못했습니다.
+                        {t('find.profile.details.friendDetailError')}
                         {friendDetailErrorMessage ? ` (${friendDetailErrorMessage})` : ""}
                       </p>
                     )}
@@ -611,12 +625,12 @@ export function FindProfileProvider({ children }: { children: React.ReactNode })
 
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-lg font-semibold text-white mb-2">About</h3>
+                  <h3 className="text-lg font-semibold text-white mb-2">{t('find.profile.sections.about')}</h3>
                   <p className="text-gray-300">{modalDescriptionDisplay}</p>
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold text-white mb-2">Interests</h3>
+                  <h3 className="text-lg font-semibold text-white mb-2">{t('find.profile.sections.interests')}</h3>
                   <div className="flex flex-wrap gap-2">
                     {modalInterests.map((interest, index) => (
                       <span key={index} className="px-3 py-1 bg-emerald-600 text-white rounded-full text-sm">
@@ -624,7 +638,7 @@ export function FindProfileProvider({ children }: { children: React.ReactNode })
                       </span>
                     ))}
                     {modalInterests.length === 0 && (
-                      <span className="text-sm text-gray-400">등록된 관심사가 없습니다.</span>
+                      <span className="text-sm text-gray-400">{t('find.profile.sections.noInterests')}</span>
                     )}
                   </div>
                 </div>
@@ -636,14 +650,14 @@ export function FindProfileProvider({ children }: { children: React.ReactNode })
                   onClick={() => startChat(selectedUser)}
                   className="w-full bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-3 rounded font-medium transition-colors"
                 >
-                  1:1 대화하기
+                  {t('find.profile.buttons.chat')}
                 </button>
                 <button
                   type="button"
                   onClick={() => startGroupChatInvite(selectedUser)}
                   className="w-full bg-gray-700 hover:bg-gray-600 text-white px-4 py-3 rounded font-medium transition-colors"
                 >
-                  그룹챗 초대하기
+                  {t('find.profile.buttons.invite')}
                 </button>
                 {renderFriendshipActions()}
                 <button
@@ -651,7 +665,7 @@ export function FindProfileProvider({ children }: { children: React.ReactNode })
                   onClick={() => viewUserPosts(selectedUser)}
                   className="w-full bg-gray-600 hover:bg-gray-700 text-white px-4 py-3 rounded font-medium transition-colors"
                 >
-                  게시글 보러가기
+                  {t('find.profile.buttons.posts')}
                 </button>
               </div>
             </div>

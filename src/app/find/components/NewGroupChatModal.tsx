@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { X } from "lucide-react";
 import { useCreateGroupChat } from "@/global/api/useChatQuery";
 import { useLoginStore } from "@/global/stores/useLoginStore";
 import { CreateGroupChatReq } from "@/global/types/chat.types";
+import { X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 
 type NewGroupChatModalProps = {
   isOpen: boolean;

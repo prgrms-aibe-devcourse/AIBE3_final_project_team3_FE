@@ -1,0 +1,192 @@
+{
+  "page": {
+    "title": "내 정보",
+    "subtitle": "프로필, 친구 관계, 알림을 한 곳에서 확인하세요."
+  },
+  "tabs": {
+    "profile": {
+      "label": "프로필",
+      "description": "기본 정보와 자기소개를 수정합니다."
+    },
+    "friends": {
+      "label": "친구 관계",
+      "description": "친구 목록과 상태를 한눈에 확인해요."
+    },
+    "notifications": {
+      "label": "알림",
+      "description": "서비스에서 받은 최신 알림을 확인하세요."
+    }
+  },
+  "info": {
+    "sectionTitle": "프로필 정보",
+    "actions": {
+      "edit": "프로필 수정",
+      "save": "저장",
+      "saving": "저장 중...",
+      "cancel": "취소",
+      "changeAvatar": "프로필 사진 변경",
+      "uploading": "업로드 중..."
+    },
+    "labels": {
+      "name": "이름",
+      "nickname": "닉네임",
+      "email": "이메일",
+      "about": "소개",
+      "country": "국가",
+      "englishLevel": "영어 레벨",
+      "interests": "관심사"
+    },
+    "notes": {
+      "emailReadOnly": "이메일은 여기에서 수정할 수 없습니다.",
+      "emailMissing": "등록된 이메일이 없습니다."
+    },
+    "placeholders": {
+      "country": "국가를 선택하세요",
+      "interests": "예: 영화 감상, 러닝, 여행"
+    },
+    "helpers": {
+      "interests": "여러 관심사는 콤마(,)로 구분해 입력하세요."
+    },
+    "messages": {
+      "descriptionEmpty": "소개가 아직 등록되지 않았습니다.",
+      "interestsEmpty": "등록된 관심사가 없습니다."
+    },
+    "englishLevels": {
+      "BEGINNER": "초급",
+      "INTERMEDIATE": "중급",
+      "ADVANCED": "고급",
+      "NATIVE": "원어민급"
+    },
+    "danger": {
+      "title": "위험 구역",
+      "description": "계정을 삭제하면 채팅 기록과 설정이 복구 없이 제거됩니다.",
+      "delete": "계정 삭제",
+      "deleting": "삭제 중..."
+    },
+    "alerts": {
+      "requiredFields": "이름, 닉네임, 소개는 필수 항목입니다.",
+      "interestsRequired": "관심사를 최소 1개 이상 입력해주세요.",
+      "countryRequired": "국가를 선택해주세요.",
+      "unsupportedImage": "JPG, PNG, WEBP 형식의 이미지 파일만 업로드할 수 있습니다.",
+      "imageTooLarge": "이미지는 최대 3MB까지 업로드할 수 있습니다.",
+      "deleteConfirm": "계정을 삭제할까요? 이 작업은 되돌릴 수 없습니다.",
+      "deleteSuccess": "계정을 삭제했습니다. 계속 이용하려면 다시 가입해주세요."
+    },
+    "avatar": {
+      "alt": "{name}님의 프로필 이미지"
+    }
+  },
+  "friends": {
+    "title": "친구 관계",
+    "subtitle": "연결된 친구와 상태를 확인하세요.",
+    "total": "총 {count}명",
+    "updating": "업데이트 중...",
+    "loading": "친구 목록을 불러오는 중입니다...",
+    "error": "친구 목록을 불러오지 못했습니다",
+    "empty": "등록된 친구가 없습니다.",
+    "status": {
+      "online": "온라인",
+      "offline": "오프라인"
+    },
+    "buttons": {
+      "details": "상세보기",
+      "remove": "친구 삭제",
+      "removing": "삭제 중",
+      "previous": "이전",
+      "next": "다음"
+    },
+    "pagination": {
+      "page": "페이지 {current}",
+      "pageWithTotal": "페이지 {current} / {total}",
+      "perPage": "(페이지당 {count}명)"
+    },
+    "messages": {
+      "detailsUnavailable": "친구 정보를 불러올 수 없습니다.",
+      "unknownFriend": "이 친구",
+      "idMissing": "친구 ID를 확인할 수 없어 삭제할 수 없습니다.",
+      "confirmDelete": "{name}님과의 친구 관계를 삭제할까요?",
+      "deleteSuccess": "친구를 삭제했습니다.",
+      "deleteFailed": "친구를 삭제하지 못했습니다.",
+      "detailLoading": "상세 정보를 불러오는 중입니다...",
+      "detailError": "상세 정보를 불러오지 못했습니다.",
+      "detailEmpty": "표시할 친구 정보를 찾지 못했습니다.",
+      "descriptionEmpty": "소개가 아직 등록되지 않았습니다.",
+      "interestsEmpty": "등록된 관심사가 없습니다."
+    },
+    "modal": {
+      "title": "친구 상세 정보",
+      "fields": {
+        "nickname": "닉네임",
+        "country": "국가",
+        "englishLevel": "영어 레벨",
+        "lastSeen": "최근 온라인",
+        "description": "소개",
+        "interests": "관심사"
+      }
+    }
+  },
+  "notifications": {
+    "title": "알림",
+    "subtitle": "읽지 않은 알림과 초대를 확인하세요.",
+    "summary": "총 {count}개 · 페이지당 {pageSize}개",
+    "buttons": {
+      "refresh": "새로고침",
+      "refreshing": "갱신 중...",
+      "markAll": "모두 읽음",
+      "deleteAll": "모두 삭제",
+      "mark": "읽음 처리",
+      "delete": "삭제",
+      "profile": "프로필 보기"
+    },
+    "status": {
+      "unread": "읽지 않음",
+      "read": "읽음"
+    },
+    "messages": {
+      "loading": "알림을 불러오는 중입니다...",
+      "error": "알림을 불러오지 못했습니다",
+      "empty": "받은 알림이 없습니다.",
+      "alreadyRead": "이미 읽음 처리된 알림입니다.",
+      "markSuccess": "알림을 읽음 처리했어요.",
+      "markFailed": "알림을 읽음 처리하지 못했습니다.",
+      "deleteConfirm": "이 알림을 삭제할까요?",
+      "deleteSuccess": "알림을 삭제했어요.",
+      "deleteFailed": "알림을 삭제하지 못했습니다.",
+      "noneToProcess": "처리할 알림이 없습니다.",
+      "markAllSuccess": "모든 알림을 읽음 처리했어요.",
+      "markAllFailed": "모든 알림을 읽음 처리하지 못했습니다.",
+      "noneToDelete": "삭제할 알림이 없습니다.",
+      "deleteAllConfirm": "모든 알림을 삭제할까요?",
+      "deleteAllSuccess": "모든 알림을 삭제했어요.",
+      "deleteAllFailed": "모든 알림을 삭제하지 못했습니다.",
+      "senderMissing": "보낸 사람 정보를 확인할 수 없습니다.",
+      "invalidSender": "올바른 회원 ID가 아닙니다."
+    },
+    "pagination": {
+      "page": "페이지 {current}",
+      "pageWithTotal": "페이지 {current} / {total}",
+      "previous": "이전",
+      "next": "다음"
+    },
+    "time": {
+      "justNow": "방금"
+    },
+    "modal": {
+      "title": "보낸 사람 정보",
+      "subtitle": "알림을 보낸 사용자의 프로필을 확인하세요.",
+      "fields": {
+        "nickname": "닉네임",
+        "country": "국가",
+        "englishLevel": "영어 레벨",
+        "lastSeen": "최근 온라인",
+        "description": "소개",
+        "interests": "관심사"
+      },
+      "descriptionEmpty": "소개가 아직 등록되지 않았습니다.",
+      "interestsEmpty": "등록된 관심사가 없습니다.",
+      "loading": "상세 정보를 불러오는 중입니다...",
+      "error": "상세 정보를 불러오지 못했습니다.",
+      "notFound": "표시할 친구 정보를 찾지 못했습니다."
+    }
+  }
+}

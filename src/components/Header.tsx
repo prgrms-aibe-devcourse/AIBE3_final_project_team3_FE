@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useLogout } from "@/global/api/useAuthQuery";
 import { useAcceptFriendRequest, useRejectFriendRequest } from "@/global/api/useFriendshipMutation";
 import {
@@ -13,7 +14,6 @@ import {
   useMarkNotificationRead,
   useNotificationsQuery,
 } from "@/global/api/useNotificationQuery";
-import { useLanguage } from "@/contexts/LanguageContext";
 import apiClient from "@/global/backend/client";
 import { useLoginStore } from "@/global/stores/useLoginStore";
 import { useNotificationStore } from "@/global/stores/useNotificationStore";
@@ -98,7 +98,7 @@ const resolveFriendRequestId = async (notification: NotificationItem): Promise<n
 };
 
 export default function Header() {
-  const { language, setLanguage } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -313,7 +313,7 @@ export default function Header() {
           disabled={isLoggingOut}
           className="text-gray-200 hover:text-emerald-400 transition-colors flex items-center disabled:opacity-70"
         >
-          {isLoggingOut ? "Logging out..." : "Logout"}
+          {isLoggingOut ? t("header.auth.loggingOut") : t("header.auth.logout")}
         </button>
       ) : (
         <button
@@ -321,7 +321,7 @@ export default function Header() {
           disabled={isLoggingOut}
           className="text-gray-200 hover:text-emerald-400 transition-colors py-2 text-left disabled:opacity-70"
         >
-          {isLoggingOut ? "Logging out..." : "Logout"}
+          {isLoggingOut ? t("header.auth.loggingOut") : t("header.auth.logout")}
         </button>
       );
     }
@@ -332,13 +332,13 @@ export default function Header() {
           href="/auth/login"
           className="text-gray-200 hover:text-emerald-400 transition-colors flex items-center"
         >
-          Login
+          {t("header.auth.login")}
         </Link>
         <Link
           href="/auth/signup"
           className="bg-emerald-600 text-white px-4 py-2 rounded-md hover:bg-emerald-500 transition-colors shadow-lg flex items-center"
         >
-          Sign Up
+          {t("header.auth.signup")}
         </Link>
       </>
     ) : (
@@ -347,13 +347,13 @@ export default function Header() {
           href="/auth/login"
           className="text-gray-200 hover:text-emerald-400 transition-colors py-2"
         >
-          Login
+          {t("header.auth.login")}
         </Link>
         <Link
           href="/auth/signup"
           className="bg-emerald-600 text-white px-4 py-2 rounded-md hover:bg-emerald-500 transition-colors text-center shadow-lg"
         >
-          Sign Up
+          {t("header.auth.signup")}
         </Link>
       </>
     );
@@ -365,7 +365,7 @@ export default function Header() {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link href="/" className="text-xl font-bold text-emerald-400">
-            EnglishChat
+            {t("header.brand")}
           </Link>
 
           {/* Desktop Navigation */}
@@ -374,44 +374,44 @@ export default function Header() {
               href="/"
               className="text-gray-200 hover:text-emerald-400 transition-colors"
             >
-              Home
+              {t("header.nav.home")}
             </Link>
             <Link
               href="/chat"
               className="text-gray-200 hover:text-emerald-400 transition-colors"
             >
-              Chat
+              {t("header.nav.chat")}
             </Link>
             <Link
               href="/find"
               className="text-gray-200 hover:text-emerald-400 transition-colors"
             >
-              Find
+              {t("header.nav.find")}
             </Link>
             <Link
               href="/board"
               className="text-gray-200 hover:text-emerald-400 transition-colors"
             >
-              Board
+              {t("header.nav.board")}
             </Link>
             <Link
               href="/learning-notes"
               className="text-gray-200 hover:text-emerald-400 transition-colors"
             >
-              Learning Notes
+              {t("header.nav.learningNotes")}
             </Link>
             <Link
               href="/profile"
               className="text-gray-200 hover:text-emerald-400 transition-colors"
             >
-              My Page
+              {t("header.nav.myPage")}
             </Link>
             {role === "ROLE_ADMIN" && (
               <Link
                 href="/admin/report-management"
                 className="text-red-400 hover:text-red-300 transition-colors font-semibold"
               >
-                Admin
+                {t("header.nav.admin")}
               </Link>
             )}
           </nav>
@@ -437,14 +437,14 @@ export default function Header() {
                     className={`w-full text-left px-4 py-2 text-sm flex items-center space-x-2 hover:bg-gray-700 ${language === 'ko' ? 'text-emerald-400 bg-gray-700/50' : 'text-gray-300'}`}
                   >
                     <span>🇰🇷</span>
-                    <span>한국어</span>
+                    <span>{t("header.language.korean")}</span>
                   </button>
                   <button
                     onClick={() => { setLanguage('en'); setIsLangMenuOpen(false); }}
                     className={`w-full text-left px-4 py-2 text-sm flex items-center space-x-2 hover:bg-gray-700 ${language === 'en' ? 'text-emerald-400 bg-gray-700/50' : 'text-gray-300'}`}
                   >
                     <span>🇺🇸</span>
-                    <span>English</span>
+                    <span>{t("header.language.english")}</span>
                   </button>
                 </div>
               )}
@@ -455,7 +455,7 @@ export default function Header() {
               <button
                 onClick={() => setShowNotifications(!showNotifications)}
                 className={`relative p-2 rounded-full transition-colors ${showNotifications ? "text-emerald-400 bg-gray-700/50" : "text-gray-200 hover:text-emerald-400 hover:bg-gray-700/50"}`}
-                title="Notifications"
+                title={t("header.notifications.title")}
               >
                 <svg
                   className="w-5 h-5"
@@ -476,7 +476,7 @@ export default function Header() {
                 <div className="absolute right-0 top-full mt-2 w-80 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-50 max-h-96 overflow-hidden">
                   <div className="p-3 border-b border-gray-600 flex justify-between items-center">
                     <h3 className="text-sm font-medium text-white">
-                      Notifications
+                      {t("header.notifications.title")}
                     </h3>
                     <div className="flex items-center gap-2">
                       <button
@@ -486,7 +486,9 @@ export default function Header() {
                         disabled={isNotificationsFetching}
                         className="text-xs text-gray-300 hover:text-white disabled:opacity-60"
                       >
-                        {isNotificationsFetching ? "Refreshing..." : "Refresh"}
+                        {isNotificationsFetching
+                          ? t("header.notifications.refreshing")
+                          : t("header.notifications.refresh")}
                       </button>
                       {unreadCount > 0 && (
                         <button
@@ -494,7 +496,9 @@ export default function Header() {
                           disabled={isMarkingAll}
                           className="text-xs text-emerald-400 hover:text-emerald-300 disabled:opacity-60"
                         >
-                          {isMarkingAll ? "Marking..." : "Mark all as read"}
+                          {isMarkingAll
+                            ? t("header.notifications.marking")
+                            : t("header.notifications.markAll")}
                         </button>
                       )}
                       <button
@@ -680,7 +684,7 @@ export default function Header() {
                     >
                       <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
                     </svg>
-                    <span>Notifications</span>
+                    <span>{t("header.notifications.title")}</span>
                   </span>
                   {unreadCount > 0 && (
                     <span className="bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
@@ -694,7 +698,7 @@ export default function Header() {
                   <div className="mt-2 bg-gray-750 rounded-lg border border-gray-600 max-h-60 overflow-y-auto">
                     <div className="p-2 border-b border-gray-600 flex justify-between items-center">
                       <span className="text-xs font-medium text-white">
-                        Notifications
+                        {t("header.notifications.title")}
                       </span>
                       <div className="flex items-center gap-2">
                         <button
@@ -704,14 +708,16 @@ export default function Header() {
                           disabled={isNotificationsFetching}
                           className="text-xs text-gray-300 hover:text-white disabled:opacity-60"
                         >
-                          {isNotificationsFetching ? "Refreshing..." : "Refresh"}
+                          {isNotificationsFetching
+                            ? t("header.notifications.refreshing")
+                            : t("header.notifications.refresh")}
                         </button>
                         {unreadCount > 0 && (
                           <button
                             onClick={handleMarkAllAsRead}
                             className="text-xs text-emerald-400 hover:text-emerald-300"
                           >
-                            Mark all read
+                            {t("header.notifications.markAll")}
                           </button>
                         )}
                       </div>
@@ -806,44 +812,44 @@ export default function Header() {
                 href="/"
                 className="text-gray-200 hover:text-emerald-400 transition-colors py-2"
               >
-                Home
+                {t("header.nav.home")}
               </Link>
               <Link
                 href="/chat"
                 className="text-gray-200 hover:text-emerald-400 transition-colors py-2"
               >
-                Chat
+                {t("header.nav.chat")}
               </Link>
               <Link
                 href="/find"
                 className="text-gray-200 hover:text-emerald-400 transition-colors py-2"
               >
-                Find
+                {t("header.nav.find")}
               </Link>
               <Link
                 href="/board"
                 className="text-gray-200 hover:text-emerald-400 transition-colors py-2"
               >
-                Board
+                {t("header.nav.board")}
               </Link>
               <Link
                 href="/learning-notes"
                 className="text-gray-200 hover:text-emerald-400 transition-colors py-2"
               >
-                Learning Notes
+                {t("header.nav.learningNotes")}
               </Link>
               <Link
                 href="/profile"
                 className="text-gray-200 hover:text-emerald-400 transition-colors py-2"
               >
-                My Page
+                {t("header.nav.myPage")}
               </Link>
               {role === "ROLE_ADMIN" && (
                 <Link
                   href="/admin/report-management"
                   className="text-red-400 hover:text-red-300 transition-colors font-semibold"
                 >
-                  Admin
+                  {t("header.nav.admin")}
                 </Link>
               )}
               {renderAuthButtons("mobile")}

@@ -1,5 +1,7 @@
 import { PromptListItem } from "@/global/types/prompt.types";
 
+type TranslateFn = (key: string, params?: Record<string, string>) => string;
+
 export interface AIScenario {
   id: number | string;
   title: string;
@@ -30,16 +32,16 @@ const ROLE_PLAY_TYPE_KEYS = [
 
 type RolePlayTypeKey = (typeof ROLE_PLAY_TYPE_KEYS)[number];
 
-const ROLE_PLAY_TYPE_LABELS: Record<RolePlayTypeKey, string> = {
-  DAILY_SERVICE: "일상 & 서비스 상황",
-  WORK_COMPANY: "회사/직장 상황",
-  SCHOOL_ACADEMIC: "학교/학습 상황",
-  TRAVEL_IMMIGRATION: "여행 & 공항/이민 상황",
-  HOSPITAL_EMERGENCY: "병원 & 긴급 상황",
-  ONLINE_DIGITAL: "온라인/디지털 상황",
-  RELATION_EMOTION: "인간관계 & 감정/갈등 상황",
-  META_LEARNING: "영어 학습 앱 특화 메타 상황",
-  FREE_TALK: "자유 대화 (Free Talk)",
+const ROLE_PLAY_TYPE_LABEL_KEYS: Record<RolePlayTypeKey, string> = {
+  DAILY_SERVICE: "find.ai.rolePlayTypes.DAILY_SERVICE",
+  WORK_COMPANY: "find.ai.rolePlayTypes.WORK_COMPANY",
+  SCHOOL_ACADEMIC: "find.ai.rolePlayTypes.SCHOOL_ACADEMIC",
+  TRAVEL_IMMIGRATION: "find.ai.rolePlayTypes.TRAVEL_IMMIGRATION",
+  HOSPITAL_EMERGENCY: "find.ai.rolePlayTypes.HOSPITAL_EMERGENCY",
+  ONLINE_DIGITAL: "find.ai.rolePlayTypes.ONLINE_DIGITAL",
+  RELATION_EMOTION: "find.ai.rolePlayTypes.RELATION_EMOTION",
+  META_LEARNING: "find.ai.rolePlayTypes.META_LEARNING",
+  FREE_TALK: "find.ai.rolePlayTypes.FREE_TALK",
 };
 
 const ROLE_PLAY_TYPE_KEY_SET = new Set<string>(ROLE_PLAY_TYPE_KEYS);
@@ -68,14 +70,18 @@ const normaliseRolePlayTypeKey = (rolePlayType?: string | null) => {
   return upper;
 };
 
-export const formatRolePlayTypeLabel = (rolePlayType?: string | null) => {
+export const formatRolePlayTypeLabel = (
+  rolePlayType?: string | null,
+  t?: TranslateFn,
+) => {
   const normalised = normaliseRolePlayTypeKey(rolePlayType);
   if (normalised === FALLBACK_CATEGORY_KEY) {
-    return "기타 상황극 프롬프트";
+    return t ? t("find.ai.rolePlayTypes.OTHER") : "Other role-play prompts";
   }
 
   if (ROLE_PLAY_TYPE_KEY_SET.has(normalised as RolePlayTypeKey)) {
-    return ROLE_PLAY_TYPE_LABELS[normalised as RolePlayTypeKey];
+    const labelKey = ROLE_PLAY_TYPE_LABEL_KEYS[normalised as RolePlayTypeKey];
+    return t ? t(labelKey) : normalised;
   }
 
   return toTitleCaseLabel(normalised);
@@ -83,6 +89,7 @@ export const formatRolePlayTypeLabel = (rolePlayType?: string | null) => {
 
 export const buildCategoriesFromPromptList = (
   promptList?: PromptListItem[] | null,
+  t?: TranslateFn,
 ): AICategory[] => {
   if (!Array.isArray(promptList) || promptList.length === 0) {
     return [];
@@ -115,7 +122,7 @@ export const buildCategoriesFromPromptList = (
 
   const categories: AICategory[] = ROLE_PLAY_TYPE_KEYS.map((key, index) => ({
     id: `${key.toLowerCase()}-${index + 1}`,
-    title: ROLE_PLAY_TYPE_LABELS[key],
+    title: formatRolePlayTypeLabel(key, t),
     rolePlayType: key,
     scenarios: scenarioMap.get(key) ?? [],
   }));
@@ -124,7 +131,7 @@ export const buildCategoriesFromPromptList = (
   if (fallbackScenarios.length > 0) {
     categories.push({
       id: `others-${categories.length + 1}`,
-      title: formatRolePlayTypeLabel(FALLBACK_CATEGORY_KEY),
+      title: formatRolePlayTypeLabel(FALLBACK_CATEGORY_KEY, t),
       rolePlayType: undefined,
       scenarios: fallbackScenarios,
     });
@@ -140,7 +147,7 @@ export const buildCategoriesFromPromptList = (
 
     categories.push({
       id: `${key.toLowerCase()}-${categories.length + 1}`,
-      title: formatRolePlayTypeLabel(key),
+      title: formatRolePlayTypeLabel(key, t),
       rolePlayType: key,
       scenarios,
     });

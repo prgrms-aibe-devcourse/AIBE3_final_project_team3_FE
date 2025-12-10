@@ -3,9 +3,11 @@
 import { ChevronLeft, ChevronRight, Eye, Trash2, X } from "lucide-react";
 import { MouseEvent, useState } from "react";
 
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useDeleteFriend } from "@/global/api/useFriendshipMutation";
 import { useFriendDetailQuery } from "@/global/api/useMemberQuery";
 import { useToastStore } from "@/global/stores/useToastStore";
+import { MemberProfileUpdateReq } from "@/global/types/member.types";
 
 import { useProfileTabs } from "./ProfileTabsProvider";
 
@@ -54,8 +56,25 @@ const resolveFriendCountry = (friend: FriendListItem) => {
   return friend.countryName || friend.country || "-";
 };
 
-const resolveFriendLevel = (friend: FriendListItem) => {
-  return friend.englishLevel || "-";
+type TranslateFn = (key: string, params?: Record<string, string>) => string;
+
+const ENGLISH_LEVEL_LABEL_KEYS: Record<MemberProfileUpdateReq["englishLevel"], string> = {
+  BEGINNER: "profile.info.englishLevels.BEGINNER",
+  INTERMEDIATE: "profile.info.englishLevels.INTERMEDIATE",
+  ADVANCED: "profile.info.englishLevels.ADVANCED",
+  NATIVE: "profile.info.englishLevels.NATIVE",
+};
+
+const translateEnglishLevel = (level: string | null | undefined, t: TranslateFn) => {
+  const normalized = level?.toString().toUpperCase() as MemberProfileUpdateReq["englishLevel"] | undefined;
+  if (normalized && ENGLISH_LEVEL_LABEL_KEYS[normalized]) {
+    return t(ENGLISH_LEVEL_LABEL_KEYS[normalized]);
+  }
+  return level || "-";
+};
+
+const resolveFriendLevel = (friend: FriendListItem, t: TranslateFn) => {
+  return translateEnglishLevel(friend.englishLevel, t);
 };
 
 const resolveFriendInitial = (friend: FriendListItem, index: number) => {
@@ -85,6 +104,7 @@ const formatLastSeen = (timestamp?: string | null) => {
 
 export function FriendRelationshipsPanel() {
   const { friendsQuery, friendPage, friendPageSize, setFriendPage } = useProfileTabs();
+  const { t } = useLanguage();
   const { data, isLoading, isFetching, error, refetch } = friendsQuery;
   const friends = (data?.items ?? []) as FriendListItem[];
   const deleteFriendMutation = useDeleteFriend();
@@ -129,7 +149,7 @@ export function FriendRelationshipsPanel() {
 
   const openFriendDetail = (friendId?: number) => {
     if (typeof friendId !== "number") {
-      addToast("친구 정보를 불러올 수 없습니다.", "error");
+      addToast(t("profile.friends.messages.detailsUnavailable"), "error");
       return;
     }
 
@@ -146,14 +166,14 @@ export function FriendRelationshipsPanel() {
     event.stopPropagation();
 
     const friendId = resolveFriendId(friend);
-    const friendName = friend.nickname || friend.name || "이 친구";
+    const friendName = friend.nickname || friend.name || t("profile.friends.messages.unknownFriend");
 
     if (typeof friendId !== "number") {
-      addToast("친구 ID를 확인할 수 없어 삭제할 수 없습니다.", "error");
+      addToast(t("profile.friends.messages.idMissing"), "error");
       return;
     }
 
-    if (!window.confirm(`${friendName}님과의 친구 관계를 삭제할까요?`)) {
+    if (!window.confirm(t("profile.friends.messages.confirmDelete", { name: friendName }))) {
       return;
     }
 
@@ -162,12 +182,12 @@ export function FriendRelationshipsPanel() {
       { friendId, opponentMemberId: friendId, refreshMembers: true },
       {
         onSuccess: () => {
-          addToast("친구를 삭제했습니다.", "success");
+          addToast(t("profile.friends.messages.deleteSuccess"), "success");
           setPendingDeleteId(null);
           refetch();
         },
         onError: (mutationError) => {
-          addToast(mutationError.message || "친구를 삭제하지 못했습니다.", "error");
+          addToast(mutationError.message || t("profile.friends.messages.deleteFailed"), "error");
           setPendingDeleteId(null);
         },
       },
@@ -202,21 +222,24 @@ export function FriendRelationshipsPanel() {
     <div className="bg-gray-800 border border-gray-600 rounded-lg p-6 shadow-sm">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-xl font-semibold text-white">Friend Relationships</h2>
-          <p className="text-sm text-gray-400">친구 목록과 온라인 상태를 한눈에 확인해요.</p>
+          <h2 className="text-xl font-semibold text-white">{t("profile.friends.title")}</h2>
+          <p className="text-sm text-gray-400">{t("profile.friends.subtitle")}</p>
         </div>
         <div className="text-right">
-          <p className="text-sm text-gray-400">총 {totalCount ?? 0}명</p>
-          {isFetching && !isLoading ? <p className="text-xs text-gray-500">업데이트 중...</p> : null}
+          <p className="text-sm text-gray-400">{t("profile.friends.total", { count: String(totalCount ?? 0) })}</p>
+          {isFetching && !isLoading ? <p className="text-xs text-gray-500">{t("profile.friends.updating")}</p> : null}
         </div>
       </div>
 
       {isLoading ? (
-        <p className="text-gray-300">친구 목록을 불러오는 중입니다...</p>
+        <p className="text-gray-300">{t("profile.friends.loading")}</p>
       ) : error ? (
-        <p className="text-red-400">친구 목록을 불러오지 못했습니다: {error.message}</p>
+        <p className="text-red-400">
+          {t("profile.friends.error")}
+          {error.message ? `: ${error.message}` : ""}
+        </p>
       ) : friends.length === 0 ? (
-        <p className="text-gray-400">등록된 친구가 없습니다.</p>
+        <p className="text-gray-400">{t("profile.friends.empty")}</p>
       ) : (
         <>
           <ul className="space-y-3">
@@ -239,7 +262,9 @@ export function FriendRelationshipsPanel() {
                       {friend.profileImageUrl ? (
                         <img
                           src={friend.profileImageUrl}
-                          alt={`${resolveFriendName(friend, index)} 프로필 이미지`}
+                          alt={t("profile.info.avatar.alt", {
+                            name: resolveFriendName(friend, index),
+                          })}
                           className="h-10 w-10 rounded-full object-cover border border-gray-700"
                           referrerPolicy="no-referrer"
                         />
@@ -251,12 +276,14 @@ export function FriendRelationshipsPanel() {
                       <div>
                         <p className="text-white font-medium">{resolveFriendName(friend, index)}</p>
                         <p className="text-xs text-gray-400">
-                          {resolveFriendCountry(friend)} · {resolveFriendLevel(friend)}
+                          {resolveFriendCountry(friend)} · {resolveFriendLevel(friend, t)}
                         </p>
                       </div>
                     </div>
                     <span className={`text-xs ${friend.isOnline ? "text-emerald-400" : "text-gray-400"}`}>
-                      {friend.isOnline ? "온라인" : "오프라인"}
+                      {friend.isOnline
+                        ? t("profile.friends.status.online")
+                        : t("profile.friends.status.offline")}
                     </span>
                   </div>
                   <div className="flex items-center justify-end gap-2">
@@ -267,7 +294,7 @@ export function FriendRelationshipsPanel() {
                       disabled={typeof friendId !== "number"}
                     >
                       <Eye className="h-4 w-4" />
-                      상세보기
+                      {t("profile.friends.buttons.details")}
                     </button>
                     <button
                       type="button"
@@ -276,7 +303,9 @@ export function FriendRelationshipsPanel() {
                       disabled={typeof friendId !== "number" || isDeleting}
                     >
                       <Trash2 className="h-4 w-4" />
-                      {isDeleting ? "삭제 중" : "친구 삭제"}
+                      {isDeleting
+                        ? t("profile.friends.buttons.removing")
+                        : t("profile.friends.buttons.remove")}
                     </button>
                   </div>
                 </li>
@@ -292,7 +321,7 @@ export function FriendRelationshipsPanel() {
               className="inline-flex items-center gap-1 px-4 py-2 rounded-lg border border-gray-600 text-gray-200 disabled:opacity-60"
             >
               <ChevronLeft className="h-4 w-4" />
-              이전
+              {t("profile.friends.buttons.previous")}
             </button>
             {pageNumbers.length > 0 ? (
               <div className="flex items-center gap-2">
@@ -315,9 +344,15 @@ export function FriendRelationshipsPanel() {
               </div>
             ) : null}
             <div className="text-sm text-gray-300">
-              페이지 {currentPage}
-              {typeof totalPages === "number" ? ` / ${Math.max(totalPages, 1)}` : ""}
-              <span className="ml-2 text-xs text-gray-500">(페이지당 {friendPageSize}명)</span>
+              {typeof totalPages === "number"
+                ? t("profile.friends.pagination.pageWithTotal", {
+                  current: String(currentPage),
+                  total: String(Math.max(totalPages, 1)),
+                })
+                : t("profile.friends.pagination.page", { current: String(currentPage) })}
+              <span className="ml-2 text-xs text-gray-500">
+                {t("profile.friends.pagination.perPage", { count: String(friendPageSize) })}
+              </span>
             </div>
             <button
               type="button"
@@ -325,7 +360,7 @@ export function FriendRelationshipsPanel() {
               disabled={!canGoNext}
               className="inline-flex items-center gap-1 px-4 py-2 rounded-lg border border-gray-600 text-gray-200 disabled:opacity-60"
             >
-              다음
+              {t("profile.friends.buttons.next")}
               <ChevronRight className="h-4 w-4" />
             </button>
           </div>
@@ -345,6 +380,7 @@ interface FriendDetailModalProps {
 
 function FriendDetailModal({ friendId, isOpen, onClose }: FriendDetailModalProps) {
   const { data, isLoading, error } = useFriendDetailQuery(friendId);
+  const { t } = useLanguage();
 
   if (!isOpen) {
     return null;
@@ -358,7 +394,7 @@ function FriendDetailModal({ friendId, isOpen, onClose }: FriendDetailModalProps
       >
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="text-lg font-semibold text-white">친구 상세 정보</h3>
+            <h3 className="text-lg font-semibold text-white">{t("profile.friends.modal.title")}</h3>
           </div>
           <button type="button" onClick={onClose} className="text-gray-400 hover:text-white">
             <X className="h-5 w-5" />
@@ -366,16 +402,19 @@ function FriendDetailModal({ friendId, isOpen, onClose }: FriendDetailModalProps
         </div>
 
         {isLoading ? (
-          <p className="text-gray-300">상세 정보를 불러오는 중입니다...</p>
+          <p className="text-gray-300">{t("profile.friends.messages.detailLoading")}</p>
         ) : error ? (
-          <p className="text-red-400">상세 정보를 불러오지 못했습니다: {error.message}</p>
+          <p className="text-red-400">
+            {t("profile.friends.messages.detailError")}
+            {error.message ? `: ${error.message}` : ""}
+          </p>
         ) : data ? (
           <div className="space-y-4">
             <div className="flex flex-col items-center text-center gap-3">
               {data.profileImageUrl ? (
                 <img
                   src={data.profileImageUrl}
-                  alt={`${data.nickname ?? "친구"} 프로필 이미지`}
+                  alt={t("profile.info.avatar.alt", { name: data.nickname ?? "" })}
                   className="h-20 w-20 rounded-full object-cover border-2 border-emerald-500/60"
                   referrerPolicy="no-referrer"
                 />
@@ -385,32 +424,34 @@ function FriendDetailModal({ friendId, isOpen, onClose }: FriendDetailModalProps
                 </div>
               )}
               <div>
-                <p className="text-sm text-gray-400">닉네임</p>
+                <p className="text-sm text-gray-400">{t("profile.friends.modal.fields.nickname")}</p>
                 <p className="text-xl text-white font-semibold">{data.nickname || "-"}</p>
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <p className="text-sm text-gray-400">국가</p>
+                <p className="text-sm text-gray-400">{t("profile.friends.modal.fields.country")}</p>
                 <p className="text-gray-200">{data.country || "-"}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-400">영어 레벨</p>
-                <p className="text-gray-200">{data.englishLevel || "-"}</p>
+                <p className="text-sm text-gray-400">{t("profile.friends.modal.fields.englishLevel")}</p>
+                <p className="text-gray-200">{translateEnglishLevel(data.englishLevel, t)}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-400">최근 온라인</p>
+                <p className="text-sm text-gray-400">{t("profile.friends.modal.fields.lastSeen")}</p>
                 <p className="text-gray-200">{formatLastSeen(data.lastSeenAt)}</p>
               </div>
             </div>
             <div>
-              <p className="text-sm text-gray-400 mb-1">소개</p>
+              <p className="text-sm text-gray-400 mb-1">{t("profile.friends.modal.fields.description")}</p>
               <p className="text-gray-200 whitespace-pre-line">
-                {data.description?.trim() ? data.description : "소개가 아직 등록되지 않았습니다."}
+                {data.description?.trim()
+                  ? data.description
+                  : t("profile.friends.messages.descriptionEmpty")}
               </p>
             </div>
             <div>
-              <p className="text-sm text-gray-400 mb-1">관심사</p>
+              <p className="text-sm text-gray-400 mb-1">{t("profile.friends.modal.fields.interests")}</p>
               {data.interests && data.interests.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                   {data.interests.map((interest, index) => (
@@ -420,12 +461,12 @@ function FriendDetailModal({ friendId, isOpen, onClose }: FriendDetailModalProps
                   ))}
                 </div>
               ) : (
-                <p className="text-gray-400 text-sm">등록된 관심사가 없습니다.</p>
+                <p className="text-gray-400 text-sm">{t("profile.friends.messages.interestsEmpty")}</p>
               )}
             </div>
           </div>
         ) : (
-          <p className="text-gray-300">표시할 친구 정보를 찾지 못했습니다.</p>
+          <p className="text-gray-300">{t("profile.friends.messages.detailEmpty")}</p>
         )}
       </div>
     </div>

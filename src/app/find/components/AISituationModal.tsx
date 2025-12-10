@@ -1,4 +1,5 @@
 // src/app/find/components/AISituationModal.tsx
+import { useLanguage } from "@/contexts/LanguageContext";
 import { RefreshCcw, X } from "lucide-react";
 import React from "react";
 import { AICategory, formatRolePlayTypeLabel } from "../constants/aiSituations";
@@ -24,9 +25,10 @@ const AISituationModal: React.FC<AISituationModalProps> = ({
   onRetry,
   headerTitle,
 }) => {
+  const { t } = useLanguage();
   if (!isOpen) return null;
 
-  const title = headerTitle ?? "AI 상황극 대화방 만들기";
+  const title = headerTitle ?? t('find.aiModals.situation.title');
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -40,7 +42,7 @@ const AISituationModal: React.FC<AISituationModalProps> = ({
           </div>
 
           {isLoading ? (
-            <div className="text-center text-gray-300 py-8">AI 프롬프트를 불러오는 중입니다...</div>
+            <div className="text-center text-gray-300 py-8">{t('find.aiModals.situation.loading')}</div>
           ) : categories.length > 0 ? (
             <div className="grid grid-cols-1 gap-4">
               {categories.map((category) => (
@@ -52,19 +54,19 @@ const AISituationModal: React.FC<AISituationModalProps> = ({
                   <h3 className="text-lg font-semibold mb-1">{category.title}</h3>
                   <div className="flex flex-wrap items-center gap-2 text-xs text-gray-400">
                     <span className="uppercase tracking-wide">
-                      {category.rolePlayType ?? "기타"}
+                      {category.rolePlayType ?? t('find.aiModals.situation.otherType')}
                     </span>
                     <span className="text-gray-500">·</span>
-                    <span>{formatRolePlayTypeLabel(category.rolePlayType)}</span>
+                    <span>{formatRolePlayTypeLabel(category.rolePlayType, t)}</span>
                     <span className="text-gray-500">·</span>
-                    <span>{category.scenarios.length}개의 프롬프트</span>
+                    <span>{t('find.aiModals.situation.promptCount', { count: String(category.scenarios.length) })}</span>
                   </div>
                 </button>
               ))}
             </div>
           ) : (
             <div className="text-center text-gray-300 py-8 space-y-4">
-              <p>사용 가능한 AI 프롬프트를 찾을 수 없습니다.</p>
+              <p>{t('find.aiModals.situation.empty')}</p>
               {errorMessage && <p className="text-sm text-red-400">{errorMessage}</p>}
               {onRetry && (
                 <button
@@ -72,7 +74,7 @@ const AISituationModal: React.FC<AISituationModalProps> = ({
                   onClick={onRetry}
                   className="inline-flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-white"
                 >
-                  <RefreshCcw size={16} /> 다시 시도
+                  <RefreshCcw size={16} /> {t('find.aiModals.situation.retry')}
                 </button>
               )}
             </div>

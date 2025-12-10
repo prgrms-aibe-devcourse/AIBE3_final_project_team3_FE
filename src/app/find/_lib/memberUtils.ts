@@ -14,25 +14,25 @@ type EnglishLevelKey = "BEGINNER" | "INTERMEDIATE" | "ADVANCED" | "NATIVE";
 
 const ENGLISH_LEVEL_META: Record<
   EnglishLevelKey,
-  { label: string; icon: string; badgeClass: string }
+  { labelKey: string; icon: string; badgeClass: string }
 > = {
   BEGINNER: {
-    label: "초급",
+    labelKey: "find.profile.englishLevels.BEGINNER",
     icon: "A1",
     badgeClass: "bg-emerald-900/40 text-emerald-200 border border-emerald-700/50",
   },
   INTERMEDIATE: {
-    label: "중급",
+    labelKey: "find.profile.englishLevels.INTERMEDIATE",
     icon: "B1",
     badgeClass: "bg-blue-900/30 text-blue-200 border border-blue-600/40",
   },
   ADVANCED: {
-    label: "고급",
+    labelKey: "find.profile.englishLevels.ADVANCED",
     icon: "C1",
     badgeClass: "bg-purple-900/30 text-purple-200 border border-purple-600/40",
   },
   NATIVE: {
-    label: "원어민",
+    labelKey: "find.profile.englishLevels.NATIVE",
     icon: "PRO",
     badgeClass: "bg-amber-900/30 text-amber-200 border border-amber-600/40",
   },
@@ -68,20 +68,22 @@ export const getPresenceMeta = (isOnline?: boolean) => ({
   label: isOnline ? "Online" : "Offline",
 });
 
-export const formatFriendSince = (value: string): string => {
+export const formatFriendSince = (value: string, locale = "ko-KR"): string => {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
     return value;
   }
 
-  return new Intl.DateTimeFormat("ko-KR", {
+  const resolvedLocale = typeof locale === "string" && locale.length > 0 ? locale : "ko-KR";
+
+  return new Intl.DateTimeFormat(resolvedLocale, {
     year: "numeric",
     month: "long",
     day: "numeric",
   }).format(date);
 };
 
-export const formatLastSeen = (value: string): string => {
+export const formatLastSeen = (value: string, locale = "ko-KR"): string => {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
     return value;
@@ -89,21 +91,23 @@ export const formatLastSeen = (value: string): string => {
 
   const diffMs = Date.now() - date.getTime();
   const diffMinutes = Math.max(Math.floor(diffMs / (1000 * 60)), 0);
+  const resolvedLocale = typeof locale === "string" && locale.length > 0 ? locale : "ko-KR";
+  const isKorean = resolvedLocale.toLowerCase().startsWith("ko");
 
   if (diffMinutes < 1) {
-    return "방금 전";
+    return isKorean ? "방금 전" : "just now";
   }
 
   if (diffMinutes < 60) {
-    return `${diffMinutes}분 전`;
+    return isKorean ? `${diffMinutes}분 전` : `${diffMinutes}m ago`;
   }
 
   const diffHours = Math.floor(diffMinutes / 60);
   if (diffHours < 24) {
-    return `${diffHours}시간 전`;
+    return isKorean ? `${diffHours}시간 전` : `${diffHours}h ago`;
   }
 
-  const formatted = new Intl.DateTimeFormat("ko-KR", {
+  const formatted = new Intl.DateTimeFormat(resolvedLocale, {
     month: "short",
     day: "numeric",
     hour: "2-digit",
@@ -114,17 +118,17 @@ export const formatLastSeen = (value: string): string => {
 };
 
 export const FRIENDSHIP_STATUS_LABELS: Record<FriendshipState, string> = {
-  FRIEND: "이미 친구",
-  REQUEST_SENT: "요청 전송됨",
-  REQUEST_RECEIVED: "요청 도착",
-  NONE: "친구 아님",
+  FRIEND: "find.profile.friendship.status.FRIEND",
+  REQUEST_SENT: "find.profile.friendship.status.REQUEST_SENT",
+  REQUEST_RECEIVED: "find.profile.friendship.status.REQUEST_RECEIVED",
+  NONE: "find.profile.friendship.status.NONE",
 };
 
 export const FRIENDSHIP_STATUS_DESCRIPTIONS: Record<FriendshipState, string> = {
-  FRIEND: "현재 서로 친구 상태입니다.",
-  REQUEST_SENT: "내가 보낸 친구 요청이 상대의 승인을 기다리고 있습니다.",
-  REQUEST_RECEIVED: "상대방이 보낸 친구 요청이 대기 중입니다.",
-  NONE: "아직 친구 요청이 오가거나 수락된 내역이 없습니다.",
+  FRIEND: "find.profile.friendship.descriptions.FRIEND",
+  REQUEST_SENT: "find.profile.friendship.descriptions.REQUEST_SENT",
+  REQUEST_RECEIVED: "find.profile.friendship.descriptions.REQUEST_RECEIVED",
+  NONE: "find.profile.friendship.descriptions.NONE",
 };
 
 export const FRIENDSHIP_BADGE_STYLE: Record<FriendshipState, string> = {

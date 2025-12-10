@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { ChangeEvent, useCallback, useEffect, useRef, useState } from "react";
 
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useDeleteMyAccount, useUpdateProfile, useUploadProfileImage } from "@/global/api/useMemberQuery";
 import { COUNTRY_OPTIONS, getCountryLabel } from "@/global/lib/countries";
 import { useLoginStore } from "@/global/stores/useLoginStore";
@@ -17,7 +18,7 @@ interface UserProfile {
   email: string;
   countryCode: string;
   countryName: string;
-  level: string;
+  level: MemberProfileUpdateReq["englishLevel"];
   description: string;
   interests: string[];
   profileImageUrl?: string;
@@ -47,11 +48,11 @@ const ENGLISH_LEVEL_OPTIONS: MemberProfileUpdateReq["englishLevel"][] = [
   "NATIVE",
 ];
 
-const ENGLISH_LEVEL_LABELS: Record<MemberProfileUpdateReq["englishLevel"], string> = {
-  BEGINNER: "Beginner",
-  INTERMEDIATE: "Intermediate",
-  ADVANCED: "Advanced",
-  NATIVE: "Native",
+const ENGLISH_LEVEL_LABEL_KEYS: Record<MemberProfileUpdateReq["englishLevel"], string> = {
+  BEGINNER: "profile.info.englishLevels.BEGINNER",
+  INTERMEDIATE: "profile.info.englishLevels.INTERMEDIATE",
+  ADVANCED: "profile.info.englishLevels.ADVANCED",
+  NATIVE: "profile.info.englishLevels.NATIVE",
 };
 
 const MAX_PROFILE_IMAGE_SIZE = 3 * 1024 * 1024;
@@ -131,6 +132,7 @@ export function ProfileInfoPanel() {
   const isSaving = updateProfileMutation.isPending;
   const isUploadingAvatar = uploadProfileImageMutation.isPending;
   const isDeletingAccount = deleteAccountMutation.isPending;
+  const { t } = useLanguage();
 
   const syncFormWithProfile = useCallback(
     (source?: typeof profileData) => {
@@ -172,19 +174,19 @@ export function ProfileInfoPanel() {
       .filter((value) => value.length > 0);
 
     if (!trimmedName || !trimmedNickname || !trimmedDescription) {
-      alert("이름, 닉네임, 자기소개는 필수 입력 항목입니다.");
+      alert(t("profile.info.alerts.requiredFields"));
       return;
     }
 
     if (sanitisedInterests.length === 0) {
-      alert("관심사를 최소 1개 이상 입력해주세요.");
+      alert(t("profile.info.alerts.interestsRequired"));
       return;
     }
 
     const countryCode = (editForm.country ?? "").trim().toUpperCase();
 
     if (!countryCode) {
-      alert("국가를 선택해주세요.");
+      alert(t("profile.info.alerts.countryRequired"));
       return;
     }
 
@@ -229,13 +231,13 @@ export function ProfileInfoPanel() {
     }
 
     if (!isSupportedImageFile(file)) {
-      alert("이미지 파일(jpg, jpeg, png, webp)만 업로드할 수 있습니다.");
+      alert(t("profile.info.alerts.unsupportedImage"));
       input.value = "";
       return;
     }
 
     if (file.size > MAX_PROFILE_IMAGE_SIZE) {
-      alert("이미지 파일은 최대 3MB까지 업로드할 수 있습니다.");
+      alert(t("profile.info.alerts.imageTooLarge"));
       input.value = "";
       return;
     }
@@ -287,16 +289,14 @@ export function ProfileInfoPanel() {
       return;
     }
 
-    const confirmed = window.confirm(
-      "정말로 계정을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.",
-    );
+    const confirmed = window.confirm(t("profile.info.alerts.deleteConfirm"));
     if (!confirmed) {
       return;
     }
 
     deleteAccountMutation.mutate(undefined, {
       onSuccess: () => {
-        alert("계정이 삭제되었습니다. 다시 이용하려면 새로 가입해주세요.");
+        alert(t("profile.info.alerts.deleteSuccess"));
         clearAccessToken();
         router.replace("/auth/login");
       },
@@ -312,9 +312,6 @@ export function ProfileInfoPanel() {
     }
 
     const englishLevel = profileData.englishLevel ?? "BEGINNER";
-    const levelLabel = ENGLISH_LEVEL_LABELS[
-      englishLevel as MemberProfileUpdateReq["englishLevel"]
-    ] ?? englishLevel;
     const legacyInterests = Array.isArray((profileData as { interest?: unknown }).interest)
       ? ((profileData as { interest?: string[] }).interest ?? [])
       : undefined;
@@ -332,7 +329,7 @@ export function ProfileInfoPanel() {
       email: profileData.email ?? accountEmail ?? "",
       countryCode,
       countryName,
-      level: levelLabel,
+      level: englishLevel as MemberProfileUpdateReq["englishLevel"],
       description: profileData.description ?? "",
       interests,
       profileImageUrl: profileData.profileImageUrl ?? "",
@@ -375,13 +372,13 @@ export function ProfileInfoPanel() {
       <div>
         <div className="bg-gray-800 rounded-lg shadow-sm border border-gray-600 p-6">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-semibold text-white">Profile Information</h2>
+            <h2 className="text-xl font-semibold text-white">{t("profile.info.sectionTitle")}</h2>
             {!isEditing ? (
               <button
                 onClick={() => setIsEditing(true)}
                 className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors"
               >
-                Edit Profile
+                {t("profile.info.actions.edit")}
               </button>
             ) : (
               <div className="flex gap-2">
@@ -390,13 +387,13 @@ export function ProfileInfoPanel() {
                   disabled={isSaving}
                   className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  {isSaving ? "Saving..." : "Save"}
+                  {isSaving ? t("profile.info.actions.saving") : t("profile.info.actions.save")}
                 </button>
                 <button
                   onClick={handleCancel}
                   className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
                 >
-                  Cancel
+                  {t("profile.info.actions.cancel")}
                 </button>
               </div>
             )}
@@ -405,7 +402,9 @@ export function ProfileInfoPanel() {
           <div className="space-y-4">
             <ProfileSummaryHeader
               imageUrl={displayProfileImageUrl}
-              imageAlt={`${profile.nickname || profile.name} profile`}
+              imageAlt={t("profile.info.avatar.alt", {
+                name: profile.nickname || profile.name || t("profile.info.labels.name"),
+              })}
               fallbackName={profile.nickname || profile.name}
               nickname={profile.nickname || "-"}
               name={profile.name}
@@ -427,7 +426,9 @@ export function ProfileInfoPanel() {
             />
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Name</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                {t("profile.info.labels.name")}
+              </label>
               {isEditing ? (
                 <input
                   type="text"
@@ -441,7 +442,9 @@ export function ProfileInfoPanel() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Nickname</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                {t("profile.info.labels.nickname")}
+              </label>
               {isEditing ? (
                 <input
                   type="text"
@@ -455,7 +458,9 @@ export function ProfileInfoPanel() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Email</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                {t("profile.info.labels.email")}
+              </label>
               {isEditing ? (
                 <>
                   <input
@@ -466,15 +471,17 @@ export function ProfileInfoPanel() {
                     className="w-full px-3 py-2 border border-gray-600 bg-gray-800 text-gray-400 rounded-lg cursor-not-allowed"
                     aria-readonly="true"
                   />
-                  <p className="text-xs text-gray-500 mt-1">이메일은 변경할 수 없습니다.</p>
+                  <p className="text-xs text-gray-500 mt-1">{t("profile.info.notes.emailReadOnly")}</p>
                 </>
               ) : (
-                <p className="text-gray-200">{resolvedEmail || "등록된 이메일이 없습니다."}</p>
+                <p className="text-gray-200">{resolvedEmail || t("profile.info.notes.emailMissing")}</p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">About Me</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                {t("profile.info.labels.about")}
+              </label>
               {isEditing ? (
                 <textarea
                   value={editForm.description}
@@ -484,20 +491,22 @@ export function ProfileInfoPanel() {
                 />
               ) : (
                 <p className="text-gray-200 whitespace-pre-line">
-                  {profile.description || "소개가 아직 등록되지 않았습니다."}
+                  {profile.description || t("profile.info.messages.descriptionEmpty")}
                 </p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Country</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                {t("profile.info.labels.country")}
+              </label>
               {isEditing ? (
                 <select
                   value={editForm.country}
                   onChange={(e) => setEditForm({ ...editForm, country: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-600 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 >
-                  <option value="">Select country</option>
+                  <option value="">{t("profile.info.placeholders.country")}</option>
                   {COUNTRY_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
                       {option.label}
@@ -512,7 +521,9 @@ export function ProfileInfoPanel() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">English Level</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                {t("profile.info.labels.englishLevel")}
+              </label>
               {isEditing ? (
                 <select
                   value={editForm.englishLevel ?? "BEGINNER"}
@@ -528,27 +539,31 @@ export function ProfileInfoPanel() {
                 >
                   {ENGLISH_LEVEL_OPTIONS.map((option) => (
                     <option key={option} value={option}>
-                      {ENGLISH_LEVEL_LABELS[option]}
+                      {t(ENGLISH_LEVEL_LABEL_KEYS[option])}
                     </option>
                   ))}
                 </select>
               ) : (
-                <p className="text-gray-200">{profile.level}</p>
+                <p className="text-gray-200">
+                  {t(ENGLISH_LEVEL_LABEL_KEYS[profile.level])}
+                </p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Interests</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                {t("profile.info.labels.interests")}
+              </label>
               {isEditing ? (
                 <div>
                   <input
                     type="text"
                     value={interestDraft}
                     onChange={(e) => setInterestDraft(e.target.value)}
-                    placeholder="예: 영화 감상, 러닝, 여행"
+                    placeholder={t("profile.info.placeholders.interests")}
                     className="w-full px-3 py-2 border border-gray-600 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
-                  <p className="text-xs text-gray-400 mt-1">복수의 관심사는 콤마(,)로 구분해서 입력해주세요.</p>
+                  <p className="text-xs text-gray-400 mt-1">{t("profile.info.helpers.interests")}</p>
                 </div>
               ) : profile.interests.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
@@ -562,19 +577,21 @@ export function ProfileInfoPanel() {
                   ))}
                 </div>
               ) : (
-                <p className="text-gray-400 text-sm">등록된 관심사가 없습니다.</p>
+                <p className="text-gray-400 text-sm">{t("profile.info.messages.interestsEmpty")}</p>
               )}
             </div>
 
             <div className="mt-8 border-t border-gray-700 pt-6">
-              <h3 className="text-sm font-semibold text-red-400 mb-2">위험 구역</h3>
-              <p className="text-sm text-gray-400 mb-4">계정을 삭제하면 채팅 기록과 설정이 복구 없이 제거됩니다.</p>
+              <h3 className="text-sm font-semibold text-red-400 mb-2">{t("profile.info.danger.title")}</h3>
+              <p className="text-sm text-gray-400 mb-4">{t("profile.info.danger.description")}</p>
               <button
                 onClick={handleDeleteAccount}
                 disabled={isDeletingAccount}
                 className="px-4 py-2 rounded-lg bg-red-600 text-white font-medium hover:bg-red-500 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                {isDeletingAccount ? "삭제 중..." : "계정 삭제"}
+                {isDeletingAccount
+                  ? t("profile.info.danger.deleting")
+                  : t("profile.info.danger.delete")}
               </button>
             </div>
           </div>
