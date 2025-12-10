@@ -18,7 +18,7 @@
     "axios": "^1.13.2",
     "jwt-decode": "^4.0.0",
     "lucide-react": "^0.553.0",
-    "next": "^14.2.33",
+    "next": "^16.0.8",
     "openapi-fetch": "^0.15.0",
     "react": "^18",
     "react-dom": "^18",
