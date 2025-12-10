@@ -289,9 +289,6 @@ export default function ChatWindow({
             <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-lg group-hover:ring-2 group-hover:ring-emerald-400 transition-all">
               {roomDetails.avatar}
             </div>
-            {roomDetails.type === "direct" && (
-              <span className="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full bg-green-500 border-2 border-gray-850"></span>
-            )}
           </div>
           <div className="ml-4 min-w-0 text-left">
             <h2 className="font-semibold text-white truncate group-hover:text-emerald-400 transition-colors">{roomDetails.name}</h2>

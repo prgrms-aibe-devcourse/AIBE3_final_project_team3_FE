@@ -1,8 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import ko from '../i18n/locales/ko.json';
-import en from '../i18n/locales/en.json';
+import ko from '../i18n/locales/chat/ko.json';
+import en from '../i18n/locales/chat/en.json';
 
 type Language = 'ko' | 'en';
 type Translations = typeof ko;

@@ -137,7 +137,6 @@ export default function ChatSidebar({
                 <Link
                   href={href}
                   key={room.id}
-                  onClick={() => setSelectedRoomId(room.id)}
                   className={`flex items-center p-3 rounded-lg cursor-pointer transition-colors ${selectedRoomId === room.id
                     ? "bg-emerald-600/20"
                     : "hover:bg-gray-700/50"
@@ -169,9 +168,6 @@ export default function ChatSidebar({
                         </div>
                       );
                     })()}
-                    {room.type === "direct" && (
-                      <span className="absolute bottom-0 right-0 block h-3 w-3 rounded-full bg-green-500 border-2 border-gray-800"></span>
-                    )}
                   </div>
                   <div className="ml-4 flex-1 min-w-0">
                     <div className="flex justify-between items-center">

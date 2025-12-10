@@ -7,7 +7,7 @@ import { AIChatRoomResp, DirectChatRoomResp, GroupChatRoomResp, MessageResp, Sub
 import type { IMessage } from "@stomp/stompjs";
 import { useQueryClient } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import ChatWindow from "../../_components/ChatWindow"; // Import the new component
 
 export default function ChatRoomPage() {
@@ -114,128 +114,133 @@ export default function ChatRoomPage() {
     }
   }, [data]);
 
+  const subscriptionRef = useRef<any>(null);
+
+  const setupSubscription = useCallback(() => {
+    const client = getStompClient();
+    const destination = `/topic/${chatRoomType}.rooms.${roomId}`;
+
+    console.log(`[WebSocket] Subscribing to: ${destination}`);
+
+    if (subscriptionRef.current) {
+      console.log(`[WebSocket] Already subscribed to ${destination}`);
+      return;
+    }
+
+    // 1. 통합 구독 (일반 메시지 + 번역 업데이트 + 상태 업데이트)
+    subscriptionRef.current = client.subscribe(
+      destination,
+      (message: IMessage) => {
+        const payload = JSON.parse(message.body);
+        
+        // 방 폐쇄 이벤트 처리
+        if (payload.type === "ROOM_CLOSED") {
+          console.log("[WebSocket] Room closed event received", payload);
+
+          alert(`'${payload.roomName}' 채팅방이 폐쇄되었습니다.\n사유: ${payload.reasonLabel}`);
+          window.location.reload();
+          return;
+        }
+        // 1. 번역 업데이트 이벤트 처리
+        if (payload.type === 'TRANSLATION_UPDATE') {
+           console.log(`[WebSocket] Received translation update:`, payload);
+           if (payload.messageId && payload.translatedContent) {
+              setMessages((prevMessages) =>
+                prevMessages.map((msg) =>
+                  msg.id === payload.messageId
+                    ? { ...msg, translatedContent: payload.translatedContent }
+                    : msg
+                )
+              );
+           }
+        }
+        // 2. 멤버 업데이트 이벤트 처리 (JOIN, LEAVE, KICK)
+        else if (['JOIN', 'LEAVE', 'KICK'].includes(payload.type)) {
+           console.log(`[WebSocket] Received member update:`, payload);
+           if (payload.subscriberCount !== undefined) setSubscriberCount(payload.subscriberCount);
+           if (payload.totalMemberCount !== undefined) setTotalMemberCount(payload.totalMemberCount);
+           
+           // 멤버 목록 갱신
+           if (chatRoomType === 'group') {
+                queryClient.invalidateQueries({ queryKey: ['chatRooms', 'group'] });
+           }
+        }
+        // 3. 구독자 수 업데이트 이벤트 처리
+        else if (payload.subscriberCount !== undefined && payload.totalMemberCount !== undefined) {
+          const countEvent = payload as SubscriberCountUpdateResp;
+          console.log(`[WebSocket] Received subscriber count event:`, countEvent);
+          setSubscriberCount(countEvent.subscriberCount);
+          setTotalMemberCount(countEvent.totalMemberCount);
+        }
+        // 3. UnreadCount 업데이트 이벤트 처리
+        else if (payload.updates !== undefined) {
+          const updateEvent = payload as UnreadCountUpdateEvent;
+          console.log(`🔔 [WebSocket UNREAD UPDATE] Received ${updateEvent.updates.length} updates`);
+
+          setMessages((prevMessages) => {
+            const updateMap = new Map(updateEvent.updates.map(u => [u.messageId, u.unreadCount]));
+            return prevMessages.map((msg) => {
+              const newCount = updateMap.get(msg.id);
+              if (newCount !== undefined) {
+                return { ...msg, unreadCount: newCount };
+              }
+              return msg;
+            });
+          });
+        } 
+        // 4. 일반 메시지 처리
+        else {
+          const receivedMessage = payload as MessageResp;
+          console.log(`[WebSocket] Received message:`, receivedMessage);
+          setMessages((prevMessages) =>
+            [...prevMessages, receivedMessage].sort((a, b) => (a.sequence || 0) - (b.sequence || 0))
+          );
+
+          // 방장 위임 시스템 메시지인 경우 채팅방 정보 업데이트
+          if (receivedMessage.messageType === 'SYSTEM' && receivedMessage.content) {
+            try {
+              const systemMsg = JSON.parse(receivedMessage.content);
+              if (systemMsg.type === 'OWNER_CHANGED') {
+                console.log('[WebSocket] Owner changed, refetching room info');
+                queryClient.invalidateQueries({ queryKey: ['chatRooms', chatRoomType] });
+              }
+            } catch (e) {
+              // Not a JSON system message, ignore
+            }
+          }
+          // Note: 방 리스트 업데이트는 layout.tsx의 /user/{userId}/queue/rooms/update 구독에서 처리됨
+        }
+      }
+    );
+
+    console.log(`[WebSocket] Subscription created for room ${roomId}`);
+  }, [chatRoomType, roomId, queryClient]);
+
   useEffect(() => {
     if (!roomId || !member || !chatRoomType || !accessToken) return;
 
     console.log(`[WebSocket Setup] Starting for roomId=${roomId}, memberId=${member.id}, type=${chatRoomType}`);
 
-    let subscription: any = null;
-    let isCleanedUp = false;
-
-    const setupSubscription = () => {
-      const client = getStompClient();
-      const destination = `/topic/${chatRoomType}/rooms/${roomId}`;
-
-      console.log(`[WebSocket] Subscribing to: ${destination}`);
-      console.log(`[WebSocket] Client connected: ${client.connected}, Session ID (internal): ${client.webSocket ? 'connected' : 'not connected'}`);
-
-      // 이미 cleanup되었으면 구독하지 않음
-      if (isCleanedUp) {
-        console.log(`[WebSocket] Component unmounted, skipping subscription`);
-        return;
-      }
-
-      // 1. 통합 구독 (일반 메시지 + 번역 업데이트 + 상태 업데이트)
-      subscription = client.subscribe(
-        destination,
-        (message: IMessage) => {
-          const payload = JSON.parse(message.body);
-          
-          // 방 폐쇄 이벤트 처리
-          if (payload.type === "ROOM_CLOSED") {
-            console.log("[WebSocket] Room closed event received", payload);
-
-            alert(`'${payload.roomName}' 채팅방이 폐쇄되었습니다.\n사유: ${payload.reasonLabel}`);
-            window.location.reload();
-            return;
-          }
-          // 1. 번역 업데이트 이벤트 처리
-          if (payload.type === 'TRANSLATION_UPDATE') {
-             console.log(`[WebSocket] Received translation update:`, payload);
-             if (payload.messageId && payload.translatedContent) {
-                setMessages((prevMessages) =>
-                  prevMessages.map((msg) =>
-                    msg.id === payload.messageId
-                      ? { ...msg, translatedContent: payload.translatedContent }
-                      : msg
-                  )
-                );
-             }
-          }
-          // 2. 멤버 업데이트 이벤트 처리 (JOIN, LEAVE, KICK)
-          else if (['JOIN', 'LEAVE', 'KICK'].includes(payload.type)) {
-             console.log(`[WebSocket] Received member update:`, payload);
-             if (payload.subscriberCount !== undefined) setSubscriberCount(payload.subscriberCount);
-             if (payload.totalMemberCount !== undefined) setTotalMemberCount(payload.totalMemberCount);
-             
-             // 멤버 목록 갱신
-             if (chatRoomType === 'group') {
-                queryClient.invalidateQueries({ queryKey: ['chatRooms', 'group'] });
-             }
-          }
-          // 3. 구독자 수 업데이트 이벤트 처리
-          else if (payload.subscriberCount !== undefined && payload.totalMemberCount !== undefined) {
-            const countEvent = payload as SubscriberCountUpdateResp;
-            console.log(`[WebSocket] Received subscriber count event:`, countEvent);
-            setSubscriberCount(countEvent.subscriberCount);
-            setTotalMemberCount(countEvent.totalMemberCount);
-          }
-          // 3. UnreadCount 업데이트 이벤트 처리
-          else if (payload.updates !== undefined) {
-            const updateEvent = payload as UnreadCountUpdateEvent;
-            console.log(`🔔 [WebSocket UNREAD UPDATE] Received ${updateEvent.updates.length} updates`);
-
-            setMessages((prevMessages) => {
-              const updateMap = new Map(updateEvent.updates.map(u => [u.messageId, u.unreadCount]));
-              return prevMessages.map((msg) => {
-                const newCount = updateMap.get(msg.id);
-                if (newCount !== undefined) {
-                  return { ...msg, unreadCount: newCount };
-                }
-                return msg;
-              });
-            });
-          } 
-          // 4. 일반 메시지 처리
-          else {
-            const receivedMessage = payload as MessageResp;
-            console.log(`[WebSocket] Received message:`, receivedMessage);
-            setMessages((prevMessages) =>
-              [...prevMessages, receivedMessage].sort((a, b) => (a.sequence || 0) - (b.sequence || 0))
-            );
-
-            // 방장 위임 시스템 메시지인 경우 채팅방 정보 업데이트
-            if (receivedMessage.messageType === 'SYSTEM' && receivedMessage.content) {
-              try {
-                const systemMsg = JSON.parse(receivedMessage.content);
-                if (systemMsg.type === 'OWNER_CHANGED') {
-                  console.log('[WebSocket] Owner changed, refetching room info');
-                  queryClient.invalidateQueries({ queryKey: ['chatRooms', chatRoomType] });
-                }
-              } catch (e) {
-                // Not a JSON system message, ignore
-              }
-            }
-            // Note: 방 리스트 업데이트는 layout.tsx의 /user/{userId}/topic/rooms/update 구독에서 처리됨
-          }
-        }
-      );
-
-      console.log(`[WebSocket] Subscription created for room ${roomId}`);
-    };
-
     connect(accessToken, setupSubscription);
 
+    // 안전장치: 1초 후에도 구독이 안 되어 있다면 재시도 (새로고침 직후 연결 불안정 해결)
+    const retryTimer = setTimeout(() => {
+      if (!subscriptionRef.current) {
+        console.warn(`[WebSocket] Subscription not established after 1s. Retrying...`);
+        connect(accessToken, setupSubscription);
+      }
+    }, 1000);
+
     return () => {
+      clearTimeout(retryTimer);
       console.log(`[WebSocket Cleanup] Starting cleanup for roomId=${roomId}, memberId=${member.id}`);
-      isCleanedUp = true;
-      if (subscription) {
-        subscription.unsubscribe();
-        subscription = null;
+      if (subscriptionRef.current) {
+        subscriptionRef.current.unsubscribe();
+        subscriptionRef.current = null;
       }
       console.log(`[WebSocket Cleanup] Unsubscribed successfully from room ${roomId}`);
     };
-  }, [roomId, member, chatRoomType, accessToken, queryClient]);
+  }, [roomId, member, chatRoomType, accessToken, setupSubscription]);
 
   const handleSendMessage = (message: { text: string; isTranslateEnabled: boolean }) => {
     if (message.text.trim() === "" || !member) {
@@ -259,9 +264,14 @@ export default function ChatRoomPage() {
       });
     } else {
       console.error("Client is not connected. Attempting to reconnect...");
-      connect(accessToken, () => {
-        alert("채팅 서버와 다시 연결되었습니다. 메시지를 다시 전송해주세요.");
-      });
+      if (accessToken) {
+        connect(accessToken, () => {
+          setupSubscription();
+          alert("채팅 서버와 다시 연결되었습니다. 메시지를 다시 전송해주세요.");
+        });
+      } else {
+        console.error("Cannot reconnect: No access token available");
+      }
     }
   };
 
