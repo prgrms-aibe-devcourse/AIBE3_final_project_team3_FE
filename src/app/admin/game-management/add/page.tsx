@@ -1,11 +1,11 @@
 "use client";
 
+import {
+  useSentenceGameCreateMutation,
+  useSentenceGameNoteQuery,
+} from "@/global/api/useAdminGameQuery";
 import { useState } from "react";
 import AdminGuard from "../../AdminGuard";
-import {
-  useSentenceGameNoteQuery,
-  useSentenceGameCreateMutation,
-} from "@/global/api/useAdminGameQuery";
 
 export default function GameAddPage() {
   const [page, setPage] = useState(0);
@@ -16,7 +16,11 @@ export default function GameAddPage() {
   const available = data?.content ?? [];
 
   const add = (note: any) => {
-    createMutation.mutate(note.id,
+    createMutation.mutate(
+      {
+        originalContent: note.originalContent,
+        correctedContent: note.correctedContent,
+      },
       {
         onSuccess: () => {
           alert("게임 문장으로 추가되었습니다.");
@@ -62,7 +66,7 @@ export default function GameAddPage() {
           {!isLoading && available.length > 0 && (
             <div className="overflow-x-auto">
               <table className="w-full">
-                
+
                 {/* 테이블 헤더 */}
                 <thead className="bg-gray-700 border-b border-gray-600">
                   <tr>
@@ -117,11 +121,10 @@ export default function GameAddPage() {
               <button
                 key={p}
                 onClick={() => setPage(p)}
-                className={`px-3 py-1 rounded text-sm ${
-                  p === currentPage
+                className={`px-3 py-1 rounded text-sm ${p === currentPage
                     ? "bg-indigo-600 text-white"
                     : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                }`}
+                  }`}
               >
                 {p + 1}
               </button>

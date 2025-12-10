@@ -1,21 +1,20 @@
 import apiClient from "@/global/backend/client";
 import { unwrap } from "@/global/backend/unwrap";
-import { API_BASE_URL } from "../consts";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
+import { API_BASE_URL } from "../consts";
 import { useLoginStore } from "../stores/useLoginStore";
 import {
-  AIChatRoomResp,
-  AiFeedbackReq,
-  AiFeedbackResp,
-  ChatRoomPageDataResp,
-  ChatRoomResp,
-  CreateAIChatReq,
-  CreateGroupChatReq,
-  InviteGroupChatReq,
-  DirectChatRoomResp,
-  GroupChatRoomResp,
-  MessageResp,
+    AIChatRoomResp,
+    AiFeedbackReq,
+    AiFeedbackResp,
+    ChatRoomPageDataResp,
+    ChatRoomResp,
+    CreateAIChatReq,
+    CreateGroupChatReq,
+    DirectChatRoomResp,
+    GroupChatRoomResp,
+    MessageResp
 } from "../types/chat.types";
 
 // --- Type Definitions ---
@@ -324,14 +323,22 @@ interface InviteMemberVariables {
 }
 
 const inviteMember = async ({ roomId, targetMemberId }: InviteMemberVariables): Promise<void> => {
-  const response = await apiClient.POST("/api/v1/chats/rooms/group/{roomId}/invite", {
-    params: {
-      path: { roomId },
+  const { accessToken } = useLoginStore.getState();
+  const url = new URL(`/api/v1/chats/rooms/group/${roomId}/invite`, API_BASE_URL);
+  const response = await fetch(url.toString(), {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
     },
-    body: { targetMemberId },
+    body: JSON.stringify({ targetMemberId }),
   });
 
-  await unwrap(response);
+  if (!response.ok) {
+    const errorJson = await response.json().catch(() => null);
+    throw new Error(errorJson?.msg || "멤버 초대에 실패했습니다.");
+  }
 };
 
 export const useInviteMemberMutation = () => {
@@ -507,13 +514,22 @@ interface UpdateGroupChatPasswordVariables {
 }
 
 const updateGroupChatPassword = async ({ roomId, newPassword }: UpdateGroupChatPasswordVariables): Promise<void> => {
-  const response = await apiClient.PATCH("/api/v1/chats/rooms/group/{roomId}/password", {
-    params: {
-      path: { roomId },
+  const { accessToken } = useLoginStore.getState();
+  const url = new URL(`/api/v1/chats/rooms/group/${roomId}/password`, API_BASE_URL);
+  const response = await fetch(url.toString(), {
+    method: "PATCH",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
     },
-    body: { newPassword },
+    body: JSON.stringify({ newPassword }),
   });
-  await unwrap(response);
+
+  if (!response.ok) {
+    const errorJson = await response.json().catch(() => null);
+    throw new Error(errorJson?.msg || "비밀번호 변경에 실패했습니다.");
+  }
 };
 
 export const useUpdateGroupChatPasswordMutation = () => {
