@@ -501,6 +501,37 @@ export const useTransferOwnershipMutation = () => {
   });
 };
 
+interface UpdateGroupChatPasswordVariables {
+  roomId: number;
+  newPassword: string;
+}
+
+const updateGroupChatPassword = async ({ roomId, newPassword }: UpdateGroupChatPasswordVariables): Promise<void> => {
+  const response = await apiClient.PATCH("/api/v1/chats/rooms/group/{roomId}/password", {
+    params: {
+      path: { roomId },
+    },
+    body: { newPassword },
+  });
+  await unwrap(response);
+};
+
+export const useUpdateGroupChatPasswordMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, UpdateGroupChatPasswordVariables>({
+    mutationFn: updateGroupChatPassword,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["chatRooms", "group"] });
+      queryClient.invalidateQueries({ queryKey: ["chatRooms", "group", "public"] });
+      alert("비밀번호가 변경되었습니다.");
+    },
+    onError: (error) => {
+      console.error("Failed to update password:", error);
+      alert(`비밀번호 변경에 실패했습니다: ${error.message}`);
+    },
+  });
+};
+
 // --- AI Feedback Mutation ---
 
 const fetchAiFeedback = async (req: AiFeedbackReq): Promise<AiFeedbackResp> => {
