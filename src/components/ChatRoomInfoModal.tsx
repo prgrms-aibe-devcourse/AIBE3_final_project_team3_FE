@@ -1,11 +1,12 @@
 "use client";
 
 import Image, { ImageLoaderProps } from "next/image";
-import { X, Users, Lock, Calendar, Crown, UserPlus, MessageSquare, ShieldAlert, Hash } from "lucide-react";
+import { X, Users, Lock, Calendar, Crown, UserPlus, MessageSquare, ShieldAlert, Hash, Key } from "lucide-react";
 import { ChatRoomMember } from "@/global/types/chat.types";
 import { useState } from "react";
 import MemberProfileModal from "./MemberProfileModal";
 import { useSendFriendRequest } from "@/global/api/useFriendshipMutation";
+import { useUpdateGroupChatPasswordMutation } from "@/global/api/useChatQuery";
 import { useToastStore } from "@/global/stores/useToastStore";
 import ReportModal from "./ReportModal";
 
@@ -45,6 +46,12 @@ export default function ChatRoomInfoModal({
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [failedMemberAvatarIds, setFailedMemberAvatarIds] = useState<Set<number>>(new Set());
   const [isPartnerAvatarError, setIsPartnerAvatarError] = useState(false);
+
+  // Password Change State
+  const [isPasswordChangeModalOpen, setIsPasswordChangeModalOpen] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const { mutate: updatePassword } = useUpdateGroupChatPasswordMutation();
+
   const { mutate: sendFriendRequest } = useSendFriendRequest();
   const { addToast } = useToastStore();
 
@@ -92,6 +99,25 @@ export default function ChatRoomInfoModal({
       next.add(memberId);
       return next;
     });
+  };
+
+  const handlePasswordUpdate = () => {
+    if (!newPassword.trim()) {
+        if (!confirm("비밀번호를 비워두면 공개방으로 전환됩니다. 계속하시겠습니까?")) {
+            return;
+        }
+    }
+    
+    updatePassword(
+      { roomId: roomDetails.id, newPassword: newPassword.trim() },
+      {
+        onSuccess: () => {
+          setIsPasswordChangeModalOpen(false);
+          setNewPassword("");
+          // Toast or Alert is handled by mutation hook
+        },
+      }
+    );
   };
 
   return (
@@ -178,7 +204,29 @@ export default function ChatRoomInfoModal({
                   {roomDetails.hasPassword && (
                     <div className="flex items-center gap-2 text-sm">
                       <Lock size={16} className="text-red-400" />
-                      <span className="text-gray-400">비밀번호로 보호된 방</span>
+                      {isOwner ? (
+                        <button 
+                            onClick={() => setIsPasswordChangeModalOpen(true)}
+                            className="text-gray-400 hover:text-emerald-400 transition-colors"
+                        >
+                            비밀번호 설정됨 (변경하려면 클릭)
+                        </button>
+                      ) : (
+                        <span className="text-gray-400">비밀번호 설정됨</span>
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* Password Set Option for Owner if no password */}
+                  {!roomDetails.hasPassword && isOwner && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Lock size={16} className="text-gray-500" />
+                      <button 
+                          onClick={() => setIsPasswordChangeModalOpen(true)}
+                          className="text-gray-400 hover:text-emerald-400 transition-colors"
+                      >
+                          비밀번호 설정하기
+                      </button>
                     </div>
                   )}
 
@@ -312,6 +360,62 @@ export default function ChatRoomInfoModal({
           </div>
         </div>
       </div>
+
+      {/* Password Change Modal */}
+      {isPasswordChangeModalOpen && (
+        <div 
+            className="fixed inset-0 bg-black bg-opacity-80 z-[60] flex items-center justify-center p-4"
+            onClick={() => setIsPasswordChangeModalOpen(false)}
+        >
+            <div 
+                className="bg-gray-800 rounded-xl shadow-2xl w-full max-w-sm p-6"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                        <Key size={20} className="text-emerald-400" />
+                        비밀번호 변경
+                    </h3>
+                    <button 
+                        onClick={() => setIsPasswordChangeModalOpen(false)}
+                        className="text-gray-400 hover:text-white"
+                    >
+                        <X size={20} />
+                    </button>
+                </div>
+                
+                <p className="text-sm text-gray-400 mb-4">
+                    새로운 비밀번호를 입력하세요. <br/>
+                    <span className="text-xs text-yellow-500/80 mt-1 block">
+                        * 비워두면 비밀번호가 제거되어 공개방이 됩니다.
+                    </span>
+                </p>
+
+                <input
+                    type="text"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="새 비밀번호 입력"
+                    className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 mb-4"
+                />
+
+                <div className="flex justify-end gap-2">
+                    <button
+                        onClick={() => setIsPasswordChangeModalOpen(false)}
+                        className="px-4 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 text-sm"
+                    >
+                        취소
+                    </button>
+                    <button
+                        onClick={handlePasswordUpdate}
+                        className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-semibold"
+                    >
+                        저장
+                    </button>
+                </div>
+            </div>
+        </div>
+      )}
 
       {/* Member Profile Modal */}
       {selectedMemberForProfile && (
