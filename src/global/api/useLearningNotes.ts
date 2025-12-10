@@ -28,9 +28,9 @@ export type FlattenFeedbackNote = {
   feedback: Feedback;
 };
 
-type LearningTag = "Grammar" | "Vocabulary" | "Translation";
+type LearningTag = "ALL" | "Grammar" | "Vocabulary" | "Translation";
 type LearningFilter = "all" | "completed" | "incomplete";
-type LearningTagParam = "GRAMMAR" | "VOCABULARY" | "TRANSLATION";
+type LearningTagParam = "ALL" | "GRAMMAR" | "VOCABULARY" | "TRANSLATION";
 type LearningFilterParam = "ALL" | "LEARNED" | "UNLEARNED";
 
 export interface CreateFeedbackReq {
@@ -63,6 +63,8 @@ const mapFilter = (f: LearningFilter): LearningFilterParam => {
 
 const mapTag = (tag: LearningTag): LearningTagParam => {
   switch (tag) {
+    case "ALL":
+      return "ALL";
     case "Grammar":
       return "GRAMMAR";
     case "Vocabulary":
