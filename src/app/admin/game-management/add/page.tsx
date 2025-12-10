@@ -16,11 +16,7 @@ export default function GameAddPage() {
   const available = data?.content ?? [];
 
   const add = (note: any) => {
-    createMutation.mutate(
-      {
-        originalContent: note.originalContent,
-        correctedContent: note.correctedContent,
-      },
+    createMutation.mutate(note.id,
       {
         onSuccess: () => {
           alert("게임 문장으로 추가되었습니다.");

@@ -62,8 +62,10 @@ export async function fetchSentenceGameNoteList(page: number) {
 }
 
 // 2) 문장게임 문장 등록 (그대로 apiClient 사용)
-export async function createSentenceGame(data: { learningNoteId: number }) {
-  const res = await apiClient.POST("/api/v1/admin/sentence-game", { body: data });
+export async function createSentenceGame( learningNoteId: number ) {
+  const res = await apiClient.POST("/api/v1/admin/sentence-game", {
+     body: {learningNoteId},
+    });
 
   return unwrap(res);
 }
@@ -131,9 +133,10 @@ export function useSentenceGameNoteQuery(page: number) {
 export function useSentenceGameCreateMutation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: createSentenceGame,
+     mutationFn: (learningNoteId: number) => createSentenceGame(learningNoteId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["sentenceGameList"] });
+      qc.invalidateQueries({ queryKey: ["sentenceGameNoteList"] });
     },
   });
 }

@@ -73,6 +73,7 @@
       <updated>1764681555149</updated>
       <workItem from="1764681556282" duration="963000" />
       <workItem from="1765343147792" duration="161000" />
+      <workItem from="1765344454023" duration="99000" />
     </task>
     <task id="LOCAL-00001" summary="Merge branch 'main' into fix/learning-cors">
       <option name="closed" value="true" />
@@ -98,7 +99,15 @@
       <option name="project" value="LOCAL" />
       <updated>1765343289974</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="Merge branch 'main' into refactor/learning-notes">
+      <option name="closed" value="true" />
+      <created>1765344502226</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1765344502226</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">

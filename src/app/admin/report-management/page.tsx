@@ -10,7 +10,6 @@ import AdminGuard from "../AdminGuard";
 
 const statusColors: Record<ReportStatus, string> = {
   WAITING: "bg-yellow-800 text-yellow-200",
-  REVIEWING: "bg-blue-800 text-blue-200",
   APPROVED: "bg-green-800 text-green-200",
   REJECTED: "bg-red-800 text-red-200",
 };
@@ -109,15 +108,21 @@ export default function ReportManagementPage() {
                       </td>
 
                       <td className="px-4 py-3 whitespace-nowrap">
-                        <button
-                          onClick={() => {
-                            setSelected(report);
-                            setNewStatus(report.status);
-                          }}
-                          className="px-3 py-1 bg-blue-700 text-white rounded text-xs hover:bg-blue-600"
-                        >
-                          상태 변경
-                        </button>
+                       <button
+                        disabled={report.status !== "WAITING"}
+                        onClick={() => {
+                          if (report.status !== "WAITING") return; // 안정성 체크
+                          setSelected(report);
+                          setNewStatus(report.status);
+                        }}
+                        className={`px-3 py-1 rounded text-xs ${
+                          report.status === "WAITING"
+                            ? "bg-blue-700 text-white hover:bg-blue-600"
+                            : "bg-gray-600 text-gray-400 cursor-not-allowed"
+                        }`}
+                      >
+                        상태 변경
+                      </button>
                       </td>
                     </tr>
                   ))}
@@ -210,7 +215,6 @@ export default function ReportManagementPage() {
                   className="w-full border border-gray-600 rounded-md p-2 bg-gray-700 text-gray-200"
                 >
                   <option value="WAITING">WAITING</option>
-                  <option value="REVIEWING">REVIEWING</option>
                   <option value="APPROVED">APPROVED</option>
                   <option value="REJECTED">REJECTED</option>
                 </select>
