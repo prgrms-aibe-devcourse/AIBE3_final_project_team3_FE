@@ -1,9 +1,9 @@
 import apiClient from "@/global/backend/client";
 import type { components } from "@/global/backend/schema";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { unwrap } from "../backend/unwrap";
 import { API_BASE_URL } from "@/global/consts";
 import { useLoginStore } from "@/global/stores/useLoginStore";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { unwrap } from "../backend/unwrap";
 
 type SentenceGameItem = {
   id: number;
@@ -19,6 +19,7 @@ type SentenceGameListResponse = {
 };
 
 type SentenceGameNotePage = components["schemas"]["PageAdminSentenceGameNoteResp"];
+type AdminSentenceGameCreateReq = components["schemas"]["AdminSentenceGameCreateReq"];
 
 const normalisePage = (page: number): number =>
   Number.isFinite(page) && page >= 0 ? Math.floor(page) : 0;
@@ -62,10 +63,7 @@ export async function fetchSentenceGameNoteList(page: number) {
 }
 
 // 2) 문장게임 문장 등록 (그대로 apiClient 사용)
-export async function createSentenceGame(data: {
-  originalContent: string;
-  correctedContent: string;
-}) {
+export async function createSentenceGame(data: AdminSentenceGameCreateReq) {
   const res = await apiClient.POST("/api/v1/admin/sentence-game", { body: data });
 
   return unwrap(res);

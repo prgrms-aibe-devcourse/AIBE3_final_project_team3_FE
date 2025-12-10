@@ -54,7 +54,7 @@ export default function MemberGrid({ members = [], source }: MemberGridProps) {
             <div className="mb-3">
               <p className="text-xs font-semibold text-gray-400 mb-1">INTERESTS</p>
               <div className="flex flex-wrap gap-1">
-                {interests.slice(0, 3).map((interest, index) => (
+                {interests.slice(0, 3).map((interest: string, index: number) => (
                   <span
                     key={`${user.id}-interest-${index}`}
                     className="px-2 py-1 bg-emerald-600 text-white text-xs rounded-full"

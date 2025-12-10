@@ -20,6 +20,37 @@ import { AICategory, AIScenario, buildCategoriesFromPromptList } from "./constan
 
 type ActiveTab = "1v1" | "friends" | "group" | "ai";
 const DEFAULT_PAGE_SIZE = 15;
+const MAX_PAGE_LINKS = 5;
+
+const buildPageNumbers = (currentPage: number, totalPages?: number | null, maxLinks = MAX_PAGE_LINKS) => {
+  if (typeof totalPages !== "number" || totalPages <= 0) {
+    return [];
+  }
+
+  if (totalPages <= maxLinks) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1);
+  }
+
+  const offset = Math.floor(maxLinks / 2);
+  let start = currentPage - offset;
+  let end = currentPage + offset;
+
+  if (maxLinks % 2 === 0) {
+    end -= 1;
+  }
+
+  if (start < 1) {
+    end += 1 - start;
+    start = 1;
+  }
+
+  if (end > totalPages) {
+    start -= end - totalPages;
+    end = totalPages;
+  }
+
+  return Array.from({ length: maxLinks }, (_, index) => start + index);
+};
 
 function FindPageContent() {
   const [showOnlineOnly, setShowOnlineOnly] = useState(false);
@@ -38,6 +69,17 @@ function FindPageContent() {
   const displayedPageNumber = isRefetching
     ? currentPage
     : (memberPage?.pageIndex ?? pageIndex) + 1;
+  const memberTotalPages = memberPage?.totalPages ?? null;
+  const derivedMemberTotalPages = (() => {
+    if (typeof memberTotalPages === "number" && memberTotalPages > 0) {
+      return memberTotalPages;
+    }
+    if (typeof memberPage?.totalElements === "number") {
+      return Math.max(Math.ceil(memberPage.totalElements / DEFAULT_PAGE_SIZE), 1);
+    }
+    return null;
+  })();
+  const memberPageNumbers = buildPageNumbers(currentPage, derivedMemberTotalPages);
 
   const [friendPage, setFriendPage] = useState(1);
   const friendPageIndex = Math.max(friendPage - 1, 0);
@@ -62,6 +104,17 @@ function FindPageContent() {
   })();
   const canFriendGoPrev = friendHasPrevPage && !isFriendInitialLoading;
   const canFriendGoNext = friendHasNextPage && !isFriendInitialLoading;
+  const friendTotalPages = friendPageData?.totalPages ?? null;
+  const derivedFriendTotalPages = (() => {
+    if (typeof friendTotalPages === "number" && friendTotalPages > 0) {
+      return friendTotalPages;
+    }
+    if (typeof friendPageData?.totalElements === "number") {
+      return Math.max(Math.ceil(friendPageData.totalElements / friendPageSize), 1);
+    }
+    return null;
+  })();
+  const friendPageNumbers = buildPageNumbers(friendPage, derivedFriendTotalPages);
 
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -109,6 +162,30 @@ function FindPageContent() {
     } else if (activeTab === "ai") {
       openAiCreationFlow();
     }
+  };
+
+  const handleSelectMemberPage = (targetPage: number) => {
+    if (targetPage < 1 || targetPage === currentPage) {
+      return;
+    }
+
+    if (typeof derivedMemberTotalPages === "number" && targetPage > derivedMemberTotalPages) {
+      return;
+    }
+
+    setCurrentPage(targetPage);
+  };
+
+  const handleSelectFriendPage = (targetPage: number) => {
+    if (targetPage < 1 || targetPage === friendPage) {
+      return;
+    }
+
+    if (typeof derivedFriendTotalPages === "number" && targetPage > derivedFriendTotalPages) {
+      return;
+    }
+
+    setFriendPage(targetPage);
   };
 
   const handleSelectAIRoomType = (roomType: AiChatRoomType) => {
@@ -182,7 +259,7 @@ function FindPageContent() {
   );
 
   const renderPeopleContent = () => {
-    const totalPages = memberPage?.totalPages ?? null;
+    const totalPages = derivedMemberTotalPages;
     const isFirstPage = memberPage?.isFirst ?? currentPage <= 1;
     const isLastPage =
       memberPage?.isLast ?? (typeof totalPages === "number" ? currentPage >= totalPages : members.length < DEFAULT_PAGE_SIZE);
@@ -237,7 +314,7 @@ function FindPageContent() {
       <>
         {renderOnlineFilter}
         {renderMemberGrid(members, "members")}
-        <div className="flex items-center justify-between mt-6">
+        <div className="flex flex-wrap items-center justify-between mt-6 gap-4">
           <button
             type="button"
             onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
@@ -246,6 +323,26 @@ function FindPageContent() {
           >
             이전
           </button>
+          {memberPageNumbers.length > 0 ? (
+            <div className="flex items-center gap-2">
+              {memberPageNumbers.map((pageNumber) => {
+                const isActive = pageNumber === currentPage;
+                return (
+                  <button
+                    key={pageNumber}
+                    type="button"
+                    onClick={() => handleSelectMemberPage(pageNumber)}
+                    className={`min-w-[2.5rem] px-3 py-1.5 rounded-lg border text-sm transition-colors ${isActive
+                        ? "border-emerald-500 text-white bg-emerald-500/10"
+                        : "border-gray-600 text-gray-300 hover:border-emerald-400"
+                      }`}
+                  >
+                    {pageNumber}
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
           <div className="text-sm text-gray-300">
             페이지 {displayedPageNumber}
             {typeof totalPages === "number" && totalPages > 0 ? ` / ${totalPages}` : ""}
@@ -292,7 +389,7 @@ function FindPageContent() {
     return (
       <>
         {renderMemberGrid(friendMembers, "friends")}
-        <div className="flex items-center justify-between mt-6">
+        <div className="flex flex-wrap items-center justify-between mt-6 gap-4">
           <button
             type="button"
             onClick={() => setFriendPage((prev) => Math.max(prev - 1, 1))}
@@ -301,8 +398,31 @@ function FindPageContent() {
           >
             이전
           </button>
+          {friendPageNumbers.length > 0 ? (
+            <div className="flex items-center gap-2">
+              {friendPageNumbers.map((pageNumber) => {
+                const isActive = pageNumber === friendPage;
+                return (
+                  <button
+                    key={pageNumber}
+                    type="button"
+                    onClick={() => handleSelectFriendPage(pageNumber)}
+                    className={`min-w-[2.5rem] px-3 py-1.5 rounded-lg border text-sm transition-colors ${isActive
+                        ? "border-emerald-500 text-white bg-emerald-500/10"
+                        : "border-gray-600 text-gray-300 hover:border-emerald-400"
+                      }`}
+                  >
+                    {pageNumber}
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
           <div className="text-sm text-gray-300">
             페이지 {displayedFriendPageNumber}
+            {typeof derivedFriendTotalPages === "number" && derivedFriendTotalPages > 0
+              ? ` / ${derivedFriendTotalPages}`
+              : ""}
             {isFriendRefetching ? <span className="ml-2 text-xs text-gray-400">업데이트 중...</span> : null}
           </div>
           <button
@@ -393,9 +513,8 @@ function FindPageContent() {
   const TabButton = ({ tab, label, Icon }: { tab: ActiveTab; label: string; Icon: React.ElementType }) => (
     <button
       onClick={() => setActiveTab(tab)}
-      className={`flex items-center gap-2 px-4 py-2 rounded-t-lg transition-colors ${
-        activeTab === tab ? "bg-gray-800 text-emerald-400" : "text-gray-400 hover:bg-gray-700/50 hover:text-white"
-      }`}
+      className={`flex items-center gap-2 px-4 py-2 rounded-t-lg transition-colors ${activeTab === tab ? "bg-gray-800 text-emerald-400" : "text-gray-400 hover:bg-gray-700/50 hover:text-white"
+        }`}
     >
       <Icon size={18} />
       <span className="font-medium">{label}</span>

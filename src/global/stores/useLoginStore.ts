@@ -39,7 +39,16 @@ export const useLoginStore = create<LoginState>()(
     }),
     {
       name: "login-storage",
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => {
+        if (typeof window !== 'undefined') {
+          return localStorage;
+        }
+        return {
+          getItem: () => null,
+          setItem: () => {},
+          removeItem: () => {},
+        };
+      }),
 
       onRehydrateStorage: () => (state, error) => {
         if (error) {
