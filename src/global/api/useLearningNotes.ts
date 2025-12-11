@@ -1,8 +1,8 @@
 import client from "@/global/backend/client";
 import { unwrap } from "@/global/backend/unwrap";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { API_BASE_URL } from "@/global/consts";
 import { useLoginStore } from "@/global/stores/useLoginStore";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 // -----------------------------
 //  Type Definitions
@@ -31,10 +31,11 @@ export type FlattenFeedbackNote = {
 type LearningTag = "ALL" | "Grammar" | "Vocabulary" | "Translation";
 type LearningFilter = "all" | "completed" | "incomplete";
 type LearningTagParam = "ALL" | "GRAMMAR" | "VOCABULARY" | "TRANSLATION";
+type LearningFeedbackTagParam = "GRAMMAR" | "VOCABULARY" | "TRANSLATION";
 type LearningFilterParam = "ALL" | "LEARNED" | "UNLEARNED";
 
 export interface CreateFeedbackReq {
-  tag: LearningTagParam;
+  tag: LearningFeedbackTagParam;
   problem: string;
   correction: string;
   extra: string;

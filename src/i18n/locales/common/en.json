@@ -1,0 +1,85 @@
+{
+  "header": {
+    "brand": "MixChat",
+    "nav": {
+      "home": "Home",
+      "chat": "Chat",
+      "find": "Find",
+      "board": "Board",
+      "learningNotes": "Learning Notes",
+      "myPage": "My Page",
+      "admin": "Admin"
+    },
+    "auth": {
+      "login": "Login",
+      "signup": "Sign Up",
+      "logout": "Logout",
+      "loggingOut": "Logging out..."
+    },
+    "notifications": {
+      "title": "Notifications",
+      "refresh": "Refresh",
+      "refreshing": "Refreshing...",
+      "markAll": "Mark all as read",
+      "marking": "Marking..."
+    },
+    "language": {
+      "label": "Language",
+      "korean": "한국어",
+      "english": "English"
+    }
+  },
+  "home": {
+    "heroTitle": "Master English with",
+    "heroHighlight": " AI Chat",
+    "heroSubtitle": "Practice conversation skills with AI tutors and connect with learners worldwide. Automatically save new vocabulary to your personal learning notes.",
+    "primaryCta": "Start Chatting",
+    "secondaryCta": "Sign Up Free",
+    "featuresTitle": "Features",
+    "features": {
+      "aiChat": {
+        "title": "AI Chat",
+        "description": "Chat with AI tutors for personalized English practice and instant feedback."
+      },
+      "userChat": {
+        "title": "User Chat",
+        "description": "Connect with learners worldwide through 1:1 and group chat rooms."
+      },
+      "learningNotes": {
+        "title": "Learning Notes",
+        "description": "Automatically save and review vocabulary you encounter during conversations."
+      }
+    },
+    "translation": {
+      "title": "Smart Translation",
+      "description": "Mix languages naturally and let AI help translate. Unknown words are automatically saved to your learning notes.",
+      "inputLabel": "You type:",
+      "outputLabel": "AI translates:",
+      "saved": "saved to learning notes"
+    }
+  },
+  "chatPage": {
+    "title": "Select a chat to start messaging",
+    "description": "Choose a friend, group, or AI tutor from the sidebar."
+  },
+  "footer": {
+    "brand": {
+      "title": "MixChat",
+      "description": "Learn English through AI-powered conversations and connect with learners worldwide."
+    },
+    "links": {
+      "title": "Quick Links",
+      "chat": "Chat",
+      "learningNotes": "Learning Notes",
+      "profile": "My Page"
+    },
+    "contact": {
+      "title": "Contact",
+      "email": "Email: support@mixchat.com",
+      "phone": "Phone: +1 (555) 123-4567"
+    },
+    "legal": {
+      "copyright": "© {year} MixChat. All rights reserved."
+    }
+  }
+}

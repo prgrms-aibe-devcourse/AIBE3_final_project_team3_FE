@@ -1,0 +1,201 @@
+{
+  "page": {
+    "header": {
+      "title": "Find Your Next Conversation",
+      "subtitle": "Browse members, friends, group rooms, and AI tutors to jump back into English practice."
+    }
+  },
+  "tabs": {
+    "people": "People",
+    "friends": "Friends",
+    "groups": "Groups",
+    "ai": "AI Tutors"
+  },
+  "filters": {
+    "onlineOnly": "Show online only"
+  },
+  "people": {
+    "loadingInitial": "Loading recommended members...",
+    "loadingNext": "Loading more members...",
+    "error": "Could not load members",
+    "empty": "No members available right now.",
+    "emptyOnline": "No members are online right now."
+  },
+  "friends": {
+    "loading": "Loading friends...",
+    "error": "Could not load friends",
+    "empty": "You have no friends yet."
+  },
+  "pagination": {
+    "previous": "Previous",
+    "next": "Next",
+    "page": "Page {current}",
+    "pageWithTotal": "Page {current} of {total}",
+    "updating": "Updating..."
+  },
+  "memberCard": {
+    "avatarAlt": "Member avatar",
+    "noDescription": "No introduction provided.",
+    "interests": "Interests",
+    "noInterests": "No interests added yet."
+  },
+  "groupRooms": {
+    "passwordModal": {
+      "title": "Enter room password",
+      "placeholder": "Password",
+      "cancel": "Cancel",
+      "submit": "Join"
+    }
+  },
+  "ai": {
+    "tag": "AI PLAYGROUND",
+    "title": "Build your own AI tutor flow",
+    "description": "Pick a tutoring style, choose a real-world scenario, and start speaking instantly with our context-aware AI rooms.",
+    "createButton": "Create AI Room",
+    "notesButton": "View Learning Notes",
+    "promptButton": "Choose Prompt",
+    "promptModalTitle": "Choose a prompt for {roomType}",
+    "alerts": {
+      "selectRoomType": "Please pick a tutoring mode first.",
+      "missingSelection": "Select both a tutoring mode and an AI prompt.",
+      "invalidPrompt": "Selected prompt is not supported."
+    },
+    "tip": {
+      "prefix": "Pro tip",
+      "body": "{rolePlay} is best for immersive scenes, {personal} uses only your notes, and {similar} suggests ideas from learners like you."
+    },
+    "rolePlayTypes": {
+      "DAILY_SERVICE": "Daily & service situations",
+      "WORK_COMPANY": "Workplace conversations",
+      "SCHOOL_ACADEMIC": "School & study life",
+      "TRAVEL_IMMIGRATION": "Travel & immigration",
+      "HOSPITAL_EMERGENCY": "Hospital & emergencies",
+      "ONLINE_DIGITAL": "Online & digital life",
+      "RELATION_EMOTION": "Relationships & emotions",
+      "META_LEARNING": "Meta learning scenarios",
+      "FREE_TALK": "Free talk",
+      "OTHER": "Other role-play prompts"
+    }
+  },
+  "aiModals": {
+    "type": {
+      "title": "Select AI tutoring mode"
+    },
+    "situation": {
+      "title": "Choose a situation to practice",
+      "loading": "Loading AI situations...",
+      "empty": "No AI situations available yet.",
+      "otherType": "Other",
+      "promptCount": "{count} prompts",
+      "retry": "Retry"
+    },
+    "scenario": {
+      "empty": "No prompts found for this category."
+    },
+    "create": {
+      "title": "Create AI room",
+      "selectedMode": "Selected mode",
+      "selectedPrompt": "Selected prompt",
+      "promptMissing": "Select a prompt to continue.",
+      "roomNameLabel": "Room name",
+      "roomNamePlaceholder": "Name your AI room",
+      "submit": "Create room",
+      "submitting": "Creating..."
+    }
+  },
+  "aiRoomTypes": {
+    "ROLE_PLAY": {
+      "title": "Role-play coach",
+      "description": "Recommended for first-time users who want practical dialogues.",
+      "details": "Practice tasks like ordering coffee, solving service issues, or presenting at work with curated prompts.",
+      "badge": "New"
+    },
+    "TUTOR_PERSONAL": {
+      "title": "Personal tutor",
+      "description": "Uses only your learning notes to tailor coaching.",
+      "details": "We analyze your saved notes to recommend expressions, drills, and follow-up tasks that match your goals.",
+      "badge": "My notes"
+    },
+    "TUTOR_SIMILAR": {
+      "title": "Similar-learner tutor",
+      "description": "Learns from people who study like you.",
+      "details": "We surface lessons from similar learners to inspire new phrases, stories, and feedback.",
+      "badge": "Similar notes"
+    }
+  },
+  "profile": {
+    "labels": {
+      "avatarAlt": "Profile avatar",
+      "member": "member",
+      "memberInfo": "Member info"
+    },
+    "sections": {
+      "about": "About",
+      "interests": "Interests",
+      "noDescription": "No description provided.",
+      "noInterests": "No interests added."
+    },
+    "buttons": {
+      "chat": "Start chat",
+      "invite": "Invite to group",
+      "posts": "View posts",
+      "accept": "Accept",
+      "accepting": "Accepting...",
+      "reject": "Decline",
+      "rejecting": "Declining...",
+      "send": "Send request",
+      "sending": "Sending...",
+      "remove": "Remove friend",
+      "removing": "Removing..."
+    },
+    "alerts": {
+      "viewPosts": "Posts for {nickname} are coming soon.",
+      "inviteGroup": "Group invites for {nickname} will be available soon.",
+      "chatConfirm": "Start a chat with {nickname}?",
+      "sendRequestMissingTarget": "Cannot find a member to send a request to.",
+      "sendRequestSuccess": "Friend request sent.",
+      "sendRequestError": "Failed to send friend request",
+      "acceptMissingRequest": "No incoming request found.",
+      "acceptSuccess": "Friend request accepted.",
+      "acceptError": "Failed to accept friend request",
+      "rejectMissingRequest": "No pending request found.",
+      "rejectSuccess": "Friend request declined.",
+      "rejectError": "Failed to decline friend request",
+      "removeMissingFriend": "Unable to find this friend.",
+      "removeConfirm": "Remove {nickname} from your friends?",
+      "removeSuccess": "Friend removed.",
+      "removeError": "Failed to remove friend"
+    },
+    "details": {
+      "lastSeen": "Last seen {time}",
+      "friendSince": "Friends since {date}",
+      "loadingFriendDetail": "Loading friendship details...",
+      "friendDetailError": "Failed to load friendship details"
+    },
+    "friendship": {
+      "loading": "Checking friendship...",
+      "error": "Unable to load friendship status",
+      "unavailable": "Friendship info unavailable",
+      "pending": "Friend request pending{requestId}",
+      "missingRequestInfo": "Missing request information.",
+      "status": {
+        "FRIEND": "Already friends",
+        "REQUEST_SENT": "Request sent",
+        "REQUEST_RECEIVED": "Request received",
+        "NONE": "Not friends"
+      },
+      "descriptions": {
+        "FRIEND": "You are connected as friends.",
+        "REQUEST_SENT": "Waiting for the other member to respond.",
+        "REQUEST_RECEIVED": "Respond to the incoming friend request.",
+        "NONE": "No friend request has been exchanged yet."
+      }
+    },
+    "englishLevels": {
+      "BEGINNER": "Beginner",
+      "INTERMEDIATE": "Intermediate",
+      "ADVANCED": "Advanced",
+      "NATIVE": "Native-like"
+    }
+  }
+}

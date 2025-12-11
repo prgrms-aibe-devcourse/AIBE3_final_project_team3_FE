@@ -1,11 +1,12 @@
 "use client";
 
-import { useGetPublicGroupChatRoomsQuery, useJoinGroupChat } from "@/global/api/useChatQuery";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useCloseRoomMutation } from "@/global/api/useAdminCloseRoomQuery";
-import { GroupChatRoomResp } from "@/global/types/chat.types";
-import { Users, Lock, Hash, MoreVertical } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
+import { useGetPublicGroupChatRoomsQuery, useJoinGroupChat } from "@/global/api/useChatQuery";
 import { useLoginStore } from "@/global/stores/useLoginStore";
+import { GroupChatRoomResp } from "@/global/types/chat.types";
+import { Hash, Lock, MoreVertical, Users } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 // Password Modal Component
 const PasswordModal = ({
@@ -17,6 +18,7 @@ const PasswordModal = ({
   onClose: () => void;
   onSubmit: (password: string) => void;
 }) => {
+  const { t } = useLanguage();
   const [password, setPassword] = useState("");
 
   if (!isOpen) return null;
@@ -28,31 +30,32 @@ const PasswordModal = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
-        <h2 className="text-xl font-bold text-white mb-4">비밀번호 입력</h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center theme-overlay">
+      <div className="theme-surface rounded-lg p-6 max-w-md w-full mx-4">
+        <h2 className="text-xl font-bold text-white mb-4">{t('find.groupRooms.passwordModal.title')}</h2>
         <form onSubmit={handleSubmit}>
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="채팅방 비밀번호를 입력하세요"
-            className="w-full bg-gray-700 text-white px-4 py-2 rounded-md mb-4 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            placeholder={t('find.groupRooms.passwordModal.placeholder')}
+            className="w-full theme-field px-4 py-2 rounded-md mb-4 focus:outline-none focus:ring-2 focus:ring-emerald-500"
             autoFocus
           />
           <div className="flex gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-md transition-colors"
+              className="flex-1 px-4 py-2 rounded-md transition-colors"
+              style={{ background: "var(--surface-panel-muted)", color: "var(--page-text)" }}
             >
-              취소
+              {t('find.groupRooms.passwordModal.cancel')}
             </button>
             <button
               type="submit"
               className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md transition-colors"
             >
-              확인
+              {t('find.groupRooms.passwordModal.submit')}
             </button>
           </div>
         </form>
@@ -61,7 +64,7 @@ const PasswordModal = ({
   );
 };
 
-  
+
 // 방 폐쇄 모달 (관리자 전용)
 const CloseRoomModal = ({
   isOpen,
@@ -94,8 +97,8 @@ const CloseRoomModal = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[999]">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-lg">
+    <div className="fixed inset-0 flex items-center justify-center z-[999] theme-overlay">
+      <div className="theme-surface rounded-lg p-6 w-full max-w-md shadow-lg">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold">방 폐쇄</h2>
           <button
@@ -116,7 +119,7 @@ const CloseRoomModal = ({
         <select
           value={reasonCode ?? ""}
           onChange={(e) => setReasonCode(Number(e.target.value))}
-          className="w-full border border-gray-300 rounded-md p-2 mb-6 bg-gray-100"
+          className="w-full theme-field rounded-md p-2 mb-6"
         >
           <option value="">폐쇄 사유 선택</option>
           {reasons.map((r) => (
@@ -129,7 +132,8 @@ const CloseRoomModal = ({
         <div className="flex justify-end gap-3">
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300 transition"
+            className="px-4 py-2 rounded-md transition"
+            style={{ background: "var(--surface-panel-muted)", color: "var(--page-text)" }}
           >
             취소
           </button>
@@ -169,21 +173,21 @@ const GroupRoomCard = ({ room }: { room: GroupChatRoomResp }) => {
   };
 
   /* --- 관리자: 방 폐쇄 --- */
-const handleConfirmClose = (reasonCode: number) => {
-  closeRoomMutation.mutate(
-    { roomId: room.id, reasonCode },
-    {
-      onSuccess() {
-        alert("채팅방이 성공적으로 폐쇄되었습니다.");
-        setIsCloseModalOpen(false);
-        setIsMenuOpen(false);
-      },
-      onError(err) {
-        alert("채팅방 폐쇄 실패: " + err?.message);
-      },
-    }
-  );
-};
+  const handleConfirmClose = (reasonCode: number) => {
+    closeRoomMutation.mutate(
+      { roomId: room.id, reasonCode },
+      {
+        onSuccess() {
+          alert("채팅방이 성공적으로 폐쇄되었습니다.");
+          setIsCloseModalOpen(false);
+          setIsMenuOpen(false);
+        },
+        onError(err) {
+          alert("채팅방 폐쇄 실패: " + err?.message);
+        },
+      }
+    );
+  };
 
   // 메뉴 외부 클릭 감지
   useEffect(() => {
@@ -201,38 +205,38 @@ const handleConfirmClose = (reasonCode: number) => {
 
   return (
     <>
-      <div className="bg-gray-800 border border-gray-700 rounded-lg p-5 flex flex-col justify-between hover:border-emerald-500 transition-all duration-300 relative">
+      <div className="theme-card rounded-2xl p-5 flex flex-col justify-between hover:border-emerald-400 transition-all duration-300 relative hover:-translate-y-1">
         {/* 헤더 + 메뉴 버튼 */}
         <div className="flex justify-between items-start mb-2">
           <div className="flex-1">
             <h3 className="text-lg font-bold text-white break-all">{room.name}</h3>
           </div>
-          
+
           <div className="flex items-center gap-2 flex-shrink-0">
             {room.hasPassword && <Lock size={16} className="text-gray-400" />}
-            
+
             {/* 관리자만 메뉴 보이기 */}
             {role === "ROLE_ADMIN" && (
-            <div className="relative" ref={menuRef}>
-              <button
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="p-1 hover:bg-gray-700 rounded transition-colors"
-                aria-label="메뉴"
-              >
-                <MoreVertical size={18} className="text-gray-400" />
-              </button>
+              <div className="relative" ref={menuRef}>
+                <button
+                  onClick={() => setIsMenuOpen(!isMenuOpen)}
+                  className="p-1 rounded transition-colors hover:bg-[var(--surface-panel-muted)]"
+                  aria-label="메뉴"
+                >
+                  <MoreVertical size={18} className="text-gray-400" />
+                </button>
 
-              {isMenuOpen && (
-                <div className="absolute right-0 mt-2 w-40 bg-gray-900 border border-gray-700 rounded-lg shadow-lg z-10">
-                  <button
-                    onClick={() => setIsCloseModalOpen(true)}
-                    className="w-full text-left px-4 py-2 text-red-400 hover:bg-gray-800 rounded-lg transition-colors first:rounded-t-lg last:rounded-b-lg"
-                  >
-                    방 폐쇄하기
-                  </button>
-                </div>
-              )}
-            </div>
+                {isMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-40 theme-popover rounded-lg z-10">
+                    <button
+                      onClick={() => setIsCloseModalOpen(true)}
+                      className="w-full text-left px-4 py-2 text-red-400 hover:bg-[var(--surface-panel-muted)] rounded-lg transition-colors first:rounded-t-lg last:rounded-b-lg"
+                    >
+                      방 폐쇄하기
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -251,7 +255,7 @@ const handleConfirmClose = (reasonCode: number) => {
           <button
             onClick={handleJoinRoom}
             disabled={joinGroupChat.isPending}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors disabled:bg-[var(--surface-panel-muted)] disabled:text-[var(--surface-muted-text)] disabled:cursor-not-allowed"
           >
             {joinGroupChat.isPending ? "참가 중..." : "Join"}
           </button>
@@ -263,7 +267,7 @@ const handleConfirmClose = (reasonCode: number) => {
         onClose={() => setIsPasswordModalOpen(false)}
         onSubmit={handlePasswordSubmit}
       />
-       {/* 🔥 폐쇄 모달 */}
+      {/* 🔥 폐쇄 모달 */}
       <CloseRoomModal
         isOpen={isCloseModalOpen}
         onClose={() => setIsCloseModalOpen(false)}

@@ -1,0 +1,84 @@
+{
+  "login": {
+    "title": "계정에 로그인하세요",
+    "subtitlePrefix": "또는 ",
+    "subtitleLink": "새 계정을 만들어보세요",
+    "subtitleSuffix": "",
+    "fields": {
+      "email": "이메일 주소",
+      "password": "비밀번호"
+    },
+    "placeholders": {
+      "email": "이메일을 입력하세요",
+      "password": "영문과 숫자를 포함해 8~20자로 입력하세요"
+    },
+    "options": {
+      "remember": "로그인 상태 유지",
+      "forgot": "비밀번호를 잊으셨나요?"
+    },
+    "divider": "또는 다른 방법으로 계속하기",
+    "buttons": {
+      "submit": "로그인",
+      "submitting": "로그인 중...",
+      "google": "Google",
+      "github": "GitHub",
+      "googleSr": "Google로 로그인",
+      "githubSr": "GitHub로 로그인"
+    },
+    "alerts": {
+      "failure": "로그인에 실패했습니다"
+    }
+  },
+  "signup": {
+    "title": "계정을 만들어 보세요",
+    "subtitlePrefix": "이미 계정이 있다면 ",
+    "subtitleLink": "로그인하세요",
+    "subtitleSuffix": "",
+    "fields": {
+      "name": "이름",
+      "nickname": "닉네임",
+      "email": "이메일",
+      "country": "국가",
+      "level": "영어 레벨",
+      "interests": "관심사",
+      "password": "비밀번호",
+      "confirmPassword": "비밀번호 확인",
+      "description": "자기소개"
+    },
+    "placeholders": {
+      "name": "이름을 입력하세요",
+      "nickname": "닉네임을 입력하세요",
+      "email": "이메일은 로그인에 사용됩니다. (예: myemail@google.com)",
+      "country": "국가를 선택하세요",
+      "level": "영어 레벨을 선택하세요",
+      "interests": "관심사는 예: 여행, 음식 처럼 콤마로 구분하세요",
+      "password": "영문과 숫자를 포함해 8~20자로 입력하세요",
+      "confirmPassword": "비밀번호를 다시 입력하세요",
+      "description": "간단한 자기소개를 작성해주세요"
+    },
+    "helpers": {
+      "levelTooltipLabel": "AI가 영어 레벨을 활용하는 방법",
+      "levelTooltip": "AI는 선택한 레벨에 맞춰 대화시의 말투를 조정해요.\nBEGINNER · 쉬운 단어와 문장 구조로 대화합니다.\nINTERMEDIATE · 중급 단어와 문장을 사용합니다.\nADVANCED 또는 NATIVE · 고급 어휘와 문장\n구조를 사용합니다.\n영어 레벨은 이후 내 정보 페이지에서 언제든 변경할 수 있어요.",
+      "interests": "복수의 관심사는 콤마(,)로 구분해 입력하세요.",
+      "gettingStartedTitle": "시작 가이드",
+      "gettingStartedDescription": "필수 정보를 모두 입력하면 회원가입 완료 후 로그인 페이지로 이동합니다."
+    },
+    "divider": "또는 다른 방법으로 계속하기",
+    "buttons": {
+      "submit": "회원가입",
+      "submitting": "계정 생성 중...",
+      "google": "Google",
+      "github": "GitHub",
+      "googleSr": "Google로 회원가입",
+      "githubSr": "GitHub로 회원가입"
+    },
+    "alerts": {
+      "passwordMismatch": "비밀번호가 일치하지 않습니다.",
+      "interestsRequired": "관심사를 최소 1개 이상 입력해주세요.",
+      "countryRequired": "국가를 선택해주세요.",
+      "levelRequired": "영어 레벨을 선택해주세요.",
+      "success": "계정을 생성했습니다! 로그인해주세요.",
+      "generic": "회원가입에 실패했습니다. 다시 시도해주세요."
+    }
+  }
+}

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 import {
   useLearningNotes,
@@ -9,6 +9,7 @@ import {
   type FlattenFeedbackNote,
 } from "@/global/api/useLearningNotes";
 
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useLoginStore } from "@/global/stores/useLoginStore";
 
 // ========================================================
@@ -41,23 +42,49 @@ function NoteCard({
   const fb = note.feedback;
   const tag = normalizeTag(fb.tag);
 
-  const tagColor =
-    {
-      Grammar: "bg-red-900/40 text-red-300 border border-red-700",
-      Vocabulary: "bg-blue-900/40 text-blue-300 border border-blue-700",
-      Translation: "bg-purple-900/40 text-purple-300 border border-purple-700",
-    }[tag] ?? "bg-gray-700 text-gray-300";
+  const badgeStyleMap: Record<
+    string,
+    { background: string; text: string; border: string }
+  > = {
+    Grammar: {
+      background: "var(--badge-grammar-bg)",
+      text: "var(--badge-grammar-text)",
+      border: "var(--badge-grammar-border)",
+    },
+    Vocabulary: {
+      background: "var(--badge-vocabulary-bg)",
+      text: "var(--badge-vocabulary-text)",
+      border: "var(--badge-vocabulary-border)",
+    },
+    Translation: {
+      background: "var(--badge-translation-bg)",
+      text: "var(--badge-translation-text)",
+      border: "var(--badge-translation-border)",
+    },
+  };
+
+  const badgeStyle =
+    badgeStyleMap[tag] ?? {
+      background: "var(--badge-default-bg)",
+      text: "var(--badge-default-text)",
+      border: "var(--badge-default-border)",
+    };
 
   return (
-    <div className="bg-gray-800 border border-gray-700 rounded-lg shadow-md p-4">
+    <div className="theme-card rounded-2xl p-4">
       <div className="flex justify-between items-start w-full">
         {/* ---------- Left Section ---------- */}
         <div className="flex-1 max-w-[80%]">
           <h4 className="font-semibold text-white mb-2">상세 피드백</h4>
 
-          <div className="bg-gray-800 p-3 rounded-md border border-gray-700 shadow-sm">
+          <div className="theme-surface-muted p-3 rounded-md shadow-sm">
             <span
-              className={`px-2 py-1 rounded text-xs font-semibold inline-block mb-2 ${tagColor}`}
+              className="px-2 py-1 rounded text-xs font-semibold inline-block mb-2 border"
+              style={{
+                background: badgeStyle.background,
+                color: badgeStyle.text,
+                borderColor: badgeStyle.border,
+              }}
             >
               {tag}
             </span>
@@ -85,18 +112,17 @@ function NoteCard({
         <div className="flex flex-col justify-center items-center gap-2 ml-4 mt-6">
           <button
             onClick={() => onToggleCompletion(fb.id, fb.marked)}
-            className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-              isCompleted
-                ? "bg-green-600 text-white"
-                : "bg-gray-700 text-gray-400 hover:bg-gray-600"
-            }`}
+            className={`w-10 h-10 rounded-lg flex items-center justify-center ${isCompleted
+              ? "bg-green-600 text-white"
+              : "bg-[var(--surface-panel-muted)] text-[var(--surface-muted-text)] hover:bg-[var(--surface-panel)]"
+              }`}
           >
             {isCompleted ? "✓" : "○"}
           </button>
 
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="w-10 h-10 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-700"
+            className="w-10 h-10 rounded-lg flex items-center justify-center text-gray-400 hover:bg-[var(--surface-panel-muted)]"
           >
             {isExpanded ? "▲" : "▼"}
           </button>
@@ -104,7 +130,7 @@ function NoteCard({
       </div>
 
       {isExpanded && (
-        <div className="mt-4 border-t border-gray-700 bg-gray-700 p-4 rounded-md">
+        <div className="mt-4 border-t border-[var(--surface-border)] bg-[var(--surface-panel-muted)] p-4 rounded-md">
           <p className="text-gray-300">
             <span className="font-semibold text-gray-400">원본 문장: </span>
             {note.note.originalContent}
@@ -127,12 +153,13 @@ function NoteCard({
 export default function LearningNotesPage() {
   const router = useRouter();
   const { accessToken, hasHydrated } = useLoginStore();
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (hasHydrated && !accessToken) {
       router.replace("/auth/login");
     }
-  }, [accessToken]);
+  }, [accessToken, hasHydrated, router]);
 
   const [activeTab, setActiveTab] =
     useState<"ALL" | "Grammar" | "Vocabulary" | "Translation">("ALL");
@@ -163,12 +190,14 @@ export default function LearningNotesPage() {
   };
 
   return (
-    <div className="p-8 min-h-screen bg-gray-900">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-4xl font-bold text-white mb-2">Learning Notes</h1>
+    <div className="p-8 min-h-screen" style={{ background: "var(--page-bg)" }}>
+      <div className="max-w-4xl mx-auto theme-surface rounded-3xl p-8 shadow-xl">
+        <h1 className="text-4xl font-bold text-white mb-2">
+          {t("learningNotes.title")}
+        </h1>
 
         <p className="text-gray-400 mb-4">
-          AI 피드백을 받은 학습 노트들을 정리해보세요
+          {t("learningNotes.subtitle")}
         </p>
 
         <div className="flex justify-end mb-6">
@@ -176,24 +205,28 @@ export default function LearningNotesPage() {
             onClick={() => router.push("/mini-game")}
             className="px-5 py-2 bg-emerald-600 text-white rounded-md shadow hover:bg-emerald-700"
           >
-            문장 미니게임 시작하기 →
+            {t("learningNotes.cta")} →
           </button>
         </div>
 
         {/* 태그 탭 */}
         <div className="flex justify-between mb-6">
           <div className="flex gap-3">
-            {["ALL", "Grammar", "Vocabulary", "Translation"].map((t) => (
+            {["ALL", "Grammar", "Vocabulary", "Translation"].map((tagKey) => (
               <button
-                key={t}
-                onClick={() => setActiveTab(t as any)}
-                className={`px-4 py-2 rounded-md ${
-                  activeTab === t
-                    ? "bg-indigo-600 text-white"
-                    : "bg-gray-800 text-gray-300 border border-gray-700"
-                }`}
+                key={tagKey}
+                onClick={() => setActiveTab(tagKey as any)}
+                className={`px-4 py-2 rounded-md ${activeTab === tagKey
+                  ? "bg-indigo-600 text-white"
+                  : "border border-[var(--surface-border)] bg-[var(--surface-panel-muted)] text-[var(--page-text)]"
+                  }`}
               >
-                {t}
+                {{
+                  ALL: t("learningNotes.tags.all"),
+                  Grammar: t("learningNotes.tags.grammar"),
+                  Vocabulary: t("learningNotes.tags.vocabulary"),
+                  Translation: t("learningNotes.tags.translation"),
+                }[tagKey as "ALL" | "Grammar" | "Vocabulary" | "Translation"] ?? tagKey}
               </button>
             ))}
           </div>
@@ -201,18 +234,17 @@ export default function LearningNotesPage() {
           {/* 완료 필터 */}
           <div className="flex gap-3">
             {[
-              { key: "all", label: "전체" },
-              { key: "completed", label: "완료" },
-              { key: "incomplete", label: "미완료" },
+              { key: "all", label: t("learningNotes.filters.all") },
+              { key: "completed", label: t("learningNotes.filters.completed") },
+              { key: "incomplete", label: t("learningNotes.filters.incomplete") },
             ].map((f) => (
               <button
                 key={f.key}
                 onClick={() => setFilter(f.key as any)}
-                className={`px-4 py-2 rounded-md ${
-                  filter === f.key
-                    ? "bg-green-600 text-white"
-                    : "bg-gray-800 text-gray-300 border border-gray-700"
-                }`}
+                className={`px-4 py-2 rounded-md ${filter === f.key
+                  ? "bg-green-600 text-white"
+                  : "border border-[var(--surface-border)] bg-[var(--surface-panel-muted)] text-[var(--page-text)]"
+                  }`}
               >
                 {f.label}
               </button>
@@ -223,8 +255,8 @@ export default function LearningNotesPage() {
         {/* 카드 리스트 */}
         <div className="space-y-4">
           {notes.length === 0 ? (
-            <div className="p-6 bg-gray-800 border border-gray-700 rounded-md text-gray-400">
-              조회된 노트가 없습니다.
+            <div className="p-6 theme-surface-muted rounded-md text-gray-400">
+              {t("learningNotes.empty")}
             </div>
           ) : (
             notes.map((n) => (
@@ -244,11 +276,10 @@ export default function LearningNotesPage() {
             <button
               key={p}
               onClick={() => setPage(p)}
-              className={`px-3 py-1 rounded text-sm ${
-                p === currentPage
-                  ? "bg-indigo-600 text-white"
-                  : "bg-gray-800 text-gray-300 border border-gray-700 hover:bg-gray-700"
-              }`}
+              className={`px-3 py-1 rounded text-sm ${p === currentPage
+                ? "bg-indigo-600 text-white"
+                : "border border-[var(--surface-border)] bg-[var(--surface-panel-muted)] text-[var(--page-text)] hover:bg-[var(--surface-panel)]"
+                }`}
             >
               {p + 1}
             </button>

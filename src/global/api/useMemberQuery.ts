@@ -260,9 +260,8 @@ export const useMembersQuery = (options?: MemberQueryOptions) => {
     };
 
     return useQuery<MemberListPage, Error>({
-        queryKey: ["members", normalisedOptions],
+        queryKey: ["members", normalisedOptions, accessToken ? "auth" : "guest"],
         queryFn: () => fetchMembers(normalisedOptions),
-        enabled: !!accessToken,
         staleTime: 1000 * 60 * 5,
         refetchOnWindowFocus: false,
     });

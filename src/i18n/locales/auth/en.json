@@ -1,0 +1,84 @@
+{
+  "login": {
+    "title": "Sign in to your account",
+    "subtitlePrefix": "Or ",
+    "subtitleLink": "create a new account",
+    "subtitleSuffix": "",
+    "fields": {
+      "email": "Email address",
+      "password": "Password"
+    },
+    "placeholders": {
+      "email": "Enter your email",
+      "password": "Use 8-20 characters with letters and numbers"
+    },
+    "options": {
+      "remember": "Remember me",
+      "forgot": "Forgot your password?"
+    },
+    "divider": "Or continue with",
+    "buttons": {
+      "submit": "Sign in",
+      "submitting": "Signing in...",
+      "google": "Google",
+      "github": "GitHub",
+      "googleSr": "Sign in with Google",
+      "githubSr": "Sign in with GitHub"
+    },
+    "alerts": {
+      "failure": "Login failed"
+    }
+  },
+  "signup": {
+    "title": "Create your account",
+    "subtitlePrefix": "Or ",
+    "subtitleLink": "sign in to your existing account",
+    "subtitleSuffix": "",
+    "fields": {
+      "name": "Full Name",
+      "nickname": "Nickname",
+      "email": "Email Address",
+      "country": "Country",
+      "level": "English Level",
+      "interests": "Interests",
+      "password": "Password",
+      "confirmPassword": "Confirm Password",
+      "description": "About You"
+    },
+    "placeholders": {
+      "name": "Enter your full name",
+      "nickname": "Enter a nickname",
+      "email": "Email is used to sign in (e.g. myemail@google.com)",
+      "country": "Select your country",
+      "level": "Select your English level",
+      "interests": "Separate interests with commas (e.g. travel, food)",
+      "password": "Use 8-20 characters with letters and numbers",
+      "confirmPassword": "Use 8-20 characters with letters and numbers",
+      "description": "Tell us briefly about yourself"
+    },
+    "helpers": {
+      "levelTooltipLabel": "How the AI uses your English level",
+      "levelTooltip": "The AI adjusts its tone based on your choice.\nBEGINNER · Uses simpler words and sentence structures.\nINTERMEDIATE · Uses intermediate vocabulary and phrasing.\nADVANCED or NATIVE · Uses richer vocabulary and more complex sentences.\nYou can change your English level anytime from the profile page.",
+      "interests": "Separate multiple interests with commas.",
+      "gettingStartedTitle": "Getting Started",
+      "gettingStartedDescription": "Fill in all required details and you'll be redirected to the sign-in page once registration succeeds."
+    },
+    "divider": "Or continue with",
+    "buttons": {
+      "submit": "Create account",
+      "submitting": "Creating account...",
+      "google": "Google",
+      "github": "GitHub",
+      "googleSr": "Sign up with Google",
+      "githubSr": "Sign up with GitHub"
+    },
+    "alerts": {
+      "passwordMismatch": "Passwords do not match.",
+      "interestsRequired": "Please enter at least one interest.",
+      "countryRequired": "Please select your country.",
+      "levelRequired": "Please choose your English level.",
+      "success": "Account created! Please sign in.",
+      "generic": "Signup failed. Please try again."
+    }
+  }
+}

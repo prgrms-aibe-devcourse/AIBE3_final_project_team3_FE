@@ -1,5 +1,6 @@
 "use client";
 
+import { useLanguage } from "@/contexts/LanguageContext";
 import Image from "next/image";
 import { MemberListItem, MemberSource, getAvatar, getPresenceMeta, resolveIsOnline, resolveProfileImageUrl } from "../_lib/memberUtils";
 import { useFindProfileModal } from "./FindProfileProvider";
@@ -10,6 +11,7 @@ interface MemberGridProps {
 }
 
 export default function MemberGrid({ members = [], source }: MemberGridProps) {
+  const { t } = useLanguage();
   const { openProfile } = useFindProfileModal();
 
   if (!members.length) {
@@ -21,27 +23,30 @@ export default function MemberGrid({ members = [], source }: MemberGridProps) {
       {members.map((user) => {
         const presence = getPresenceMeta(resolveIsOnline(user));
         const interests = Array.isArray(user.interests) ? user.interests : [];
-        const description = user.description ?? "소개 정보가 아직 없습니다.";
+        const description = user.description ?? t('find.memberCard.noDescription');
         const fallbackNickname = user.nickname || "member";
         const avatarSrc = resolveProfileImageUrl(user.profileImageUrl) ?? getAvatar(fallbackNickname);
 
         return (
           <div
             key={user.id}
-            className="bg-gray-800 border border-gray-600 rounded-lg p-6 hover:border-emerald-500 transition-all duration-300 cursor-pointer"
+            className="theme-card rounded-2xl p-6 hover:border-emerald-400 transition-all duration-300 cursor-pointer hover:-translate-y-1"
             onClick={() => openProfile(user, source)}
           >
             <div className="flex items-center mb-4">
               <div className="relative w-16 h-16">
                 <Image
                   src={avatarSrc}
-                  alt={user.nickname || "사용자 아바타"}
+                  alt={user.nickname || t('find.memberCard.avatarAlt')}
                   width={64}
                   height={64}
                   unoptimized
                   className="rounded-full object-cover w-16 h-16"
                 />
-                <div className={`absolute -bottom-1 -right-1 w-5 h-5 border-2 border-gray-800 rounded-full ${presence.badgeClass}`}></div>
+                <div
+                  className={`absolute -bottom-1 -right-1 w-5 h-5 border-2 rounded-full ${presence.badgeClass}`}
+                  style={{ borderColor: "var(--surface-panel)" }}
+                ></div>
               </div>
               <div className="ml-4">
                 <h3 className="text-lg font-semibold text-white">{user.nickname}</h3>
@@ -52,7 +57,9 @@ export default function MemberGrid({ members = [], source }: MemberGridProps) {
             <p className="text-gray-300 text-sm mb-3 line-clamp-2">{description}</p>
 
             <div className="mb-3">
-              <p className="text-xs font-semibold text-gray-400 mb-1">INTERESTS</p>
+              <p className="text-xs font-semibold text-gray-400 mb-1 uppercase tracking-wide">
+                {t('find.memberCard.interests')}
+              </p>
               <div className="flex flex-wrap gap-1">
                 {interests.slice(0, 3).map((interest: string, index: number) => (
                   <span
@@ -63,7 +70,7 @@ export default function MemberGrid({ members = [], source }: MemberGridProps) {
                   </span>
                 ))}
                 {interests.length === 0 && (
-                  <span className="text-xs text-gray-400">등록된 관심사가 없습니다.</span>
+                  <span className="text-xs text-gray-400">{t('find.memberCard.noInterests')}</span>
                 )}
               </div>
             </div>

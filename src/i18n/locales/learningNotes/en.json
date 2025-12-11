@@ -1,0 +1,22 @@
+{
+  "title": "Learning Notes",
+  "subtitle": "Organize the notes you've received AI feedback on.",
+  "cta": "Start Mini Game",
+  "filters": {
+    "all": "All",
+    "completed": "Completed",
+    "incomplete": "Incomplete"
+  },
+  "tags": {
+    "all": "ALL",
+    "grammar": "Grammar",
+    "vocabulary": "Vocabulary",
+    "translation": "Translation"
+  },
+  "empty": "No notes found.",
+  "loading": "Loading notes...",
+  "error": "Failed to load notes.",
+  "original": "Original",
+  "corrected": "Corrected",
+  "description": "Description"
+}

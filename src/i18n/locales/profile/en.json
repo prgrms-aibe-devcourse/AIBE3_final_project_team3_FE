@@ -1,0 +1,192 @@
+{
+  "page": {
+    "title": "My Page",
+    "subtitle": "Review your profile, friendships, and notifications at a glance."
+  },
+  "tabs": {
+    "profile": {
+      "label": "Profile",
+      "description": "Edit your basic details and introduction."
+    },
+    "friends": {
+      "label": "Friendships",
+      "description": "Check friend list, requests, and statuses."
+    },
+    "notifications": {
+      "label": "Notifications",
+      "description": "Read the latest alerts from the service."
+    }
+  },
+  "info": {
+    "sectionTitle": "Profile Information",
+    "actions": {
+      "edit": "Edit Profile",
+      "save": "Save",
+      "saving": "Saving...",
+      "cancel": "Cancel",
+      "changeAvatar": "Change avatar",
+      "uploading": "Uploading..."
+    },
+    "labels": {
+      "name": "Name",
+      "nickname": "Nickname",
+      "email": "Email",
+      "about": "About Me",
+      "country": "Country",
+      "englishLevel": "English Level",
+      "interests": "Interests"
+    },
+    "notes": {
+      "emailReadOnly": "Email cannot be updated here.",
+      "emailMissing": "No email on file."
+    },
+    "placeholders": {
+      "country": "Select country",
+      "interests": "e.g. Movies, running, travel"
+    },
+    "helpers": {
+      "interests": "Separate multiple interests with commas."
+    },
+    "messages": {
+      "descriptionEmpty": "No introduction has been added yet.",
+      "interestsEmpty": "No interests registered yet."
+    },
+    "englishLevels": {
+      "BEGINNER": "Beginner",
+      "INTERMEDIATE": "Intermediate",
+      "ADVANCED": "Advanced",
+      "NATIVE": "Native"
+    },
+    "danger": {
+      "title": "Danger Zone",
+      "description": "Deleting your account removes chat history and settings permanently.",
+      "delete": "Delete account",
+      "deleting": "Deleting..."
+    },
+    "alerts": {
+      "requiredFields": "Name, nickname, and introduction are required.",
+      "interestsRequired": "Please enter at least one interest.",
+      "countryRequired": "Please choose a country.",
+      "unsupportedImage": "Only JPG, PNG, or WEBP images can be uploaded.",
+      "imageTooLarge": "Images up to 3MB are supported.",
+      "deleteConfirm": "Delete your account? This cannot be undone.",
+      "deleteSuccess": "Your account has been deleted. Please sign up again to keep using MixChat."
+    },
+    "avatar": {
+      "alt": "{name}'s profile image"
+    }
+  },
+  "friends": {
+    "title": "Friend Relationships",
+    "subtitle": "See who you're connected with and their status.",
+    "total": "{count} friends total",
+    "updating": "Updating...",
+    "loading": "Loading friends...",
+    "error": "Failed to load friends",
+    "empty": "No friends have been added yet.",
+    "status": {
+      "online": "Online",
+      "offline": "Offline"
+    },
+    "buttons": {
+      "details": "View details",
+      "remove": "Remove friend",
+      "removing": "Removing...",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "pagination": {
+      "page": "Page {current}",
+      "pageWithTotal": "Page {current} / {total}",
+      "perPage": "({count} per page)"
+    },
+    "messages": {
+      "detailsUnavailable": "Unable to load friend information.",
+      "unknownFriend": "this friend",
+      "idMissing": "Cannot delete because the friend ID is missing.",
+      "confirmDelete": "Remove {name} from your friends?",
+      "deleteSuccess": "Friend removed.",
+      "deleteFailed": "Failed to remove friend.",
+      "detailLoading": "Loading detail...",
+      "detailError": "Unable to load detail information.",
+      "detailEmpty": "No friend information available.",
+      "descriptionEmpty": "No introduction has been added yet.",
+      "interestsEmpty": "No interests registered yet."
+    },
+    "modal": {
+      "title": "Friend detail",
+      "fields": {
+        "nickname": "Nickname",
+        "country": "Country",
+        "englishLevel": "English Level",
+        "lastSeen": "Last seen",
+        "description": "Description",
+        "interests": "Interests"
+      }
+    }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "subtitle": "Keep track of unread alerts and chat invitations.",
+    "summary": "Total {count} · {pageSize} per page",
+    "buttons": {
+      "refresh": "Refresh",
+      "refreshing": "Refreshing...",
+      "markAll": "Mark all read",
+      "deleteAll": "Delete all",
+      "mark": "Mark read",
+      "delete": "Delete",
+      "profile": "View profile"
+    },
+    "status": {
+      "unread": "Unread",
+      "read": "Read"
+    },
+    "messages": {
+      "loading": "Loading notifications...",
+      "error": "Failed to load notifications",
+      "empty": "No notifications yet.",
+      "alreadyRead": "This notification is already marked as read.",
+      "markSuccess": "Marked as read.",
+      "markFailed": "Failed to mark as read.",
+      "deleteConfirm": "Delete this notification?",
+      "deleteSuccess": "Notification deleted.",
+      "deleteFailed": "Failed to delete notification.",
+      "noneToProcess": "No notifications to process.",
+      "markAllSuccess": "All notifications marked as read.",
+      "markAllFailed": "Failed to mark all notifications as read.",
+      "noneToDelete": "No notifications to delete.",
+      "deleteAllConfirm": "Delete all notifications?",
+      "deleteAllSuccess": "All notifications deleted.",
+      "deleteAllFailed": "Failed to delete all notifications.",
+      "senderMissing": "Cannot find sender information.",
+      "invalidSender": "Invalid sender ID."
+    },
+    "pagination": {
+      "page": "Page {current}",
+      "pageWithTotal": "Page {current} / {total}",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "time": {
+      "justNow": "Just now"
+    },
+    "modal": {
+      "title": "Sender profile",
+      "subtitle": "See who sent this notification.",
+      "fields": {
+        "nickname": "Nickname",
+        "country": "Country",
+        "englishLevel": "English Level",
+        "lastSeen": "Last seen",
+        "description": "Description",
+        "interests": "Interests"
+      },
+      "descriptionEmpty": "No introduction has been added yet.",
+      "interestsEmpty": "No interests registered yet.",
+      "loading": "Loading detail...",
+      "error": "Failed to load detail information.",
+      "notFound": "No sender information available."
+    }
+  }
+}

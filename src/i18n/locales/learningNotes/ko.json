@@ -1,0 +1,22 @@
+{
+  "title": "러닝노트",
+  "subtitle": "AI 피드백을 받은 학습 노트를 정리해보세요.",
+  "cta": "문장 미니게임",
+  "filters": {
+    "all": "전체",
+    "completed": "완료",
+    "incomplete": "미완료"
+  },
+  "tags": {
+    "all": "전체",
+    "grammar": "Grammar",
+    "vocabulary": "Vocabulary",
+    "translation": "Translation"
+  },
+  "empty": "조회된 노트가 없습니다.",
+  "loading": "노트를 불러오는 중입니다...",
+  "error": "노트를 불러오지 못했어요.",
+  "original": "원본",
+  "corrected": "수정",
+  "description": "설명"
+}

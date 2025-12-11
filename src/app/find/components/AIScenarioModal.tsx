@@ -1,4 +1,5 @@
 // src/app/find/components/AIScenarioModal.tsx
+import { useLanguage } from "@/contexts/LanguageContext";
 import { ArrowLeft, X } from "lucide-react";
 import React from "react";
 import { AICategory, AIScenario, formatRolePlayTypeLabel } from "../constants/aiSituations";
@@ -18,6 +19,7 @@ const AIScenarioModal: React.FC<AIScenarioModalProps> = ({
   selectedCategory,
   onSelectScenario,
 }) => {
+  const { t } = useLanguage();
   if (!isOpen || !selectedCategory) return null;
 
   return (
@@ -50,7 +52,7 @@ const AIScenarioModal: React.FC<AIScenarioModalProps> = ({
                   )}
                   {!scenario.description && (
                     <p className="text-gray-400 text-sm mt-1">
-                      {formatRolePlayTypeLabel(scenario.rolePlayType ?? selectedCategory.rolePlayType ?? null)}
+                      {formatRolePlayTypeLabel(scenario.rolePlayType ?? selectedCategory.rolePlayType ?? null, t)}
                     </p>
                   )}
                 </button>
@@ -58,7 +60,7 @@ const AIScenarioModal: React.FC<AIScenarioModalProps> = ({
             </div>
           ) : (
             <div className="text-center text-gray-300 py-8">
-              현재 선택한 카테고리에 등록된 프롬프트가 없습니다.
+              {t('find.aiModals.scenario.empty')}
             </div>
           )}
         </div>

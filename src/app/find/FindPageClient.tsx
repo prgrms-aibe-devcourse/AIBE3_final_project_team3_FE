@@ -1,5 +1,6 @@
 "use client";
 
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useCreateAiChat } from "@/global/api/useChatQuery";
 import { useFriendsQuery, useMembersQuery } from "@/global/api/useMemberQuery";
 import { usePromptListQuery } from "@/global/api/usePromptQuery";
@@ -53,6 +54,9 @@ const buildPageNumbers = (currentPage: number, totalPages?: number | null, maxLi
 };
 
 function FindPageContent() {
+  const { t } = useLanguage();
+  const secondaryButtonClass =
+    "px-4 py-2 rounded border border-[var(--surface-border)] bg-[var(--surface-panel-muted)] text-[var(--page-text)] transition-colors disabled:opacity-60 disabled:cursor-not-allowed hover:bg-[var(--surface-panel)]";
   const [showOnlineOnly, setShowOnlineOnly] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const pageIndex = Math.max(currentPage - 1, 0);
@@ -134,9 +138,13 @@ function FindPageContent() {
     error: promptError,
     refetch: refetchPromptList,
   } = usePromptListQuery();
-  const aiCategories = useMemo(() => buildCategoriesFromPromptList(promptList), [promptList]);
+  const aiCategories = useMemo(
+    () => buildCategoriesFromPromptList(promptList, t),
+    [promptList, t],
+  );
+  const localizedRoomTypeLabel = formatAiRoomTypeLabel(selectedRoomType, t);
   const aiPromptModalTitle = selectedRoomType
-    ? `${formatAiRoomTypeLabel(selectedRoomType)} 프롬프트 선택`
+    ? t('find.ai.promptModalTitle', { roomType: localizedRoomTypeLabel })
     : undefined;
 
   useEffect(() => {
@@ -212,7 +220,7 @@ function FindPageContent() {
 
   const handleSelectAIScenario = (scenario: AIScenario) => {
     if (!selectedRoomType) {
-      alert("AI 채팅방 유형을 먼저 선택해 주세요.");
+      alert(t('find.ai.alerts.selectRoomType'));
       return;
     }
     setSelectedAIScenario(scenario);
@@ -232,13 +240,13 @@ function FindPageContent() {
 
   const handleCreateAiRoom = (roomName: string) => {
     if (!selectedRoomType || !selectedAIScenario) {
-      alert("AI 채팅방 유형과 프롬프트를 먼저 선택해 주세요.");
+      alert(t('find.ai.alerts.missingSelection'));
       return;
     }
 
     const personaId = Number(selectedAIScenario.id);
     if (!Number.isFinite(personaId)) {
-      alert("선택한 프롬프트 ID가 올바르지 않습니다. 다시 시도해 주세요.");
+      alert(t('find.ai.alerts.invalidPrompt'));
       return;
     }
 
@@ -269,7 +277,7 @@ function FindPageContent() {
     if (isInitialLoading) {
       return (
         <div className="text-center text-white">
-          <p>{currentPage > 1 ? "다음 페이지를 불러오는 중입니다..." : "Loading..."}</p>
+          <p>{currentPage > 1 ? t('find.people.loadingNext') : t('find.people.loadingInitial')}</p>
         </div>
       );
     }
@@ -277,7 +285,10 @@ function FindPageContent() {
     if (error) {
       return (
         <div className="text-center text-red-400">
-          <p>Error loading: {error.message}</p>
+          <p>
+            {t('find.people.error')}
+            {error.message ? `: ${error.message}` : ""}
+          </p>
         </div>
       );
     }
@@ -292,9 +303,9 @@ function FindPageContent() {
               setShowOnlineOnly(event.target.checked);
               setCurrentPage(1);
             }}
-            className="h-4 w-4 rounded border-gray-500 bg-gray-700 text-emerald-500 focus:ring-emerald-500"
+            className="h-4 w-4 rounded border-[var(--surface-border)] bg-[var(--surface-field)] text-emerald-500 focus:ring-emerald-500"
           />
-          온라인 멤버만 보기
+          {t('find.filters.onlineOnly')}
         </label>
       </div>
     );
@@ -304,11 +315,17 @@ function FindPageContent() {
         <>
           {renderOnlineFilter}
           <div className="text-center text-gray-400">
-            <p>{showOnlineOnly ? "현재 온라인인 사용자가 없습니다." : "등록된 사용자를 찾을 수 없습니다."}</p>
+            <p>{showOnlineOnly ? t('find.people.emptyOnline') : t('find.people.empty')}</p>
           </div>
         </>
       );
     }
+
+    const displayedPageText = String(displayedPageNumber);
+    const totalPageText = typeof totalPages === "number" && totalPages > 0 ? String(totalPages) : null;
+    const pageLabel = totalPageText
+      ? t('find.pagination.pageWithTotal', { current: displayedPageText, total: totalPageText })
+      : t('find.pagination.page', { current: displayedPageText });
 
     return (
       <>
@@ -319,9 +336,9 @@ function FindPageContent() {
             type="button"
             onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
             disabled={!canGoPrev}
-            className="px-4 py-2 rounded bg-gray-700 text-white disabled:bg-gray-600/60 disabled:text-gray-400"
+            className={secondaryButtonClass}
           >
-            이전
+            {t('find.pagination.previous')}
           </button>
           {memberPageNumbers.length > 0 ? (
             <div className="flex items-center gap-2">
@@ -333,8 +350,8 @@ function FindPageContent() {
                     type="button"
                     onClick={() => handleSelectMemberPage(pageNumber)}
                     className={`min-w-[2.5rem] px-3 py-1.5 rounded-lg border text-sm transition-colors ${isActive
-                        ? "border-emerald-500 text-white bg-emerald-500/10"
-                        : "border-gray-600 text-gray-300 hover:border-emerald-400"
+                      ? "border-emerald-500 text-white bg-emerald-500/10"
+                      : "border-gray-600 text-gray-300 hover:border-emerald-400"
                       }`}
                   >
                     {pageNumber}
@@ -344,17 +361,16 @@ function FindPageContent() {
             </div>
           ) : null}
           <div className="text-sm text-gray-300">
-            페이지 {displayedPageNumber}
-            {typeof totalPages === "number" && totalPages > 0 ? ` / ${totalPages}` : ""}
-            {isRefetching ? <span className="ml-2 text-xs text-gray-400">업데이트 중...</span> : null}
+            {pageLabel}
+            {isRefetching ? <span className="ml-2 text-xs text-gray-400">{t('find.pagination.updating')}</span> : null}
           </div>
           <button
             type="button"
             onClick={() => setCurrentPage((prev) => prev + 1)}
             disabled={!canGoNext}
-            className="px-4 py-2 rounded bg-gray-700 text-white disabled:bg-gray-600/60 disabled:text-gray-400"
+            className={secondaryButtonClass}
           >
-            다음
+            {t('find.pagination.next')}
           </button>
         </div>
       </>
@@ -365,7 +381,7 @@ function FindPageContent() {
     if (isFriendInitialLoading) {
       return (
         <div className="text-center text-white">
-          <p>친구 목록을 불러오는 중입니다...</p>
+          <p>{t('find.friends.loading')}</p>
         </div>
       );
     }
@@ -373,7 +389,10 @@ function FindPageContent() {
     if (friendError) {
       return (
         <div className="text-center text-red-400">
-          <p>Error loading friends: {friendError.message}</p>
+          <p>
+            {t('find.friends.error')}
+            {friendError.message ? `: ${friendError.message}` : ""}
+          </p>
         </div>
       );
     }
@@ -381,7 +400,7 @@ function FindPageContent() {
     if (!friendMembers || friendMembers.length === 0) {
       return (
         <div className="text-center text-gray-400">
-          <p>등록된 친구가 없습니다. 새로운 친구를 추가해 보세요.</p>
+          <p>{t('find.friends.empty')}</p>
         </div>
       );
     }
@@ -394,9 +413,9 @@ function FindPageContent() {
             type="button"
             onClick={() => setFriendPage((prev) => Math.max(prev - 1, 1))}
             disabled={!canFriendGoPrev}
-            className="px-4 py-2 rounded bg-gray-700 text-white disabled:bg-gray-600/60 disabled:text-gray-400"
+            className={secondaryButtonClass}
           >
-            이전
+            {t('find.pagination.previous')}
           </button>
           {friendPageNumbers.length > 0 ? (
             <div className="flex items-center gap-2">
@@ -408,8 +427,8 @@ function FindPageContent() {
                     type="button"
                     onClick={() => handleSelectFriendPage(pageNumber)}
                     className={`min-w-[2.5rem] px-3 py-1.5 rounded-lg border text-sm transition-colors ${isActive
-                        ? "border-emerald-500 text-white bg-emerald-500/10"
-                        : "border-gray-600 text-gray-300 hover:border-emerald-400"
+                      ? "border-emerald-500 text-white bg-emerald-500/10"
+                      : "border-gray-600 text-gray-300 hover:border-emerald-400"
                       }`}
                   >
                     {pageNumber}
@@ -419,19 +438,25 @@ function FindPageContent() {
             </div>
           ) : null}
           <div className="text-sm text-gray-300">
-            페이지 {displayedFriendPageNumber}
-            {typeof derivedFriendTotalPages === "number" && derivedFriendTotalPages > 0
-              ? ` / ${derivedFriendTotalPages}`
-              : ""}
-            {isFriendRefetching ? <span className="ml-2 text-xs text-gray-400">업데이트 중...</span> : null}
+            {(() => {
+              const currentText = String(displayedFriendPageNumber);
+              const totalText =
+                typeof derivedFriendTotalPages === "number" && derivedFriendTotalPages > 0
+                  ? String(derivedFriendTotalPages)
+                  : null;
+              return totalText
+                ? t('find.pagination.pageWithTotal', { current: currentText, total: totalText })
+                : t('find.pagination.page', { current: currentText });
+            })()}
+            {isFriendRefetching ? <span className="ml-2 text-xs text-gray-400">{t('find.pagination.updating')}</span> : null}
           </div>
           <button
             type="button"
             onClick={() => setFriendPage((prev) => prev + 1)}
             disabled={!canFriendGoNext}
-            className="px-4 py-2 rounded bg-gray-700 text-white disabled:bg-gray-600/60 disabled:text-gray-400"
+            className={secondaryButtonClass}
           >
-            다음
+            {t('find.pagination.next')}
           </button>
         </div>
       </>
@@ -450,13 +475,17 @@ function FindPageContent() {
     if (activeTab === "ai") {
       return (
         <div className="space-y-10">
-          <div className="bg-gradient-to-r from-gray-800 via-emerald-900/30 to-gray-800 border border-emerald-800/50 rounded-2xl p-8 flex flex-col gap-4">
+          <div
+            className="rounded-2xl p-8 flex flex-col gap-4"
+            style={{
+              background: "linear-gradient(135deg, var(--surface-panel), rgba(16,185,129,0.12) 60%, var(--surface-panel))",
+              border: "1px solid rgba(16,185,129,0.35)",
+            }}
+          >
             <div>
-              <p className="text-emerald-300 text-sm font-semibold uppercase tracking-[0.2em]">AI ENGLISH LAB</p>
-              <h2 className="text-3xl font-bold text-white mt-2">3가지 AI 튜터로 상황극부터 맞춤 피드백까지</h2>
-              <p className="text-gray-300 mt-3 max-w-3xl">
-                역할놀이로 말하기 감각을 깨우고, 내 학습노트 기반 코칭과 유사 학습자 사례까지 한 번에 연결해 보세요. 선택 즉시 프롬프트 카테고리를 열어 원하는 시나리오를 고를 수 있습니다.
-              </p>
+              <p className="text-emerald-300 text-sm font-semibold uppercase tracking-[0.2em]">{t('find.ai.tag')}</p>
+              <h2 className="text-3xl font-bold text-white mt-2">{t('find.ai.title')}</h2>
+              <p className="text-gray-300 mt-3 max-w-3xl">{t('find.ai.description')}</p>
             </div>
             <div className="flex flex-wrap gap-3">
               <button
@@ -464,43 +493,48 @@ function FindPageContent() {
                 onClick={openAiCreationFlow}
                 className="px-6 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-semibold transition-colors"
               >
-                AI 대화방 만들기
+                {t('find.ai.createButton')}
               </button>
               <button
                 type="button"
                 onClick={() => router.push("/learning-notes")}
-                className="px-6 py-3 rounded-xl border border-gray-600 text-white font-semibold hover:bg-gray-800/60 transition-colors"
+                className="px-6 py-3 rounded-xl border border-[var(--surface-border)] font-semibold text-[var(--page-text)] hover:bg-[var(--surface-panel)] transition-colors"
               >
-                학습노트 살펴보기
+                {t('find.ai.notesButton')}
               </button>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {AI_ROOM_TYPE_OPTIONS.map((option) => (
-              <div key={option.type} className="bg-gray-800 border border-gray-700 rounded-2xl p-6 flex flex-col gap-4">
+              <div key={option.type} className="theme-surface rounded-2xl p-6 flex flex-col gap-4">
                 <div className="flex items-center gap-2">
-                  <h3 className="text-xl font-semibold text-white">{option.title}</h3>
-                  {option.badge ? (
-                    <span className="px-2 py-0.5 text-xs rounded-full bg-emerald-600 text-white">{option.badge}</span>
+                  <h3 className="text-xl font-semibold text-white">{t(option.titleKey)}</h3>
+                  {option.badgeKey ? (
+                    <span className="px-2 py-0.5 text-xs rounded-full bg-emerald-600 text-white">{t(option.badgeKey)}</span>
                   ) : null}
                 </div>
-                <p className="text-gray-200 text-sm leading-relaxed">{option.description}</p>
-                <p className="text-gray-400 text-xs leading-relaxed flex-1">{option.details}</p>
+                <p className="text-gray-200 text-sm leading-relaxed">{t(option.descriptionKey)}</p>
+                <p className="text-gray-400 text-xs leading-relaxed flex-1">{t(option.detailsKey)}</p>
                 <button
                   type="button"
                   onClick={() => handleSelectAIRoomType(option.type)}
-                  className="mt-auto inline-flex items-center justify-center px-4 py-2 rounded-lg bg-gray-700 hover:bg-emerald-500 text-white font-medium transition-colors"
+                  className="mt-auto inline-flex items-center justify-center px-4 py-2 rounded-lg bg-[var(--surface-panel-muted)] text-[var(--page-text)] font-medium transition-colors hover:bg-emerald-500 hover:text-white"
                 >
-                  프롬프트 선택하기
+                  {t('find.ai.promptButton')}
                 </button>
               </div>
             ))}
           </div>
 
-          <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6">
+          <div className="theme-surface rounded-2xl p-6">
             <p className="text-sm text-gray-300">
-              Tip. 상황극(ROLE_PLAY)은 실전 회화 루틴을 빠르게 만들어 주고, <span className="text-white font-semibold">개인화 튜터</span>와 <span className="text-white font-semibold">유사도 튜터</span>는 학습노트 데이터를 활용해 표현 확장과 피드백을 제공합니다. 하루에 여러 모드를 번갈아 사용해 보면 가장 빠르게 말하기 감각이 올라갑니다.
+              <span className="font-semibold text-white/80 mr-1">{t('find.ai.tip.prefix')}</span>
+              {t('find.ai.tip.body', {
+                rolePlay: t('find.aiRoomTypes.ROLE_PLAY.title'),
+                personal: t('find.aiRoomTypes.TUTOR_PERSONAL.title'),
+                similar: t('find.aiRoomTypes.TUTOR_SIMILAR.title'),
+              })}
             </p>
           </div>
         </div>
@@ -510,38 +544,50 @@ function FindPageContent() {
     return renderPeopleContent();
   };
 
-  const TabButton = ({ tab, label, Icon }: { tab: ActiveTab; label: string; Icon: React.ElementType }) => (
-    <button
-      onClick={() => setActiveTab(tab)}
-      className={`flex items-center gap-2 px-4 py-2 rounded-t-lg transition-colors ${activeTab === tab ? "bg-gray-800 text-emerald-400" : "text-gray-400 hover:bg-gray-700/50 hover:text-white"
-        }`}
-    >
-      <Icon size={18} />
-      <span className="font-medium">{label}</span>
-    </button>
-  );
+  const TabButton = ({ tab, label, Icon }: { tab: ActiveTab; label: string; Icon: React.ElementType }) => {
+    const isActive = activeTab === tab;
+    return (
+      <button
+        type="button"
+        onClick={() => setActiveTab(tab)}
+        className={`relative flex items-center gap-2 px-5 py-3 rounded-2xl border font-medium transition-all shadow-sm ${isActive
+          ? "bg-[var(--card-surface)] text-emerald-500 border-emerald-300 shadow-[0_12px_30px_rgba(15,23,42,0.18)]"
+          : "text-[var(--surface-muted-text)] border-transparent hover:text-[var(--page-text)] hover:bg-[var(--surface-panel-muted)]"
+          }`}
+      >
+        <Icon size={18} className={isActive ? "text-emerald-500" : "text-inherit"} />
+        <span>{label}</span>
+        <span
+          className={`pointer-events-none absolute left-1/2 -bottom-1 h-1 w-8 -translate-x-1/2 rounded-full bg-emerald-400 transition-opacity ${isActive ? "opacity-100" : "opacity-0"}`}
+        />
+      </button>
+    );
+  };
 
   return (
     <>
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2 text-white">Find</h1>
-          <p className="text-gray-300">Discover new people, groups, and AI to practice English with.</p>
+          <h1 className="text-3xl font-bold mb-2 text-white">{t('find.page.header.title')}</h1>
+          <p className="text-gray-300">{t('find.page.header.subtitle')}</p>
         </div>
 
-        <div className="border-b border-gray-700 mb-8">
-          <div className="flex justify-between items-center">
-            <div className="flex gap-2">
-              <TabButton tab="1v1" label="People" Icon={MessageSquare} />
-              <TabButton tab="friends" label="Friends" Icon={UserRoundCheck} />
-              <TabButton tab="group" label="Groups" Icon={Users} />
-              <TabButton tab="ai" label="AI Tutors" Icon={Bot} />
+        <div className="border-b border-[var(--surface-border)] mb-8">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div
+              className="flex flex-wrap gap-2 p-1 rounded-3xl border border-[var(--surface-border)]"
+              style={{ background: "var(--surface-panel-muted)" }}
+            >
+              <TabButton tab="1v1" label={t('find.tabs.people')} Icon={MessageSquare} />
+              <TabButton tab="friends" label={t('find.tabs.friends')} Icon={UserRoundCheck} />
+              <TabButton tab="group" label={t('find.tabs.groups')} Icon={Users} />
+              <TabButton tab="ai" label={t('find.tabs.ai')} Icon={Bot} />
             </div>
             {(activeTab === "group" || activeTab === "ai") && (
               <button
                 type="button"
                 onClick={handlePlusClick}
-                className="text-gray-400 hover:text-white transition-colors"
+                className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--surface-border)] text-[var(--surface-muted-text)] transition-all hover:border-emerald-400 hover:text-emerald-500"
               >
                 <Plus size={22} />
               </button>

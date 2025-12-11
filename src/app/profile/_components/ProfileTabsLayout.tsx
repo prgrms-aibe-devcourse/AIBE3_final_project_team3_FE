@@ -2,35 +2,37 @@
 
 import { Bell, UserRoundCheck, Users } from "lucide-react";
 
-import { useProfileTabs } from "./ProfileTabsProvider";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { FriendRelationshipsPanel } from "./FriendRelationshipsPanel";
 import { NotificationsPanel } from "./NotificationsPanel";
 import { ProfileInfoPanel } from "./ProfileInfoPanel";
+import { useProfileTabs } from "./ProfileTabsProvider";
 
 type ProfileTabKey = "profile" | "friends" | "notifications";
 
-const TAB_ITEMS: Array<{ id: ProfileTabKey; label: string; description: string; icon: typeof UserRoundCheck }> = [
+const TAB_CONFIG: Array<{ id: ProfileTabKey; icon: typeof UserRoundCheck; labelKey: string; descriptionKey: string }> = [
   {
     id: "profile",
-    label: "프로필",
-    description: "기본 정보와 자기소개를 수정합니다.",
     icon: UserRoundCheck,
+    labelKey: "profile.tabs.profile.label",
+    descriptionKey: "profile.tabs.profile.description",
   },
   {
     id: "friends",
-    label: "친구 관계",
-    description: "친구 목록과 상태를 한눈에 확인해요",
     icon: Users,
+    labelKey: "profile.tabs.friends.label",
+    descriptionKey: "profile.tabs.friends.description",
   },
   {
     id: "notifications",
-    label: "알림",
-    description: "받은 알림을 최신 순으로 살펴봐요",
     icon: Bell,
+    labelKey: "profile.tabs.notifications.label",
+    descriptionKey: "profile.tabs.notifications.description",
   },
 ];
 
 export function ProfileTabsLayout() {
+  const { t } = useLanguage();
   const { activeTab, setActiveTab } = useProfileTabs();
 
   const renderActivePanel = () => {
@@ -48,30 +50,33 @@ export function ProfileTabsLayout() {
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-white mb-2">My Page</h1>
-        <p className="text-gray-400 text-sm">
-          프로필, 친구, 알림 정보를 한곳에서 관리해 탭을 바꿔도 빠르게 확인할 수 있어요.
+        <h1 className="text-3xl font-bold mb-2" style={{ color: "var(--page-text)" }}>
+          {t('profile.page.title')}
+        </h1>
+        <p className="text-sm" style={{ color: "var(--surface-muted-text)" }}>
+          {t('profile.page.subtitle')}
         </p>
       </div>
 
-      <div className="flex flex-wrap gap-3 mb-8">
-        {TAB_ITEMS.map(({ id, label, description, icon: Icon }) => {
+      <div className="grid grid-cols-1 gap-3 mb-8 sm:grid-cols-2 lg:grid-cols-3">
+        {TAB_CONFIG.map(({ id, labelKey, descriptionKey, icon: Icon }) => {
           const isActive = activeTab === id;
           return (
             <button
               key={id}
               type="button"
               onClick={() => setActiveTab(id)}
-              className={`flex items-center gap-3 rounded-2xl px-4 py-3 border transition-colors ${
-                isActive
-                  ? "border-emerald-500 bg-emerald-500/10 text-white"
-                  : "border-gray-700 bg-gray-900/40 text-gray-300 hover:border-gray-500"
-              }`}
+              className={`flex w-full items-center gap-3 rounded-2xl px-4 py-3 border transition-all shadow-sm text-left ${isActive
+                ? "bg-[var(--card-surface)] border-emerald-300 text-emerald-600 shadow-[0_12px_30px_rgba(15,23,42,0.18)]"
+                : "bg-[var(--surface-panel)] border-[var(--surface-border)] text-[var(--surface-muted-text)] hover:text-[var(--page-text)] hover:border-emerald-200/60"
+                }`}
             >
-              <Icon className="h-5 w-5" />
+              <Icon className={`h-5 w-5 ${isActive ? "text-emerald-500" : "text-[var(--surface-muted-text)]"}`} />
               <div className="text-left">
-                <p className="text-sm font-semibold">{label}</p>
-                <p className="text-xs text-gray-400">{description}</p>
+                <p className="text-sm font-semibold" style={{ color: isActive ? "var(--page-text)" : "inherit" }}>
+                  {t(labelKey)}
+                </p>
+                <p className="text-xs" style={{ color: "var(--surface-muted-text)" }}>{t(descriptionKey)}</p>
               </div>
             </button>
           );

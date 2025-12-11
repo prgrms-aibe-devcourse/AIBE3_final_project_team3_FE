@@ -1,0 +1,72 @@
+{
+  "nav": {
+    "reportManagement": "Report Management",
+    "gameList": "Game List",
+    "gameAdd": "Add Game Entry"
+  },
+  "report": {
+    "title": "Report Management",
+    "listTitle": "Report List",
+    "loading": "Loading...",
+    "empty": "No reports found.",
+    "table": {
+      "id": "ID",
+      "status": "Status",
+      "category": "Category",
+      "message": "Reported Message",
+      "reason": "Reason",
+      "date": "Reported At",
+      "actions": "Actions"
+    },
+    "noMessage": "No content",
+    "noReason": "No reason provided",
+    "statusButton": "Change Status",
+    "detail": {
+      "title": "Report Details",
+      "reportedUser": "Reported User",
+      "category": "Report Category",
+      "message": "Reported Message",
+      "reason": "Report Reason",
+      "status": "Update Status",
+      "cancel": "Cancel",
+      "save": "Save"
+    },
+    "statuses": {
+      "waiting": "Waiting",
+      "reviewing": "Reviewing",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    "categories": {
+      "abuse": "Abuse / Harassment",
+      "scam": "Scam / Advertisement",
+      "inappropriate": "Inappropriate Content",
+      "other": "Other"
+    }
+  },
+  "game": {
+    "layoutTitle": "Sentence Game Management",
+    "table": {
+      "original": "Original Sentence",
+      "corrected": "Corrected Sentence",
+      "actions": "Actions",
+      "createdAt": "Created At"
+    },
+    "add": {
+      "title": "Add Sentences",
+      "loading": "Loading...",
+      "empty": "There are no sentences to add.",
+      "action": "Add",
+      "success": "The sentence is now available in the game.",
+      "error": "Failed to register the sentence."
+    },
+    "list": {
+      "title": "Registered Game Sentences",
+      "loading": "Loading...",
+      "empty": "No entries have been registered yet.",
+      "remove": "Remove",
+      "confirmDelete": "Are you sure you want to delete this entry?",
+      "deleteSuccess": "The entry has been removed."
+    }
+  }
+}

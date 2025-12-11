@@ -4,6 +4,7 @@
 
 export type ReportStatus =
   | "WAITING"
+  | "REVIEWING"
   | "APPROVED"
   | "REJECTED";
 

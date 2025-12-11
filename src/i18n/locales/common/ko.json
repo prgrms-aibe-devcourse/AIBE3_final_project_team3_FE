@@ -1,0 +1,85 @@
+{
+  "header": {
+    "brand": "MixChat",
+    "nav": {
+      "home": "홈",
+      "chat": "채팅",
+      "find": "대화상대 찾기",
+      "board": "게시판",
+      "learningNotes": "러닝노트",
+      "myPage": "내 정보",
+      "admin": "관리자"
+    },
+    "auth": {
+      "login": "로그인",
+      "signup": "회원가입",
+      "logout": "로그아웃",
+      "loggingOut": "로그아웃 중..."
+    },
+    "notifications": {
+      "title": "알림",
+      "refresh": "새로고침",
+      "refreshing": "갱신 중...",
+      "markAll": "모두 읽음",
+      "marking": "처리 중..."
+    },
+    "language": {
+      "label": "언어",
+      "korean": "한국어",
+      "english": "English"
+    }
+  },
+  "home": {
+    "heroTitle": "AI와 함께 영어를 연습하세요",
+    "heroHighlight": " MixChat",
+    "heroSubtitle": "스마트 번역으로 사용자들과 대화하기, AI와의 대화하기, 학습노트 자동등록으로 영어 실력을 향상시킬 수 있습니다.",
+    "primaryCta": "바로 채팅하기",
+    "secondaryCta": "무료 회원가입",
+    "featuresTitle": "주요 기능",
+    "features": {
+      "aiChat": {
+        "title": "AI 채팅",
+        "description": "AI 튜터와 대화하며 개인 맞춤 피드백을 받아보세요."
+      },
+      "userChat": {
+        "title": "유저 채팅",
+        "description": "1:1 · 그룹 채팅방에서 다양한 학습자와 대화하세요."
+      },
+      "learningNotes": {
+        "title": "학습 노트",
+        "description": "대화에서 배운 표현을 자동으로 저장하고 복습하세요."
+      }
+    },
+    "translation": {
+      "title": "스마트 번역",
+      "description": "한국어와 영어를 섞어도 AI가 자연스럽게 번역하고, 모르는 표현은 학습 노트에 저장됩니다.",
+      "inputLabel": "입력 예시",
+      "outputLabel": "AI 번역",
+      "saved": "학습 노트에 저장됨"
+    }
+  },
+  "chatPage": {
+    "title": "채팅을 선택하고 대화를 시작하세요",
+    "description": "사이드바에서 친구, 그룹 또는 AI 튜터를 선택하세요."
+  },
+  "footer": {
+    "brand": {
+      "title": "MixChat",
+      "description": "AI 영어 대화로 전 세계 학습자와 연결되고 자연스럽게 배우세요."
+    },
+    "links": {
+      "title": "바로가기",
+      "chat": "채팅",
+      "learningNotes": "학습노트",
+      "profile": "마이페이지"
+    },
+    "contact": {
+      "title": "문의",
+      "email": "이메일: support@mixchat.com",
+      "phone": "전화: +1 (555) 123-4567"
+    },
+    "legal": {
+      "copyright": "© {year} MixChat. 모든 권리를 보유하고 있습니다."
+    }
+  }
+}
