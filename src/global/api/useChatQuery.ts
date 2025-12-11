@@ -15,7 +15,11 @@ import {
   InviteGroupChatReq,
   DirectChatRoomResp,
   GroupChatRoomResp,
+  GroupChatRoomSummaryResp,
+  GroupChatRoomPublicResp,
+  JoinRoomResp,
   MessageResp,
+  ChatSearchResult,
 } from "../types/chat.types";
 
 // --- Type Definitions ---
@@ -81,9 +85,10 @@ const fetchDirectChatRooms = async (): Promise<DirectChatRoomResp[]> => {
   return rooms || [];
 };
 
-const fetchGroupChatRooms = async (): Promise<GroupChatRoomResp[]> => {
+// [Plan C] 최적화: Summary DTO 사용
+const fetchGroupChatRooms = async (): Promise<GroupChatRoomSummaryResp[]> => {
   const response = await apiClient.GET("/api/v1/chats/rooms/group");
-  const rooms = await unwrap<GroupChatRoomResp[]>(response);
+  const rooms = await unwrap<GroupChatRoomSummaryResp[]>(response);
   return rooms || [];
 };
 
@@ -93,9 +98,26 @@ const fetchAiChatRooms = async (): Promise<AIChatRoomResp[]> => {
   return rooms || [];
 };
 
-const fetchPublicGroupChatRooms = async (): Promise<GroupChatRoomResp[]> => {
+const fetchChatSearch = async (keyword: string, chatRoomType: string): Promise<ChatSearchResult[]> => {
+  const response = await apiClient.GET("/api/v1/chats/search", {
+    params: {
+      query: {
+        chatRoomType: chatRoomType.toUpperCase() as "DIRECT" | "GROUP" | "AI",
+        keyword,
+      },
+    },
+  });
+
+  const page = await unwrap<any>(response);
+  if (page && Array.isArray(page.content)) {
+    return page.content as ChatSearchResult[];
+  }
+  return [];
+};
+
+const fetchPublicGroupChatRooms = async (): Promise<GroupChatRoomPublicResp[]> => {
   const response = await apiClient.GET("/api/v1/chats/rooms/group/public");
-  const rooms = await unwrap<GroupChatRoomResp[]>(response);
+  const rooms = await unwrap<GroupChatRoomPublicResp[]>(response);
   return rooms || [];
 };
 
@@ -136,9 +158,10 @@ export const useGetDirectChatRoomsQuery = () => {
   });
 };
 
+// [Plan C] 최적화: Summary DTO 사용
 export const useGetGroupChatRoomsQuery = () => {
   const { accessToken } = useLoginStore();
-  return useQuery<GroupChatRoomResp[], Error>({
+  return useQuery<GroupChatRoomSummaryResp[], Error>({
     queryKey: ["chatRooms", "group"],
     queryFn: fetchGroupChatRooms,
     enabled: !!accessToken,
@@ -147,7 +170,7 @@ export const useGetGroupChatRoomsQuery = () => {
 
 export const useGetPublicGroupChatRoomsQuery = () => {
   const { accessToken } = useLoginStore();
-  return useQuery<GroupChatRoomResp[], Error>({
+  return useQuery<GroupChatRoomPublicResp[], Error>({
     queryKey: ["chatRooms", "group", "public"],
     queryFn: fetchPublicGroupChatRooms,
     enabled: !!accessToken,
@@ -160,6 +183,16 @@ export const useGetAiChatRoomsQuery = () => {
     queryKey: ["chatRooms", "ai"],
     queryFn: fetchAiChatRooms,
     enabled: !!accessToken,
+  });
+};
+
+export const useChatSearchQuery = (keyword: string, chatRoomType: string) => {
+  const { accessToken } = useLoginStore();
+  return useQuery<ChatSearchResult[], Error>({
+    queryKey: ["chatSearch", chatRoomType, keyword],
+    queryFn: () => fetchChatSearch(keyword, chatRoomType),
+    enabled: !!accessToken && keyword.trim().length >= 2,
+    staleTime: 0,
   });
 };
 
@@ -276,8 +309,7 @@ interface JoinGroupChatVariables {
   password?: string;
 }
 
-const joinGroupChat = async (variables: JoinGroupChatVariables): Promise<GroupChatRoomResp> => {
-  // 비밀번호가 있고 공백이 아닌 경우에만 전송
+const joinGroupChat = async (variables: JoinGroupChatVariables): Promise<JoinRoomResp> => {
   const trimmedPassword = variables.password?.trim();
 
   const response = await apiClient.POST("/api/v1/chats/rooms/group/{roomId}/join", {
@@ -287,7 +319,7 @@ const joinGroupChat = async (variables: JoinGroupChatVariables): Promise<GroupCh
     body: trimmedPassword ? { password: trimmedPassword } : undefined,
   });
 
-  const unwrappedResponse = await unwrap<GroupChatRoomResp>(response);
+  const unwrappedResponse = await unwrap<JoinRoomResp>(response);
 
   if (!unwrappedResponse) {
     throw new Error("Failed to join group chat room: No data received.");
@@ -299,7 +331,7 @@ export const useJoinGroupChat = () => {
   const queryClient = useQueryClient();
   const router = useRouter();
 
-  return useMutation<GroupChatRoomResp, Error, JoinGroupChatVariables>({
+  return useMutation<JoinRoomResp, Error, JoinGroupChatVariables>({
     mutationFn: joinGroupChat,
     onSuccess: async (data) => {
       await Promise.all([

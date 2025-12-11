@@ -12,8 +12,9 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useChatSearchQuery } from "@/global/api/useChatQuery";
 
 type ChatSidebarProps = {
   activeTab: "direct" | "group" | "ai";
@@ -34,6 +35,49 @@ export default function ChatSidebar({
   const router = useRouter();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedTerm, setDebouncedTerm] = useState("");
+  const { data: searchResults = [], isLoading: isSearching, isError: isSearchError } = useChatSearchQuery(
+    debouncedTerm,
+    activeTab
+  );
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedTerm(searchTerm.trim()), 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const showingSearch = debouncedTerm.length >= 2;
+  const searchHitMap = useMemo(() => {
+    if (!showingSearch) return new Map<string, any>();
+    const map = new Map<string, any>();
+    searchResults.forEach((hit: any) => {
+      const key = `${activeTab}-${hit.chatRoomId}`;
+      if (!map.has(key)) {
+        map.set(key, hit);
+      }
+    });
+    return map;
+  }, [activeTab, searchResults, showingSearch]);
+
+  const displayedRooms = useMemo(() => {
+    if (!showingSearch) return rooms;
+
+    const matchedIds = new Set(
+      searchResults.map((hit: any) => `${activeTab}-${hit.chatRoomId}`)
+    );
+    const fromSearch = rooms.filter((room) => matchedIds.has(room.id));
+
+    if (fromSearch.length > 0) return fromSearch;
+
+    // Fallback: 클라이언트에서 방 이름/마지막 메시지로 단순 필터
+    const keyword = debouncedTerm.toLowerCase();
+    return rooms.filter((room) => {
+      const name = room.name?.toLowerCase() || "";
+      const last = room.lastMessage?.toLowerCase() || "";
+      return name.includes(keyword) || last.includes(keyword);
+    });
+  }, [rooms, searchResults, activeTab, showingSearch, debouncedTerm]);
 
   const handlePlusClick = () => {
     if (activeTab === "direct") {
@@ -115,6 +159,8 @@ export default function ChatSidebar({
               type="text"
               placeholder="Search chats..."
               className="w-full bg-gray-700 border border-gray-600 rounded-lg pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
         </div>
@@ -129,77 +175,92 @@ export default function ChatSidebar({
         {/* Room List */}
         <div className="flex-1 overflow-y-auto">
           <div className="p-2">
-            {rooms.map((room) => {
-              const [type, actualId] = room.id.split('-');
-              const href = `/chat/${type}/${actualId}`;
+            {isSearching ? (
+              <div className="text-sm text-gray-400 px-3 py-2">Searching...</div>
+            ) : isSearchError ? (
+              <div className="text-sm text-red-400 px-3 py-2">Search failed.</div>
+            ) : showingSearch && displayedRooms.length === 0 ? (
+              <div className="text-sm text-gray-400 px-3 py-2">No results.</div>
+            ) : (
+              displayedRooms.map((room) => {
+                const roomId = room.id;
+                const roomName = room.name;
+                const matchingHit = searchHitMap.get(roomId);
+                const lastMessage = matchingHit
+                  ? matchingHit.translatedContent || matchingHit.content || room.lastMessage
+                  : room.lastMessage;
+                const [type, actualId] = roomId.split('-');
+                const href = `/chat/${type}/${actualId}`;
 
-              return (
-                <Link
-                  href={href}
-                  key={room.id}
-                  className={`flex items-center p-3 rounded-lg cursor-pointer transition-colors ${selectedRoomId === room.id
-                    ? "bg-emerald-600/20"
-                    : "hover:bg-gray-700/50"
-                    }`}
-                >
-                  <div className="relative">
-                    {(() => {
-                      const src = room.avatar?.trim() ?? "";
-                      const isImageAvatar =
-                        src.startsWith("http://") || src.startsWith("https://") || src.startsWith("/");
+                return (
+                  <Link
+                    href={href}
+                    key={roomId}
+                    className={`flex items-center p-3 rounded-lg cursor-pointer transition-colors ${selectedRoomId === roomId
+                      ? "bg-emerald-600/20"
+                      : "hover:bg-gray-700/50"
+                      }`}
+                    onClick={() => setSelectedRoomId(roomId)}
+                  >
+                    <div className="relative">
+                      {(() => {
+                        const src = room.avatar?.trim() ?? "";
+                        const isImageAvatar =
+                          src.startsWith("http://") || src.startsWith("https://") || src.startsWith("/");
 
-                      if (isImageAvatar) {
+                        if (isImageAvatar) {
+                          return (
+                            <Image
+                              src={src}
+                              alt={roomName}
+                              width={48}
+                              height={48}
+                              unoptimized
+                              className="w-12 h-12 rounded-full object-cover"
+                            />
+                          );
+                        }
+
+                        const fallbackLabel = src || roomName.charAt(0).toUpperCase();
                         return (
-                          <Image
-                            src={src}
-                            alt={room.name}
-                            width={48}
-                            height={48}
-                            unoptimized
-                            className="w-12 h-12 rounded-full object-cover"
-                          />
+                          <div className="w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center text-xl font-semibold text-white">
+                            {fallbackLabel}
+                          </div>
                         );
-                      }
-
-                      const fallbackLabel = src || room.name.charAt(0).toUpperCase();
-                      return (
-                        <div className="w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center text-xl font-semibold text-white">
-                          {fallbackLabel}
-                        </div>
-                      );
-                    })()}
-                  </div>
-                  <div className="ml-4 flex-1 min-w-0">
-                    <div className="flex justify-between items-center">
-                      <h3 className="font-semibold text-sm text-white truncate">
-                        {room.name}
-                      </h3>
+                      })()}
                     </div>
-                    <div className="flex justify-between items-start">
-                      <p className="text-xs text-gray-400 truncate mt-1">
-                        {(() => {
-                          try {
-                            if (!room.lastMessage) return "";
-                            const parsed = JSON.parse(room.lastMessage);
-                            if (parsed.type && parsed.params) {
-                              return t(`system.${parsed.type}`, parsed.params);
+                    <div className="ml-4 flex-1 min-w-0">
+                      <div className="flex justify-between items-center">
+                        <h3 className="font-semibold text-sm text-white truncate">
+                          {roomName}
+                        </h3>
+                      </div>
+                      <div className="flex justify-between items-start">
+                        <p className="text-xs text-gray-400 truncate mt-1">
+                          {(() => {
+                            try {
+                              if (!lastMessage) return "";
+                              const parsed = JSON.parse(lastMessage);
+                              if (parsed.type && parsed.params) {
+                                return t(`system.${parsed.type}`, parsed.params);
+                              }
+                              return lastMessage;
+                            } catch (e) {
+                              return lastMessage;
                             }
-                            return room.lastMessage;
-                          } catch (e) {
-                            return room.lastMessage;
-                          }
-                        })()}
-                      </p>
-                      {room.type !== "ai" && room.unreadCount && room.unreadCount > 0 ? (
-                        <span className="ml-2 mt-1 bg-emerald-500 text-white text-xs font-bold rounded-full h-5 min-w-[1.25rem] px-1 flex items-center justify-center flex-shrink-0">
-                          {room.unreadCount > 99 ? '99+' : room.unreadCount}
-                        </span>
-                      ) : null}
+                          })()}
+                        </p>
+                        {room.type !== "ai" && room.unreadCount && room.unreadCount > 0 ? (
+                          <span className="ml-2 mt-1 bg-emerald-500 text-white text-xs font-bold rounded-full h-5 min-w-[1.25rem] px-1 flex items-center justify-center flex-shrink-0">
+                            {room.unreadCount > 99 ? '99+' : room.unreadCount}
+                          </span>
+                        ) : null}
+                      </div>
                     </div>
-                  </div>
-                </Link>
-              );
-            })}
+                  </Link>
+                );
+              })
+            )}
           </div>
         </div>
       </aside>

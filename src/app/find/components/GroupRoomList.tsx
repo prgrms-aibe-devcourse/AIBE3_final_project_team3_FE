@@ -2,7 +2,7 @@
 
 import { useGetPublicGroupChatRoomsQuery, useJoinGroupChat } from "@/global/api/useChatQuery";
 import { useCloseRoomMutation } from "@/global/api/useAdminCloseRoomQuery";
-import { GroupChatRoomResp } from "@/global/types/chat.types";
+import { GroupChatRoomPublicResp } from "@/global/types/chat.types";
 import { Users, Lock, Hash, MoreVertical } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useLoginStore } from "@/global/stores/useLoginStore";
@@ -146,7 +146,7 @@ const CloseRoomModal = ({
 };
 
 // Individual Group Room Card Component
-const GroupRoomCard = ({ room }: { room: GroupChatRoomResp }) => {
+const GroupRoomCard = ({ room }: { room: GroupChatRoomPublicResp }) => {
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isCloseModalOpen, setIsCloseModalOpen] = useState(false);

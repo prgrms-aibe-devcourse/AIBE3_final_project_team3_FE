@@ -3,7 +3,7 @@
 import { useGetAiChatRoomsQuery, useGetDirectChatRoomsQuery, useGetGroupChatRoomsQuery } from '@/global/api/useChatQuery';
 import { ChatRoom, useChatStore } from "@/global/stores/useChatStore";
 import { useLoginStore } from '@/global/stores/useLoginStore';
-import { AIChatRoomResp, DirectChatRoomResp, GroupChatRoomResp, RoomLastMessageUpdateResp } from '@/global/types/chat.types';
+import { AIChatRoomResp, DirectChatRoomResp, GroupChatRoomResp, GroupChatRoomSummaryResp, RoomLastMessageUpdateResp } from '@/global/types/chat.types';
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo } from "react";
 import ChatSidebar from "./_components/ChatSidebar";
@@ -76,7 +76,7 @@ export default function ChatLayout({
   const { data: groupRoomsData } = useGetGroupChatRoomsQuery();
   const { data: aiRoomsData } = useGetAiChatRoomsQuery();
 
-  // WebSocket 구독: 채팅방 리스트 실시간 업데이트
+  // WebSocket 구독: 채팅방 리스트 실시간 업데이트 (Plan A: Lazy Calculation)
   useEffect(() => {
     if (!member || !accessToken) return;
 
@@ -84,29 +84,33 @@ export default function ChatLayout({
 
     const setupSubscription = () => {
       const client = getStompClient();
-      const destination = `/user/queue/rooms/update`;
+      const destination = `/topic/room-list-updates`;  // Topic Broadcast로 변경
 
       subscription = client.subscribe(
         destination,
         (message: IMessage) => {
           const payload: RoomLastMessageUpdateResp = JSON.parse(message.body);
 
-          // 캐시에서 해당 방의 lastMessageAt, unreadCount, lastMessage 업데이트 (API 재조회 없이)
+          // 캐시에서 해당 방의 lastMessageAt, lastMessage 업데이트 + unreadCount 계산
           const roomType = payload.chatRoomType.toLowerCase();
           const cacheKey: (string | number)[] = ['chatRooms', roomType];
 
           queryClient.setQueryData<CachedRoomSummary[] | undefined>(cacheKey, (prevRooms) => {
             if (!prevRooms) return prevRooms;
-            return prevRooms.map((room) =>
-              room.id === payload.roomId
-                ? {
-                    ...room,
-                    lastMessageAt: payload.lastMessageAt,
-                    unreadCount: payload.unreadCount,
-                    lastMessageContent: payload.lastMessageContent
-                  }
-                : room
-            );
+            return prevRooms.map((room) => {
+              if (room.id !== payload.roomId) return room;
+
+              // 클라이언트에서 unreadCount 계산: latestSequence - lastReadSequence
+              const lastReadSequence = (room as any).lastReadSequence ?? 0;
+              const unreadCount = Math.max(0, payload.latestSequence - lastReadSequence);
+
+              return {
+                ...room,
+                lastMessageAt: payload.lastMessageAt,
+                unreadCount: unreadCount,
+                lastMessageContent: payload.lastMessageContent
+              };
+            });
           });
         }
       );
@@ -141,7 +145,8 @@ export default function ChatLayout({
       };
     });
 
-    const groupRooms: ChatRoom[] = (groupRoomsData || []).map((room: GroupChatRoomResp) => {
+    // [Plan C] 최적화: Summary DTO 사용
+    const groupRooms: ChatRoom[] = (groupRoomsData || []).map((room: GroupChatRoomSummaryResp) => {
       return {
         id: `group-${room.id}`,
         name: room.name,

@@ -20,6 +20,7 @@ export interface DirectChatRoomResp {
   user1: ChatRoomMember;
   user2: ChatRoomMember;
   unreadCount: number;
+  lastReadSequence?: number;
   lastMessageAt?: string;
   lastMessageContent?: string;
 }
@@ -35,8 +36,34 @@ export interface GroupChatRoomResp {
   ownerId: number;
   members: ChatRoomMember[];
   unreadCount: number;
+  lastReadSequence?: number;
   lastMessageAt?: string;
   lastMessageContent?: string;
+}
+
+// 그룹 채팅방 Summary DTO (Chat 페이지 리스트용)
+export interface GroupChatRoomSummaryResp {
+  id: number;
+  name: string;
+  unreadCount: number;
+  lastReadSequence?: number;
+  lastMessageAt?: string;
+  lastMessageContent?: string;
+}
+
+// 공개 그룹 채팅방 DTO (Find 페이지용)
+export interface GroupChatRoomPublicResp {
+  id: number;
+  name: string;
+  description?: string;
+  topic?: string;
+  hasPassword: boolean;
+  memberCount: number;
+}
+
+// 채팅방 참가 응답
+export interface JoinRoomResp {
+  id: number;
 }
 
 export interface CreateAIChatReq {
@@ -63,7 +90,7 @@ export interface RoomLastMessageUpdateResp {
   roomId: number;
   chatRoomType: "DIRECT" | "GROUP" | "AI";
   lastMessageAt: string;
-  unreadCount: number;
+  latestSequence: number;
   lastMessageContent: string;
 }
 
@@ -144,4 +171,15 @@ export interface AiFeedbackItem {
 export interface AiFeedbackResp {
   correctedContent: string;
   feedback: AiFeedbackItem[];
+}
+
+export interface ChatSearchResult {
+  messageId: string;
+  chatRoomId: number;
+  chatRoomType: "DIRECT" | "GROUP" | "AI";
+  senderName: string;
+  content: string;
+  translatedContent?: string;
+  sequence?: number;
+  createdAt: string;
 }
