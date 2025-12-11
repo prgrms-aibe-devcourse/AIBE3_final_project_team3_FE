@@ -564,7 +564,7 @@ function SenderProfileModal({ memberId, isOpen, onClose }: SenderProfileModalPro
               <p className="text-sm mb-1" style={{ color: "var(--surface-muted-text)" }}>{t("profile.notifications.modal.fields.interests")}</p>
               {data.interests && data.interests.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
-                  {data.interests.map((interest, index) => (
+                  {data.interests.map((interest: string, index: number) => (
                     <span
                       key={`${interest}-${index}`}
                       className="px-3 py-1 rounded-full bg-emerald-600/20 text-emerald-200 text-xs"

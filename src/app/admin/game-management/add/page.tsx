@@ -25,8 +25,7 @@ export default function GameAddPage() {
   const handleAdd = (note: any) => {
     createMutation.mutate(
       {
-        originalContent: note.originalContent,
-        correctedContent: note.correctedContent,
+        learningNoteId: note.id,
       },
       {
         onSuccess: () => {
