@@ -159,7 +159,7 @@ export default function LearningNotesPage() {
     if (hasHydrated && !accessToken) {
       router.replace("/auth/login");
     }
-  }, [accessToken]);
+  }, [accessToken, hasHydrated, router]);
 
   const [activeTab, setActiveTab] =
     useState<"ALL" | "Grammar" | "Vocabulary" | "Translation">("ALL");

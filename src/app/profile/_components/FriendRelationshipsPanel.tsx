@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronLeft, ChevronRight, Eye, Trash2, X } from "lucide-react";
+import Image from "next/image";
 import { MouseEvent, useState } from "react";
 
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -259,13 +260,16 @@ export function FriendRelationshipsPanel() {
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                       {friend.profileImageUrl ? (
-                        <img
+                        <Image
                           src={friend.profileImageUrl}
                           alt={t("profile.info.avatar.alt", {
                             name: resolveFriendName(friend, index),
                           })}
+                          width={40}
+                          height={40}
                           className="h-10 w-10 rounded-full object-cover border border-[var(--surface-border)]"
                           referrerPolicy="no-referrer"
+                          unoptimized
                         />
                       ) : (
                         <div className="h-10 w-10 rounded-full bg-[var(--surface-panel-muted)] text-sm font-semibold flex items-center justify-center border border-[var(--surface-border)]" style={{ color: "var(--page-text)" }}>
@@ -415,11 +419,14 @@ function FriendDetailModal({ friendId, isOpen, onClose }: FriendDetailModalProps
           <div className="space-y-4">
             <div className="flex flex-col items-center text-center gap-3">
               {data.profileImageUrl ? (
-                <img
+                <Image
                   src={data.profileImageUrl}
                   alt={t("profile.info.avatar.alt", { name: data.nickname ?? "" })}
+                  width={80}
+                  height={80}
                   className="h-20 w-20 rounded-full object-cover border-2 border-emerald-400"
                   referrerPolicy="no-referrer"
+                  unoptimized
                 />
               ) : (
                 <div className="h-20 w-20 rounded-full bg-[var(--surface-panel-muted)] text-2xl font-semibold flex items-center justify-center border border-[var(--surface-border)]" style={{ color: "var(--page-text)" }}>

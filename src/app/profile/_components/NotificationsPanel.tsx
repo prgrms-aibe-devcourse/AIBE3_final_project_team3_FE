@@ -1,6 +1,7 @@
 "use client";
 
 import { Check, ChevronLeft, ChevronRight, Trash2, X } from "lucide-react";
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -518,11 +519,14 @@ function SenderProfileModal({ memberId, isOpen, onClose }: SenderProfileModalPro
           <div className="space-y-4">
             <div className="flex flex-col items-center text-center gap-3">
               {data.profileImageUrl ? (
-                <img
+                <Image
                   src={data.profileImageUrl}
                   alt={t("profile.info.avatar.alt", { name: data.nickname ?? "" })}
+                  width={80}
+                  height={80}
                   className="h-20 w-20 rounded-full object-cover border-2 border-emerald-400"
                   referrerPolicy="no-referrer"
+                  unoptimized
                 />
               ) : (
                 <div className="h-20 w-20 rounded-full bg-[var(--surface-panel-muted)] text-2xl font-semibold flex items-center justify-center border border-[var(--surface-border)]" style={{ color: "var(--page-text)" }}>
