@@ -26,7 +26,6 @@ function MiniGamePlayContent() {
   const [correctCount, setCorrectCount] = useState(0);
   const [isFinished, setIsFinished] = useState(false);
 
-  // 🔥 WrongItem 타입 자동 추론
   type WrongItem = {
     question: typeof questions[number] & { correctedContent: string };
     feedbacks: {
@@ -37,26 +36,19 @@ function MiniGamePlayContent() {
     }[];
   };
 
-  // ❌ 틀린 문제 리스트
   const [wrongList, setWrongList] = useState<WrongItem[]>([]);
 
-  // 🔥 페이지네이션 설정
   const ITEMS_PER_PAGE = 5;
   const [page, setPage] = useState(1);
 
   const totalPages = Math.ceil(wrongList.length / ITEMS_PER_PAGE);
+  const currentItems = wrongList.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
-  const currentItems = wrongList.slice(
-    (page - 1) * ITEMS_PER_PAGE,
-    page * ITEMS_PER_PAGE
-  );
-
-  // 🔥 정답 제출 훅
   const submitMutation = useSubmitAnswerMutation();
 
-  if (isLoading) return <div className="p-10">Loading...</div>;
+  if (isLoading) return <div className="p-10 text-[var(--text-primary)]">Loading...</div>;
   if (!questions.length)
-    return <div className="p-10">문제를 불러올 수 없습니다.</div>;
+    return <div className="p-10 text-[var(--text-primary)]">문제를 불러올 수 없습니다.</div>;
 
   const q = questions[current];
 
@@ -71,10 +63,7 @@ function MiniGamePlayContent() {
       },
       {
         onSuccess: (resp) => {
-          const answerCorrect = resp.correct;
-
-          // ❌ 오답이면 리스트에 저장
-          if (!answerCorrect) {
+          if (!resp.correct) {
             setWrongList((prev) => [
               ...prev,
               {
@@ -89,16 +78,13 @@ function MiniGamePlayContent() {
             setCorrectCount((prev) => prev + 1);
           }
 
-          setIsCorrect(answerCorrect);
+          setIsCorrect(resp.correct);
           setShowAnswer(true);
         },
       }
     );
   };
 
-  // ---------------------------------------------------
-  // 🔥 다음 문제로 이동
-  // ---------------------------------------------------
   const goNext = () => {
     if (current + 1 === questions.length) {
       setIsFinished(true);
@@ -119,46 +105,49 @@ function MiniGamePlayContent() {
   // 🔥 렌더링 시작
   // ============================================================
   return (
-    <div className="min-h-screen p-10 bg-gray-100">
-      <div className="max-w-xl mx-auto bg-white shadow-md rounded-xl p-6">
+    <div
+      className="min-h-screen p-10"
+      style={{ background: "var(--page-bg)" }}
+    >
+      <div className="theme-surface max-w-xl mx-auto shadow-md rounded-xl p-6">
 
         {/* ------------------------------------------------ */}
         {/* 🔥 게임 종료 화면 */}
         {/* ------------------------------------------------ */}
         {isFinished ? (
           <div className="text-center space-y-6">
-            <h2 className="text-2xl font-bold text-indigo-700">🎉 게임 완료!</h2>
+            <h2 className="text-2xl font-bold text-[var(--primary)]">
+              🎉 게임 완료!
+            </h2>
 
-            <p className="text-lg font-semibold text-gray-800">
+            <p className="text-lg font-semibold text-[var(--text-primary)]">
               총 {questions.length}문제 중 {correctCount}문제 정답!
             </p>
 
-            {/* ------------------------------------------------ */}
-            {/* ❌ 틀린 문제 아코디언 + 페이지네이션 */}
-            {/* ------------------------------------------------ */}
+            {/* 🔥 틀린 문제 복습 */}
             {wrongList.length > 0 && (
               <div className="mt-6 text-left space-y-4">
-                <h3 className="text-xl font-bold text-red-600">
+                <h3 className="text-xl font-bold text-red-500">
                   ❌ 틀린 문제 복습
                 </h3>
 
                 {currentItems.map((item, idx) => (
                   <details
                     key={idx}
-                    className="border rounded-lg bg-white shadow-sm p-3 group open:shadow-md transition"
+                    className="theme-surface-muted border rounded-lg p-3 group open:shadow-md transition"
                   >
-                    <summary className="cursor-pointer text-red-700 font-semibold text-base list-none flex justify-between items-center">
+                    <summary className="cursor-pointer font-semibold text-red-400 text-base list-none flex justify-between items-center">
                       <span>
                         문제 {idx + 1 + (page - 1) * ITEMS_PER_PAGE}:{" "}
                         {item.question.originalContent}
                       </span>
-                      <span className="text-gray-500 group-open:rotate-180 transition-transform">
+                      <span className="text-[var(--text-muted)] group-open:rotate-180 transition-transform">
                         ▼
                       </span>
                     </summary>
 
                     <div className="mt-3 space-y-3">
-                      <p className="text-green-700 font-semibold">
+                      <p className="text-green-500 font-semibold">
                         정답: {item.question.correctedContent}
                       </p>
 
@@ -167,9 +156,9 @@ function MiniGamePlayContent() {
                           {item.feedbacks.map((fb, fIdx) => (
                             <div
                               key={fIdx}
-                              className="p-3 bg-gray-50 border rounded-md"
+                              className="theme-panel border rounded-md p-3"
                             >
-                              <p className="font-bold text-indigo-600">[{fb.tag}]</p>
+                              <p className="font-bold text-indigo-400">[{fb.tag}]</p>
                               <p><span className="font-semibold">문제:</span> {fb.problem}</p>
                               <p><span className="font-semibold">수정:</span> {fb.correction}</p>
                               <p><span className="font-semibold">설명:</span> {fb.extra}</p>
@@ -187,28 +176,26 @@ function MiniGamePlayContent() {
                     <button
                       onClick={() => setPage((p) => Math.max(1, p - 1))}
                       disabled={page === 1}
-                      className="px-3 py-1 border rounded disabled:opacity-40"
+                      className="px-3 py-1 border rounded disabled:opacity-40 theme-panel"
                     >
                       이전
                     </button>
 
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                      (p) => (
-                        <button
-                          key={p}
-                          onClick={() => setPage(p)}
-                          className={`px-3 py-1 border rounded ${page === p ? "bg-indigo-600 text-white" : ""
-                            }`}
-                        >
-                          {p}
-                        </button>
-                      )
-                    )}
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                      <button
+                        key={p}
+                        onClick={() => setPage(p)}
+                        className={`px-3 py-1 border rounded theme-panel 
+                          ${page === p ? "bg-indigo-600 text-white" : ""}`}
+                      >
+                        {p}
+                      </button>
+                    ))}
 
                     <button
                       onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                       disabled={page === totalPages}
-                      className="px-3 py-1 border rounded disabled:opacity-40"
+                      className="px-3 py-1 border rounded disabled:opacity-40 theme-panel"
                     >
                       다음
                     </button>
@@ -217,6 +204,7 @@ function MiniGamePlayContent() {
               </div>
             )}
 
+            {/* 버튼들 */}
             <div className="space-y-3">
               <button
                 onClick={() => router.push("/learning-notes")}
@@ -238,18 +226,18 @@ function MiniGamePlayContent() {
             {/* ------------------------------------------------ */}
             {/* 🔥 문제 화면 */}
             {/* ------------------------------------------------ */}
-            <h2 className="text-xl font-bold mb-4">
+            <h2 className="text-xl font-bold mb-4 text-[var(--text-primary)]">
               문제 {current + 1} / {questions.length}
             </h2>
 
-            <p className="text-gray-700 mb-3">
+            <p className="text-[var(--text-primary)] mb-3">
               잘못된 문장:{" "}
-              <span className="font-semibold text-red-600">
+              <span className="font-semibold text-red-500">
                 {q.originalContent}
               </span>
             </p>
 
-            {/* required를 위한 form */}
+            {/* 입력 form */}
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -257,7 +245,7 @@ function MiniGamePlayContent() {
               }}
             >
               <input
-                className="w-full border p-2 rounded-md mt-3"
+                className="w-full border rounded-md p-2 mt-3 theme-panel"
                 placeholder="올바른 문장을 입력하세요"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
@@ -278,18 +266,14 @@ function MiniGamePlayContent() {
             {/* 🔥 정답 확인 화면 */}
             {/* ------------------------------------------------ */}
             {showAnswer && (
-              <div className="mt-6 p-4 bg-gray-50 border border-gray-300 rounded-md">
+              <div className="mt-6 theme-surface-muted border rounded-md p-4">
                 {isCorrect ? (
-                  <p className="text-green-700 font-bold text-lg mb-2">
-                    정답입니다! 🎉
-                  </p>
+                  <p className="text-green-500 font-bold text-lg mb-2">정답입니다! 🎉</p>
                 ) : (
-                  <p className="text-red-600 font-bold text-lg mb-2">
-                    틀렸습니다.
-                  </p>
+                  <p className="text-red-500 font-bold text-lg mb-2">틀렸습니다.</p>
                 )}
 
-                <p className="text-gray-800 mb-4">
+                <p className="text-[var(--text-primary)] mb-4">
                   <span className="font-semibold">정답: </span>
                   {submitMutation.data?.correctedContent}
                 </p>
@@ -297,22 +281,15 @@ function MiniGamePlayContent() {
                 {/* 피드백 */}
                 {submitMutation.data?.feedbacks?.length ? (
                   <div className="mt-4">
-                    <p className="font-semibold text-gray-700 mb-2">피드백:</p>
+                    <p className="font-semibold text-[var(--text-primary)] mb-2">피드백:</p>
 
                     <ul className="space-y-3">
-                      {submitMutation.data.feedbacks.map((fb: {
-                        tag?: string;
-                        problem?: string;
-                        correction?: string;
-                        extra?: string;
-                      }, idx: number) => (
+                      {submitMutation.data.feedbacks.map((fb, idx) => (
                         <li
                           key={idx}
-                          className="p-3 bg-white border rounded-md shadow-sm"
+                          className="theme-panel border rounded-md p-3 shadow-sm"
                         >
-                          <p className="font-semibold text-indigo-600">
-                            [{fb.tag}]
-                          </p>
+                          <p className="font-semibold text-indigo-400">[{fb.tag}]</p>
                           <p><span className="font-semibold">문제:</span> {fb.problem}</p>
                           <p><span className="font-semibold">수정:</span> {fb.correction}</p>
                           <p><span className="font-semibold">설명:</span> {fb.extra}</p>
