@@ -58,7 +58,7 @@ export function ProfileTabsLayout() {
         </p>
       </div>
 
-      <div className="flex flex-wrap gap-3 mb-8">
+      <div className="grid grid-cols-1 gap-3 mb-8 sm:grid-cols-2 lg:grid-cols-3">
         {TAB_CONFIG.map(({ id, labelKey, descriptionKey, icon: Icon }) => {
           const isActive = activeTab === id;
           return (
@@ -66,7 +66,7 @@ export function ProfileTabsLayout() {
               key={id}
               type="button"
               onClick={() => setActiveTab(id)}
-              className={`flex items-center gap-3 rounded-2xl px-4 py-3 border transition-all shadow-sm ${isActive
+              className={`flex w-full items-center gap-3 rounded-2xl px-4 py-3 border transition-all shadow-sm text-left ${isActive
                 ? "bg-[var(--card-surface)] border-emerald-300 text-emerald-600 shadow-[0_12px_30px_rgba(15,23,42,0.18)]"
                 : "bg-[var(--surface-panel)] border-[var(--surface-border)] text-[var(--surface-muted-text)] hover:text-[var(--page-text)] hover:border-emerald-200/60"
                 }`}

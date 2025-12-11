@@ -1,21 +1,28 @@
 "use client";
 
+import { useState } from "react";
+
+import { useLanguage } from "@/contexts/LanguageContext";
 import {
   useSentenceGameCreateMutation,
   useSentenceGameNoteQuery,
 } from "@/global/api/useAdminGameQuery";
-import { useState } from "react";
+
 import AdminGuard from "../../AdminGuard";
 
 export default function GameAddPage() {
+  const { t } = useLanguage();
   const [page, setPage] = useState(0);
 
   const { data, isLoading } = useSentenceGameNoteQuery(page);
   const createMutation = useSentenceGameCreateMutation();
 
   const available = data?.content ?? [];
+  const totalPages = data?.totalPages ?? 0;
+  const currentPage = data?.number ?? 0;
+  const pageNumbers = Array.from({ length: totalPages }, (_, i) => i);
 
-  const add = (note: any) => {
+  const handleAdd = (note: any) => {
     createMutation.mutate(
       {
         originalContent: note.originalContent,
@@ -23,91 +30,85 @@ export default function GameAddPage() {
       },
       {
         onSuccess: () => {
-          alert("게임 문장으로 추가되었습니다.");
+          alert(t("admin.game.add.success"));
         },
-        onError: (e: any) => {
-          alert(e.message ?? "등록 실패");
+        onError: (error: any) => {
+          alert(error?.message ?? t("admin.game.add.error"));
         },
-      }
+      },
     );
   };
 
-  const totalPages = data?.totalPages ?? 0;
-  const currentPage = data?.number ?? 0;
-  const pageNumbers = Array.from({ length: totalPages }, (_, i) => i);
-
   return (
     <AdminGuard>
-      <main className="max-w-6xl mx-auto text-gray-200">
-
-        {/* 🔥 다크 카드 */}
-        <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
-
-          {/* Header */}
-          <div className="p-4 bg-gray-700 border-b border-gray-600 text-lg font-bold text-gray-200">
-            문장 추가
+      <main
+        className="max-w-6xl mx-auto space-y-6"
+        style={{ color: "var(--page-text)" }}
+      >
+        <div className="theme-card rounded-3xl overflow-hidden">
+          <div
+            className="px-5 py-4 border-b text-lg font-semibold"
+            style={{ borderColor: "var(--surface-border)" }}
+          >
+            {t("admin.game.add.title")}
           </div>
 
-          {/* 로딩 */}
           {isLoading && (
-            <div className="p-10 text-center text-gray-400">
-              로딩 중입니다...
+            <div
+              className="p-10 text-center text-sm"
+              style={{ color: "var(--surface-muted-text)" }}
+            >
+              {t("admin.game.add.loading")}
             </div>
           )}
 
-          {/* 데이터 없음 */}
           {!isLoading && available.length === 0 && (
-            <div className="p-10 text-center text-gray-400">
-              추가할 수 있는 문장이 없습니다.
+            <div
+              className="p-10 text-center text-sm"
+              style={{ color: "var(--surface-muted-text)" }}
+            >
+              {t("admin.game.add.empty")}
             </div>
           )}
 
-          {/* 테이블 */}
           {!isLoading && available.length > 0 && (
             <div className="overflow-x-auto">
-              <table className="w-full">
-
-                {/* 테이블 헤더 */}
-                <thead className="bg-gray-700 border-b border-gray-600">
+              <table className="w-full text-sm">
+                <thead style={{ background: "var(--surface-panel-muted)" }}>
                   <tr>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">
-                      원본 문장
+                    <th className="px-4 py-3 text-left font-semibold">
+                      {t("admin.game.table.original")}
                     </th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">
-                      수정된 문장
+                    <th className="px-4 py-3 text-left font-semibold">
+                      {t("admin.game.table.corrected")}
                     </th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-300">
-                      작업
+                    <th className="px-4 py-3 text-left font-semibold">
+                      {t("admin.game.table.actions")}
                     </th>
                   </tr>
                 </thead>
-
-                {/* 테이블 내용 */}
-                <tbody className="divide-y divide-gray-700">
+                <tbody className="divide-y divide-[var(--surface-border)]">
                   {available.map((note: any) => (
-                    <tr key={note.id} className="hover:bg-gray-700/40">
-
-                      <td className="px-4 py-3">
-                        <p className="text-sm text-gray-200">
-                          {note.originalContent}
-                        </p>
+                    <tr
+                      key={note.id}
+                      className="hover:bg-emerald-500/5 transition-colors"
+                    >
+                      <td className="px-4 py-3 align-top">
+                        <p>{note.originalContent}</p>
                       </td>
-
-                      <td className="px-4 py-3">
-                        <p className="text-sm text-green-400">
+                      <td className="px-4 py-3 align-top">
+                        <p className="text-emerald-500 font-medium">
                           {note.correctedContent}
                         </p>
                       </td>
-
                       <td className="px-4 py-3 whitespace-nowrap">
                         <button
-                          onClick={() => add(note)}
-                          className="px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-500 transition"
+                          onClick={() => handleAdd(note)}
+                          className="px-3 py-1 rounded-2xl bg-emerald-500 text-white text-xs font-semibold hover:bg-emerald-400 transition-colors"
                         >
-                          추가
+                          {t("admin.game.add.action")}
                         </button>
                       </td>
-
                     </tr>
                   ))}
                 </tbody>
@@ -115,22 +116,22 @@ export default function GameAddPage() {
             </div>
           )}
 
-          {/* 페이지네이션 */}
-          <div className="flex justify-center gap-2 p-4">
+          <div
+            className="flex justify-center gap-2 p-4 border-t"
+            style={{ borderColor: "var(--surface-border)" }}
+          >
             {pageNumbers.map((p) => (
               <button
                 key={p}
                 onClick={() => setPage(p)}
-                className={`px-3 py-1 rounded text-sm ${p === currentPage
-                    ? "bg-indigo-600 text-white"
-                    : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                  }`}
+                className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${p === currentPage
+                  ? "bg-emerald-500 text-white"
+                  : "bg-[var(--surface-panel-muted)] text-[var(--surface-muted-text)] hover:text-[var(--page-text)]"}`}
               >
                 {p + 1}
               </button>
             ))}
           </div>
-
         </div>
       </main>
     </AdminGuard>

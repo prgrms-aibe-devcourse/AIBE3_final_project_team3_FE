@@ -1,14 +1,17 @@
 'use client';
 
 import { useState } from 'react';
-import AdminGuard from "../../AdminGuard";
 
+import { useLanguage } from "@/contexts/LanguageContext";
 import {
-  useSentenceGameListQuery,
   useSentenceGameDeleteMutation,
+  useSentenceGameListQuery,
 } from "@/global/api/useAdminGameQuery";
 
+import AdminGuard from "../../AdminGuard";
+
 export default function GameListPage() {
+  const { t } = useLanguage();
   const [page, setPage] = useState(0);
 
   const { data, isLoading } = useSentenceGameListQuery(page);
@@ -17,12 +20,12 @@ export default function GameListPage() {
   const gameItems = data?.content ?? [];
 
   const removeItem = (id: number) => {
-    if (!confirm("정말 삭제하시겠습니까?")) return;
+    if (!confirm(t("admin.game.list.confirmDelete"))) return;
 
     deleteMutation.mutate(id, {
       onSuccess: () => {
-        alert("삭제되었습니다.");
-      }
+        alert(t("admin.game.list.deleteSuccess"));
+      },
     });
   };
 
@@ -32,53 +35,78 @@ export default function GameListPage() {
 
   return (
     <AdminGuard>
-      <main className="max-w-6xl mx-auto text-gray-100">
-
-        <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden shadow-lg">
-
-          {/* Header */}
-          <div className="p-4 bg-gray-700 border-b border-gray-600 text-lg font-bold text-gray-100">
-            등록된 게임 문장 목록
+      <main
+        className="max-w-6xl mx-auto space-y-6"
+        style={{ color: "var(--page-text)" }}
+      >
+        <div className="theme-card rounded-3xl overflow-hidden">
+          <div
+            className="px-5 py-4 border-b text-lg font-semibold"
+            style={{ borderColor: "var(--surface-border)" }}
+          >
+            {t("admin.game.list.title")}
           </div>
 
-          {/* Empty case */}
-          {gameItems.length === 0 ? (
-            <div className="p-10 text-center text-gray-400">
-              현재 등록된 문장이 없습니다.
+          {isLoading && (
+            <div
+              className="p-10 text-center text-sm"
+              style={{ color: "var(--surface-muted-text)" }}
+            >
+              {t("admin.game.list.loading")}
             </div>
-          ) : (
+          )}
+
+          {!isLoading && gameItems.length === 0 && (
+            <div
+              className="p-10 text-center text-sm"
+              style={{ color: "var(--surface-muted-text)" }}
+            >
+              {t("admin.game.list.empty")}
+            </div>
+          )}
+
+          {!isLoading && gameItems.length > 0 && (
             <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-700 border-b border-gray-600">
+              <table className="w-full text-sm">
+                <thead style={{ background: "var(--surface-panel-muted)" }}>
                   <tr>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-200">원본 문장</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-200">수정된 문장</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-200">추가일</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-200">작업</th>
+                    <th className="px-4 py-3 text-left font-semibold">
+                      {t("admin.game.table.original")}
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold">
+                      {t("admin.game.table.corrected")}
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold">
+                      {t("admin.game.table.createdAt")}
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold">
+                      {t("admin.game.table.actions")}
+                    </th>
                   </tr>
                 </thead>
-
-                <tbody className="divide-y divide-gray-700">
+                <tbody className="divide-y divide-[var(--surface-border)]">
                   {gameItems.map((item: any) => (
-                    <tr key={item.id} className="hover:bg-gray-700 transition">
+                    <tr
+                      key={item.id}
+                      className="hover:bg-emerald-500/5 transition-colors"
+                    >
                       <td className="px-4 py-3">
-                        <p className="text-sm text-gray-100">{item.originalContent}</p>
+                        {item.originalContent}
                       </td>
-
                       <td className="px-4 py-3">
-                        <p className="text-sm text-green-400">{item.correctedContent}</p>
+                        <span className="text-emerald-500 font-medium">
+                          {item.correctedContent}
+                        </span>
                       </td>
-
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-400">
+                      <td className="px-4 py-3 whitespace-nowrap" style={{ color: "var(--surface-muted-text)" }}>
                         {item.createdAt?.slice(0, 10)}
                       </td>
-
                       <td className="px-4 py-3 whitespace-nowrap">
                         <button
                           onClick={() => removeItem(item.id)}
-                          className="px-3 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 transition"
+                          className="px-3 py-1 rounded-2xl bg-red-500 text-white text-xs font-semibold hover:bg-red-400 transition-colors"
                         >
-                          제거
+                          {t("admin.game.list.remove")}
                         </button>
                       </td>
                     </tr>
@@ -88,23 +116,23 @@ export default function GameListPage() {
             </div>
           )}
 
-          {/* Pagination */}
-          <div className="flex justify-center gap-2 p-4 border-t border-gray-700">
+          <div
+            className="flex justify-center gap-2 p-4 border-t"
+            style={{ borderColor: "var(--surface-border)" }}
+          >
             {pageNumbers.map((p) => (
               <button
                 key={p}
                 onClick={() => setPage(p)}
-                className={`px-3 py-1 rounded text-sm ${
-                  p === currentPage
-                    ? "bg-indigo-600 text-white"
-                    : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                }`}
+                className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${p === currentPage
+                    ? "bg-emerald-500 text-white"
+                    : "bg-[var(--surface-panel-muted)] text-[var(--surface-muted-text)] hover:text-[var(--page-text)]"
+                  }`}
               >
                 {p + 1}
               </button>
             ))}
           </div>
-
         </div>
       </main>
     </AdminGuard>

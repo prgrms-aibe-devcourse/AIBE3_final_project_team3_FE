@@ -1,0 +1,72 @@
+{
+  "nav": {
+    "reportManagement": "신고 관리",
+    "gameList": "게임 목록",
+    "gameAdd": "게임 추가"
+  },
+  "report": {
+    "title": "신고 관리",
+    "listTitle": "신고 목록",
+    "loading": "로딩 중입니다...",
+    "empty": "신고 내역이 없습니다.",
+    "table": {
+      "id": "ID",
+      "status": "상태",
+      "category": "카테고리",
+      "message": "신고 메시지",
+      "reason": "신고 사유",
+      "date": "신고일",
+      "actions": "작업"
+    },
+    "noMessage": "내용 없음",
+    "noReason": "사유 없음",
+    "statusButton": "상태 변경",
+    "detail": {
+      "title": "신고 상세 정보",
+      "reportedUser": "신고당한 유저",
+      "category": "신고 카테고리",
+      "message": "신고 메시지",
+      "reason": "신고 사유",
+      "status": "상태 변경",
+      "cancel": "취소",
+      "save": "저장"
+    },
+    "statuses": {
+      "waiting": "대기",
+      "reviewing": "검토 중",
+      "approved": "승인",
+      "rejected": "거절"
+    },
+    "categories": {
+      "abuse": "욕설/폭언",
+      "scam": "사기/광고",
+      "inappropriate": "부적절한 내용",
+      "other": "기타"
+    }
+  },
+  "game": {
+    "layoutTitle": "게임 문장 관리",
+    "table": {
+      "original": "원본 문장",
+      "corrected": "수정된 문장",
+      "actions": "작업",
+      "createdAt": "추가일"
+    },
+    "add": {
+      "title": "문장 추가",
+      "loading": "로딩 중입니다...",
+      "empty": "추가할 수 있는 문장이 없습니다.",
+      "action": "추가",
+      "success": "게임 문장으로 추가되었습니다.",
+      "error": "등록에 실패했습니다."
+    },
+    "list": {
+      "title": "등록된 게임 문장 목록",
+      "loading": "로딩 중입니다...",
+      "empty": "현재 등록된 문장이 없습니다.",
+      "remove": "제거",
+      "confirmDelete": "정말 삭제하시겠습니까?",
+      "deleteSuccess": "삭제되었습니다."
+    }
+  }
+}

@@ -1,6 +1,8 @@
 "use client";
 
 import { createContext, ReactNode, useContext, useEffect, useState } from "react";
+import adminEn from "../i18n/locales/admin/en.json";
+import adminKo from "../i18n/locales/admin/ko.json";
 import authEn from "../i18n/locales/auth/en.json";
 import authKo from "../i18n/locales/auth/ko.json";
 import chatEn from "../i18n/locales/chat/en.json";
@@ -16,6 +18,7 @@ import profileKo from "../i18n/locales/profile/ko.json";
 
 type Language = 'ko' | 'en';
 type Translations = typeof commonKo & {
+  admin: typeof adminKo;
   auth: typeof authKo;
   chat: typeof chatKo;
   find: typeof findKo;
@@ -26,6 +29,7 @@ type Translations = typeof commonKo & {
 const translations: Record<Language, Translations> = {
   ko: {
     ...commonKo,
+    admin: adminKo,
     auth: authKo,
     chat: chatKo,
     find: findKo,
@@ -34,6 +38,7 @@ const translations: Record<Language, Translations> = {
   },
   en: {
     ...commonEn,
+    admin: adminEn,
     auth: authEn,
     chat: chatEn,
     find: findEn,
