@@ -1,15 +1,15 @@
 "use client";
 
 import { useGetAiChatRoomsQuery, useGetDirectChatRoomsQuery, useGetGroupChatRoomsQuery } from '@/global/api/useChatQuery';
+import { connect, getStompClient } from "@/global/stomp/stompClient";
 import { ChatRoom, useChatStore } from "@/global/stores/useChatStore";
 import { useLoginStore } from '@/global/stores/useLoginStore';
 import { AIChatRoomResp, DirectChatRoomResp, GroupChatRoomResp, RoomLastMessageUpdateResp } from '@/global/types/chat.types';
+import type { IMessage } from "@stomp/stompjs";
+import { useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo } from "react";
 import ChatSidebar from "./_components/ChatSidebar";
-import { connect, getStompClient } from "@/global/stomp/stompClient";
-import type { IMessage } from "@stomp/stompjs";
-import { useQueryClient } from "@tanstack/react-query";
 
 type CachedRoomSummary = {
   id: string | number;
@@ -100,11 +100,11 @@ export default function ChatLayout({
             return prevRooms.map((room) =>
               room.id === payload.roomId
                 ? {
-                    ...room,
-                    lastMessageAt: payload.lastMessageAt,
-                    unreadCount: payload.unreadCount,
-                    lastMessageContent: payload.lastMessageContent
-                  }
+                  ...room,
+                  lastMessageAt: payload.lastMessageAt,
+                  unreadCount: payload.unreadCount,
+                  lastMessageContent: payload.lastMessageContent
+                }
                 : room
             );
           });
@@ -204,7 +204,14 @@ export default function ChatLayout({
 
   return (
     <div className="h-[calc(100vh-4rem)] w-full lg:w-3/5 lg:mx-auto">
-      <div className="flex h-full bg-gray-900 text-white rounded-xl shadow-2xl overflow-hidden">
+      <div
+        className="flex h-full rounded-xl shadow-2xl overflow-hidden"
+        style={{
+          background: "var(--surface-panel)",
+          border: "1px solid var(--surface-border)",
+          color: "var(--page-text)",
+        }}
+      >
         <ChatSidebar
           activeTab={activeTab}
           setActiveTab={handleSetActiveTab}

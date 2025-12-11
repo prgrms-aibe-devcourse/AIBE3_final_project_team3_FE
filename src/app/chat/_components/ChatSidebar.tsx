@@ -1,6 +1,7 @@
 "use client";
 
 import NewGroupChatModal from "@/app/find/components/NewGroupChatModal";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { ChatRoom } from "@/global/stores/useChatStore";
 import {
   Bot,
@@ -13,7 +14,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { useLanguage } from "@/contexts/LanguageContext";
 
 type ChatSidebarProps = {
   activeTab: "direct" | "group" | "ai";
@@ -72,9 +72,18 @@ export default function ChatSidebar({
 
   return (
     <>
-      <aside className="w-1/4 min-w-[300px] max-w-[400px] bg-gray-800 flex flex-col border-r border-gray-700">
+      <aside
+        className="w-1/4 min-w-[300px] max-w-[400px] flex flex-col border-r"
+        style={{
+          background: "var(--surface-panel)",
+          borderRightColor: "var(--surface-border-strong)",
+        }}
+      >
         {/* Header */}
-        <div className="p-4 border-b border-gray-700 flex-shrink-0">
+        <div
+          className="p-4 border-b flex-shrink-0"
+          style={{ borderColor: "var(--surface-border)" }}
+        >
           <div className="flex justify-between items-center">
             <h1 className="text-xl font-bold text-white">Chat</h1>
             <div className="relative">
@@ -85,19 +94,19 @@ export default function ChatSidebar({
                 <Plus size={22} />
               </button>
               {activeTab === "group" && isDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-gray-700 rounded-md shadow-lg z-10">
+                <div className="absolute right-0 mt-2 w-48 theme-popover rounded-md z-10">
                   <button
                     onClick={() => {
                       setIsModalOpen(true);
                       setIsDropdownOpen(false);
                     }}
-                    className="block w-full text-left px-4 py-2 text-sm text-white hover:bg-gray-600"
+                    className="block w-full text-left px-4 py-2 text-sm hover:bg-[var(--surface-panel-muted)]"
                   >
                     NEW GROUP CHAT
                   </button>
                   <Link
                     href="/find?tab=group"
-                    className="block px-4 py-2 text-sm text-white hover:bg-gray-600"
+                    className="block px-4 py-2 text-sm hover:bg-[var(--surface-panel-muted)]"
                     onClick={() => setIsDropdownOpen(false)}
                   >
                     FIND GROUP CHAT
@@ -114,13 +123,19 @@ export default function ChatSidebar({
             <input
               type="text"
               placeholder="Search chats..."
-              className="w-full bg-gray-700 border border-gray-600 rounded-lg pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full theme-field rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 placeholder-gray-400"
             />
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="flex-shrink-0 bg-gray-900 border-b border-gray-700 grid grid-cols-3">
+        <div
+          className="flex-shrink-0 grid grid-cols-3 border-b"
+          style={{
+            background: "var(--surface-panel-muted)",
+            borderColor: "var(--surface-border)",
+          }}
+        >
           <TabButton tabName="direct" label="1:1 Chat" Icon={MessageSquare} />
           <TabButton tabName="group" label="Group Chat" Icon={Users} />
           <TabButton tabName="ai" label="AI Chat" Icon={Bot} />
@@ -139,7 +154,7 @@ export default function ChatSidebar({
                   key={room.id}
                   className={`flex items-center p-3 rounded-lg cursor-pointer transition-colors ${selectedRoomId === room.id
                     ? "bg-emerald-600/20"
-                    : "hover:bg-gray-700/50"
+                    : "hover:bg-[var(--surface-panel-muted)]"
                     }`}
                 >
                   <div className="relative">
@@ -163,7 +178,10 @@ export default function ChatSidebar({
 
                       const fallbackLabel = src || room.name.charAt(0).toUpperCase();
                       return (
-                        <div className="w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center text-xl font-semibold text-white">
+                        <div
+                          className="w-12 h-12 rounded-full flex items-center justify-center text-xl font-semibold text-white"
+                          style={{ background: "var(--surface-panel-muted)" }}
+                        >
                           {fallbackLabel}
                         </div>
                       );

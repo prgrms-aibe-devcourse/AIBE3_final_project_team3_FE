@@ -66,7 +66,10 @@ export function ProfileSummaryHeader({
 
     return (
         <div className={combineClassName(className)} data-member-id={memberId ?? undefined}>
-            <div className="relative w-20 h-20 rounded-full overflow-hidden bg-gray-700 flex items-center justify-center text-2xl text-gray-300">
+            <div
+                className="relative w-20 h-20 rounded-2xl overflow-hidden border border-[var(--surface-border)] bg-[var(--surface-panel-muted)] flex items-center justify-center text-2xl font-semibold"
+                style={{ color: "var(--page-text)" }}
+            >
                 {displayImageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={displayImageUrl} alt={resolvedImageAlt} className="w-full h-full object-cover" />
@@ -74,17 +77,17 @@ export function ProfileSummaryHeader({
                     <span>{fallbackInitial}</span>
                 )}
                 {isUploadingAvatar && (
-                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-xs text-white">
+                    <div className="absolute inset-0 bg-[var(--surface-overlay)] flex items-center justify-center text-xs text-white">
                         {resolvedUploadingText}
                     </div>
                 )}
             </div>
             <div className="space-y-1">
                 {nickname && (
-                    <p className="text-base font-semibold text-white">{nickname}</p>
+                    <p className="text-base font-semibold" style={{ color: "var(--page-text)" }}>{nickname}</p>
                 )}
                 {name && (
-                    <p className="text-sm text-gray-300">{name}</p>
+                    <p className="text-sm" style={{ color: "var(--surface-muted-text)" }}>{name}</p>
                 )}
                 {children}
                 {onClickChangeAvatar && (
@@ -92,7 +95,7 @@ export function ProfileSummaryHeader({
                         type="button"
                         onClick={onClickChangeAvatar}
                         disabled={changeButtonDisabled}
-                        className="mt-2 inline-flex items-center gap-1 rounded-md bg-gray-700 px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="mt-2 inline-flex items-center gap-1 rounded-lg border border-[var(--surface-border)] bg-[var(--surface-panel-muted)] px-3 py-1.5 text-xs font-medium text-[var(--page-text)] transition-colors hover:border-emerald-400 hover:text-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                         <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
                             <path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2h-2.586a1 1 0 01-.707-.293l-.414-.414A2 2 0 0011.586 1H8.414a2 2 0 00-1.414.586l-.414.414A1 1 0 015.879 3H4zm6 4a4 4 0 110 8 4 4 0 010-8zm0 2a2 2 0 100 4 2 2 0 000-4z" />

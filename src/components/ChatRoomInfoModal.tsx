@@ -1,13 +1,13 @@
 "use client";
 
-import Image, { ImageLoaderProps } from "next/image";
-import { X, Users, Lock, Calendar, Crown, UserPlus, MessageSquare, ShieldAlert, Hash, Key } from "lucide-react";
+import { useUpdateGroupChatPasswordMutation } from "@/global/api/useChatQuery";
+import { useSendFriendRequest } from "@/global/api/useFriendshipMutation";
+import { useToastStore } from "@/global/stores/useToastStore";
 import { ChatRoomMember } from "@/global/types/chat.types";
+import { Calendar, Crown, Hash, Key, Lock, ShieldAlert, UserPlus, Users, X } from "lucide-react";
+import Image, { ImageLoaderProps } from "next/image";
 import { useState } from "react";
 import MemberProfileModal from "./MemberProfileModal";
-import { useSendFriendRequest } from "@/global/api/useFriendshipMutation";
-import { useUpdateGroupChatPasswordMutation } from "@/global/api/useChatQuery";
-import { useToastStore } from "@/global/stores/useToastStore";
 import ReportModal from "./ReportModal";
 
 const remoteImageLoader = ({ src }: ImageLoaderProps) => src;
@@ -103,11 +103,11 @@ export default function ChatRoomInfoModal({
 
   const handlePasswordUpdate = () => {
     if (!newPassword.trim()) {
-        if (!confirm("비밀번호를 비워두면 공개방으로 전환됩니다. 계속하시겠습니까?")) {
-            return;
-        }
+      if (!confirm("비밀번호를 비워두면 공개방으로 전환됩니다. 계속하시겠습니까?")) {
+        return;
+      }
     }
-    
+
     updatePassword(
       { roomId: roomDetails.id, newPassword: newPassword.trim() },
       {
@@ -123,21 +123,22 @@ export default function ChatRoomInfoModal({
   return (
     <>
       <div
-        className="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4"
+        className="fixed inset-0 z-50 flex items-center justify-center p-4"
+        style={{ backgroundColor: "var(--surface-overlay)" }}
         onClick={onClose}
       >
         <div
-          className="bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[85vh] animate-slide-in-right"
+          className="theme-card rounded-3xl shadow-2xl w-full max-w-lg flex flex-col max-h-[85vh]"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="p-6 border-b border-gray-700 flex items-center justify-between flex-shrink-0">
-            <h2 className="text-xl font-bold text-white">
+          <div className="p-6 border-b flex items-center justify-between flex-shrink-0" style={{ borderColor: "var(--surface-border)" }}>
+            <h2 className="text-xl font-bold" style={{ color: "var(--page-text)" }}>
               {isGroupChat ? "그룹 채팅방 정보" : isDirectChat ? "대화 상대 정보" : "채팅방 정보"}
             </h2>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-white transition-colors"
+              className="text-[var(--surface-muted-text)] hover:text-emerald-400 transition-colors"
               aria-label="닫기"
             >
               <X size={24} />
@@ -151,14 +152,17 @@ export default function ChatRoomInfoModal({
               <>
                 {/* Room Title & Avatar */}
                 <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-full bg-gray-700 flex items-center justify-center text-3xl flex-shrink-0">
+                  <div
+                    className="w-16 h-16 rounded-full flex items-center justify-center text-3xl flex-shrink-0 border"
+                    style={{ background: "var(--surface-panel-muted)", borderColor: "var(--surface-border)", color: "var(--page-text)" }}
+                  >
                     {roomDetails.avatar || "👥"}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-2xl font-bold text-white truncate">
+                    <h3 className="text-2xl font-bold truncate" style={{ color: "var(--page-text)" }}>
                       {roomDetails.name}
                     </h3>
-                    <div className="flex items-center gap-2 text-sm text-gray-400 mt-1">
+                    <div className="flex items-center gap-2 text-sm mt-1" style={{ color: "var(--surface-muted-text)" }}>
                       <Users size={14} />
                       <span>
                         {subscriberCount || 0}명 접속 중 / {totalMemberCount || roomDetails.members?.length || 0}명
@@ -171,29 +175,30 @@ export default function ChatRoomInfoModal({
                 <div className="space-y-3">
                   {/* Description */}
                   {roomDetails.description && (
-                    <div className="bg-gray-900/50 rounded-lg p-4">
-                      <p className="text-xs text-gray-400 mb-1 font-semibold">설명</p>
-                      <p className="text-sm text-gray-200">{roomDetails.description}</p>
+                    <div className="rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-panel)] p-4">
+                      <p className="text-xs mb-1 font-semibold" style={{ color: "var(--surface-muted-text)" }}>설명</p>
+                      <p className="text-sm" style={{ color: "var(--page-text)" }}>{roomDetails.description}</p>
                     </div>
                   )}
 
                   {/* Topic */}
                   {roomDetails.topic && (
-                    <div className="flex items-center gap-2 text-sm">
+                    <div className="flex items-center gap-2 text-sm" style={{ color: "var(--surface-muted-text)" }}>
                       <Hash size={16} className="text-emerald-400" />
-                      <span className="text-gray-400">주제:</span>
-                      <span className="text-gray-200 font-medium">{roomDetails.topic}</span>
+                      <span>주제:</span>
+                      <span className="font-medium" style={{ color: "var(--page-text)" }}>{roomDetails.topic}</span>
                     </div>
                   )}
 
                   {/* Owner */}
                   {owner && (
-                    <div className="flex items-center gap-2 text-sm">
+                    <div className="flex items-center gap-2 text-sm" style={{ color: "var(--surface-muted-text)" }}>
                       <Crown size={16} className="text-yellow-400" />
-                      <span className="text-gray-400">방장:</span>
+                      <span>방장:</span>
                       <button
                         onClick={() => setSelectedMemberForProfile(owner)}
-                        className="text-gray-200 font-medium hover:text-emerald-400 transition-colors"
+                        className="font-medium hover:text-emerald-400 transition-colors"
+                        style={{ color: "var(--page-text)" }}
                       >
                         {owner.nickname}
                       </button>
@@ -202,40 +207,42 @@ export default function ChatRoomInfoModal({
 
                   {/* Password */}
                   {roomDetails.hasPassword && (
-                    <div className="flex items-center gap-2 text-sm">
+                    <div className="flex items-center gap-2 text-sm" style={{ color: "var(--surface-muted-text)" }}>
                       <Lock size={16} className="text-red-400" />
                       {isOwner ? (
-                        <button 
-                            onClick={() => setIsPasswordChangeModalOpen(true)}
-                            className="text-gray-400 hover:text-emerald-400 transition-colors"
+                        <button
+                          onClick={() => setIsPasswordChangeModalOpen(true)}
+                          className="hover:text-emerald-400 transition-colors"
+                          style={{ color: "var(--surface-muted-text)" }}
                         >
-                            비밀번호 설정됨 (변경하려면 클릭)
+                          비밀번호 설정됨 (변경하려면 클릭)
                         </button>
                       ) : (
-                        <span className="text-gray-400">비밀번호 설정됨</span>
+                        <span>비밀번호 설정됨</span>
                       )}
                     </div>
                   )}
-                  
+
                   {/* Password Set Option for Owner if no password */}
                   {!roomDetails.hasPassword && isOwner && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <Lock size={16} className="text-gray-500" />
-                      <button 
-                          onClick={() => setIsPasswordChangeModalOpen(true)}
-                          className="text-gray-400 hover:text-emerald-400 transition-colors"
+                    <div className="flex items-center gap-2 text-sm" style={{ color: "var(--surface-muted-text)" }}>
+                      <Lock size={16} className="text-[var(--surface-muted-text)]" />
+                      <button
+                        onClick={() => setIsPasswordChangeModalOpen(true)}
+                        className="hover:text-emerald-400 transition-colors"
+                        style={{ color: "var(--surface-muted-text)" }}
                       >
-                          비밀번호 설정하기
+                        비밀번호 설정하기
                       </button>
                     </div>
                   )}
 
                   {/* Created At */}
                   {roomDetails.createdAt && (
-                    <div className="flex items-center gap-2 text-sm">
+                    <div className="flex items-center gap-2 text-sm" style={{ color: "var(--surface-muted-text)" }}>
                       <Calendar size={16} className="text-blue-400" />
-                      <span className="text-gray-400">생성일:</span>
-                      <span className="text-gray-200">
+                      <span>생성일:</span>
+                      <span style={{ color: "var(--page-text)" }}>
                         {new Date(roomDetails.createdAt).toLocaleDateString("ko-KR")}
                       </span>
                     </div>
@@ -246,7 +253,7 @@ export default function ChatRoomInfoModal({
                 {roomDetails.members && roomDetails.members.length > 0 && (
                   <div>
                     <div className="flex items-center justify-between mb-3">
-                      <h4 className="text-sm font-semibold text-gray-300">멤버</h4>
+                      <h4 className="text-sm font-semibold" style={{ color: "var(--page-text)" }}>멤버</h4>
                       <button
                         onClick={() => {
                           onClose();
@@ -266,7 +273,8 @@ export default function ChatRoomInfoModal({
                           <div key={member.id} className="relative">
                             <button
                               onClick={() => setSelectedMemberForProfile(member)}
-                              className="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center text-white font-semibold text-sm hover:ring-2 hover:ring-emerald-400 transition-all overflow-hidden"
+                              className="w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm hover:ring-2 hover:ring-emerald-400 transition-all overflow-hidden"
+                              style={{ background: "var(--surface-panel-muted)", color: "var(--page-text)" }}
                               title={member.nickname}
                             >
                               {shouldShowInitial ? (
@@ -293,7 +301,10 @@ export default function ChatRoomInfoModal({
                         );
                       })}
                       {roomDetails.members.length > 8 && (
-                        <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-white text-xs">
+                        <div
+                          className="w-10 h-10 rounded-full flex items-center justify-center text-xs"
+                          style={{ background: "var(--surface-panel-muted)", color: "var(--page-text)" }}
+                        >
                           +{roomDetails.members.length - 8}
                         </div>
                       )}
@@ -308,7 +319,10 @@ export default function ChatRoomInfoModal({
               <>
                 {/* Partner Profile */}
                 <div className="flex flex-col items-center">
-                  <div className="w-24 h-24 rounded-full bg-gray-600 flex items-center justify-center text-3xl font-bold text-white mb-4 shadow-lg overflow-hidden">
+                  <div
+                    className="w-24 h-24 rounded-full flex items-center justify-center text-3xl font-bold mb-4 shadow-lg overflow-hidden border"
+                    style={{ background: "var(--surface-panel-muted)", borderColor: "var(--surface-border)", color: "var(--page-text)" }}
+                  >
                     {!partner.profileImageUrl || partner.profileImageUrl.trim() === "" || isPartnerAvatarError ? (
                       partner.nickname.charAt(0).toUpperCase()
                     ) : (
@@ -324,9 +338,9 @@ export default function ChatRoomInfoModal({
                       />
                     )}
                   </div>
-                  <h3 className="text-2xl font-bold text-white mb-2">{partner.nickname}</h3>
+                  <h3 className="text-2xl font-bold mb-2" style={{ color: "var(--page-text)" }}>{partner.nickname}</h3>
                   {partner.isFriend && (
-                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-500/20 text-emerald-400 text-sm font-semibold rounded-full">
+                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-500/20 text-emerald-300 text-sm font-semibold rounded-full">
                       친구
                     </span>
                   )}
@@ -337,7 +351,7 @@ export default function ChatRoomInfoModal({
                   {!partner.isFriend && (
                     <button
                       onClick={handleSendFriendRequest}
-                      className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-emerald-600 text-white font-semibold rounded-lg hover:bg-emerald-700 transition-colors"
+                      className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-emerald-500 text-white font-semibold shadow-lg shadow-emerald-500/30 hover:bg-emerald-400 transition-colors"
                     >
                       <UserPlus size={18} />
                       친구 추가
@@ -349,7 +363,7 @@ export default function ChatRoomInfoModal({
                       onClose();
                       setIsReportModalOpen(true);
                     }}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-red-600/20 text-red-400 font-semibold rounded-lg hover:bg-red-600/30 transition-colors border border-red-500/30"
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl border border-red-500/40 text-red-400 font-semibold hover:bg-red-500/10 transition-colors"
                   >
                     <ShieldAlert size={18} />
                     신고하기
@@ -363,57 +377,58 @@ export default function ChatRoomInfoModal({
 
       {/* Password Change Modal */}
       {isPasswordChangeModalOpen && (
-        <div 
-            className="fixed inset-0 bg-black bg-opacity-80 z-[60] flex items-center justify-center p-4"
-            onClick={() => setIsPasswordChangeModalOpen(false)}
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+          style={{ backgroundColor: "var(--surface-overlay)" }}
+          onClick={() => setIsPasswordChangeModalOpen(false)}
         >
-            <div 
-                className="bg-gray-800 rounded-xl shadow-2xl w-full max-w-sm p-6"
-                onClick={(e) => e.stopPropagation()}
-            >
-                <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                        <Key size={20} className="text-emerald-400" />
-                        비밀번호 변경
-                    </h3>
-                    <button 
-                        onClick={() => setIsPasswordChangeModalOpen(false)}
-                        className="text-gray-400 hover:text-white"
-                    >
-                        <X size={20} />
-                    </button>
-                </div>
-                
-                <p className="text-sm text-gray-400 mb-4">
-                    새로운 비밀번호를 입력하세요. <br/>
-                    <span className="text-xs text-yellow-500/80 mt-1 block">
-                        * 비워두면 비밀번호가 제거되어 공개방이 됩니다.
-                    </span>
-                </p>
-
-                <input
-                    type="text"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="새 비밀번호 입력"
-                    className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 mb-4"
-                />
-
-                <div className="flex justify-end gap-2">
-                    <button
-                        onClick={() => setIsPasswordChangeModalOpen(false)}
-                        className="px-4 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 text-sm"
-                    >
-                        취소
-                    </button>
-                    <button
-                        onClick={handlePasswordUpdate}
-                        className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-semibold"
-                    >
-                        저장
-                    </button>
-                </div>
+          <div
+            className="theme-card rounded-3xl shadow-2xl w-full max-w-sm p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold flex items-center gap-2" style={{ color: "var(--page-text)" }}>
+                <Key size={20} className="text-emerald-400" />
+                비밀번호 변경
+              </h3>
+              <button
+                onClick={() => setIsPasswordChangeModalOpen(false)}
+                className="text-[var(--surface-muted-text)] hover:text-emerald-400"
+              >
+                <X size={20} />
+              </button>
             </div>
+
+            <p className="text-sm mb-4" style={{ color: "var(--surface-muted-text)" }}>
+              새로운 비밀번호를 입력하세요. <br />
+              <span className="text-xs text-yellow-500/80 mt-1 block">
+                * 비워두면 비밀번호가 제거되어 공개방이 됩니다.
+              </span>
+            </p>
+
+            <input
+              type="text"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="새 비밀번호 입력"
+              className="w-full px-4 py-3 rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-field)] text-[var(--page-text)] placeholder-[var(--surface-muted-text)] focus:outline-none focus:ring-2 focus:ring-emerald-400/70 mb-4"
+            />
+
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setIsPasswordChangeModalOpen(false)}
+                className="px-4 py-2 rounded-2xl border border-[var(--surface-border)] text-sm text-[var(--page-text)] hover:border-emerald-400"
+              >
+                취소
+              </button>
+              <button
+                onClick={handlePasswordUpdate}
+                className="px-4 py-2 rounded-2xl bg-emerald-500 text-white text-sm font-semibold shadow-lg shadow-emerald-500/30 hover:bg-emerald-400"
+              >
+                저장
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

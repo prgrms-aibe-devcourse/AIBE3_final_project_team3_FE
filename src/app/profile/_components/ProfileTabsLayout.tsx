@@ -50,8 +50,10 @@ export function ProfileTabsLayout() {
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-white mb-2">{t('profile.page.title')}</h1>
-        <p className="text-gray-400 text-sm">
+        <h1 className="text-3xl font-bold mb-2" style={{ color: "var(--page-text)" }}>
+          {t('profile.page.title')}
+        </h1>
+        <p className="text-sm" style={{ color: "var(--surface-muted-text)" }}>
           {t('profile.page.subtitle')}
         </p>
       </div>
@@ -64,15 +66,17 @@ export function ProfileTabsLayout() {
               key={id}
               type="button"
               onClick={() => setActiveTab(id)}
-              className={`flex items-center gap-3 rounded-2xl px-4 py-3 border transition-colors ${isActive
-                  ? "border-emerald-500 bg-emerald-500/10 text-white"
-                  : "border-gray-700 bg-gray-900/40 text-gray-300 hover:border-gray-500"
+              className={`flex items-center gap-3 rounded-2xl px-4 py-3 border transition-all shadow-sm ${isActive
+                ? "bg-[var(--card-surface)] border-emerald-300 text-emerald-600 shadow-[0_12px_30px_rgba(15,23,42,0.18)]"
+                : "bg-[var(--surface-panel)] border-[var(--surface-border)] text-[var(--surface-muted-text)] hover:text-[var(--page-text)] hover:border-emerald-200/60"
                 }`}
             >
-              <Icon className="h-5 w-5" />
+              <Icon className={`h-5 w-5 ${isActive ? "text-emerald-500" : "text-[var(--surface-muted-text)]"}`} />
               <div className="text-left">
-                <p className="text-sm font-semibold">{t(labelKey)}</p>
-                <p className="text-xs text-gray-400">{t(descriptionKey)}</p>
+                <p className="text-sm font-semibold" style={{ color: isActive ? "var(--page-text)" : "inherit" }}>
+                  {t(labelKey)}
+                </p>
+                <p className="text-xs" style={{ color: "var(--surface-muted-text)" }}>{t(descriptionKey)}</p>
               </div>
             </button>
           );

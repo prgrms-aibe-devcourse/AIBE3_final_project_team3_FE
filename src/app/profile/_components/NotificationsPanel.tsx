@@ -283,12 +283,12 @@ export function NotificationsPanel() {
   };
 
   return (
-    <div className="bg-gray-800 border border-gray-600 rounded-lg p-6 shadow-sm">
+    <div className="theme-card rounded-3xl p-6">
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <div>
-          <h2 className="text-xl font-semibold text-white">{t("profile.notifications.title")}</h2>
-          <p className="text-sm text-gray-400">{t("profile.notifications.subtitle")}</p>
-          <p className="text-xs text-gray-500">
+          <h2 className="text-xl font-semibold" style={{ color: "var(--page-text)" }}>{t("profile.notifications.title")}</h2>
+          <p className="text-sm" style={{ color: "var(--surface-muted-text)" }}>{t("profile.notifications.subtitle")}</p>
+          <p className="text-xs" style={{ color: "var(--surface-muted-text)" }}>
             {t("profile.notifications.summary", {
               count: String(totalCount),
               pageSize: String(notificationPageSize),
@@ -300,7 +300,7 @@ export function NotificationsPanel() {
             type="button"
             onClick={() => refetch()}
             disabled={isFetching}
-            className="text-sm px-3 py-1.5 rounded-lg border border-gray-500 text-gray-200 hover:bg-gray-700 disabled:opacity-60"
+            className="text-sm px-3 py-1.5 rounded-2xl border border-[var(--surface-border)] text-[var(--page-text)] hover:border-emerald-400 disabled:opacity-60"
           >
             {isFetching
               ? t("profile.notifications.buttons.refreshing")
@@ -310,7 +310,7 @@ export function NotificationsPanel() {
             type="button"
             onClick={handleMarkAllNotifications}
             disabled={isMarkingAll || notifications.length === 0}
-            className="inline-flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg border border-emerald-500/70 text-emerald-200 hover:bg-emerald-500/10 disabled:opacity-60"
+            className="inline-flex items-center gap-1 px-3 py-1.5 text-sm rounded-2xl border border-emerald-400 text-emerald-500 hover:bg-emerald-500/10 disabled:opacity-60"
           >
             <Check className="h-4 w-4" />
             {t("profile.notifications.buttons.markAll")}
@@ -319,7 +319,7 @@ export function NotificationsPanel() {
             type="button"
             onClick={handleDeleteAllNotifications}
             disabled={isDeletingAll || notifications.length === 0}
-            className="inline-flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg border border-red-500/60 text-red-300 hover:bg-red-500/10 disabled:opacity-60"
+            className="inline-flex items-center gap-1 px-3 py-1.5 text-sm rounded-2xl border border-red-400/70 text-red-500 hover:bg-red-500/10 disabled:opacity-60"
           >
             <Trash2 className="h-4 w-4" />
             {t("profile.notifications.buttons.deleteAll")}
@@ -328,14 +328,14 @@ export function NotificationsPanel() {
       </div>
 
       {isLoading ? (
-        <p className="text-gray-300">{t("profile.notifications.messages.loading")}</p>
+        <p className="text-[var(--surface-muted-text)]">{t("profile.notifications.messages.loading")}</p>
       ) : error ? (
         <p className="text-red-400">
           {t("profile.notifications.messages.error")}
           {error.message ? `: ${error.message}` : ""}
         </p>
       ) : notifications.length === 0 ? (
-        <p className="text-gray-400">{t("profile.notifications.messages.empty")}</p>
+        <p className="text-[var(--surface-muted-text)]">{t("profile.notifications.messages.empty")}</p>
       ) : (
         <>
           <ul className="space-y-3">
@@ -356,29 +356,28 @@ export function NotificationsPanel() {
               return (
                 <li
                   key={notification.id}
-                  className={`rounded-lg border px-4 py-3 bg-gray-900/40 ${notification.isRead ? "border-gray-700" : "border-emerald-500/50"
-                    }`}
+                  className={`rounded-2xl border px-4 py-3 bg-[var(--surface-panel)] shadow-sm ${notification.isRead ? "border-[var(--surface-border)]" : "border-emerald-400/70"}`}
                 >
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                       <div className="flex items-center gap-2">
-                        <p className="text-white font-semibold flex items-center gap-2">
+                        <p className="font-semibold flex items-center gap-2" style={{ color: "var(--page-text)" }}>
                           <span aria-hidden>{resolveNotificationEmoji(notification.type)}</span>
                           {resolveNotificationTitle(notification)}
                         </p>
                         {!notification.isRead ? (
-                          <span className="text-xs text-emerald-400">{t("profile.notifications.status.unread")}</span>
+                          <span className="text-xs text-emerald-500">{t("profile.notifications.status.unread")}</span>
                         ) : (
-                          <span className="text-xs text-gray-500">{t("profile.notifications.status.read")}</span>
+                          <span className="text-xs" style={{ color: "var(--surface-muted-text)" }}>{t("profile.notifications.status.read")}</span>
                         )}
                       </div>
-                      <p className="text-xs text-gray-500">{formattedDate}</p>
-                      <p className="text-sm text-gray-300 mt-2 whitespace-pre-line">{notification.message}</p>
+                      <p className="text-xs" style={{ color: "var(--surface-muted-text)" }}>{formattedDate}</p>
+                      <p className="text-sm mt-2 whitespace-pre-line" style={{ color: "var(--page-text)" }}>{notification.message}</p>
                       {canViewProfile ? (
                         <button
                           type="button"
                           onClick={() => handleViewSenderProfile(senderMemberId)}
-                          className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-emerald-300 hover:text-emerald-200"
+                          className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-emerald-500 hover:text-emerald-400"
                         >
                           {t("profile.notifications.buttons.profile")}
                         </button>
@@ -390,7 +389,7 @@ export function NotificationsPanel() {
                           type="button"
                           onClick={() => handleMarkNotification(notification)}
                           disabled={notification.isRead || isMarking}
-                          className="inline-flex items-center justify-center h-9 w-9 rounded-lg border border-gray-600 text-gray-200 hover:border-emerald-400 disabled:opacity-60"
+                          className="inline-flex items-center justify-center h-9 w-9 rounded-lg border border-[var(--surface-border)] text-[var(--page-text)] hover:border-emerald-400 disabled:opacity-60"
                           aria-label={t("profile.notifications.buttons.mark")}
                         >
                           <Check className="h-4 w-4" />
@@ -401,7 +400,7 @@ export function NotificationsPanel() {
                         type="button"
                         onClick={() => handleDeleteNotification(notification)}
                         disabled={isDeleting}
-                        className="inline-flex items-center justify-center h-9 w-9 rounded-lg border border-red-500/60 text-red-300 hover:bg-red-500/10 disabled:opacity-60"
+                        className="inline-flex items-center justify-center h-9 w-9 rounded-lg border border-red-400/70 text-red-500 hover:bg-red-500/10 disabled:opacity-60"
                         aria-label={t("profile.notifications.buttons.delete")}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -419,7 +418,7 @@ export function NotificationsPanel() {
               type="button"
               onClick={handlePrevPage}
               disabled={!canGoPrev}
-              className="inline-flex items-center gap-1 px-4 py-2 rounded-lg border border-gray-600 text-gray-200 disabled:opacity-60"
+              className="inline-flex items-center gap-1 px-4 py-2 rounded-lg border border-[var(--surface-border)] text-[var(--page-text)] disabled:opacity-60"
             >
               <ChevronLeft className="h-4 w-4" />
               {t("profile.notifications.pagination.previous")}
@@ -434,8 +433,8 @@ export function NotificationsPanel() {
                       type="button"
                       onClick={() => handlePageSelect(pageNumber)}
                       className={`min-w-[2.5rem] px-3 py-1.5 rounded-lg border text-sm transition-colors ${isActive
-                        ? "border-emerald-500 text-white bg-emerald-500/10"
-                        : "border-gray-600 text-gray-300 hover:border-emerald-400"
+                        ? "border-emerald-500 text-emerald-600 bg-emerald-500/10"
+                        : "border-[var(--surface-border)] text-[var(--surface-muted-text)] hover:border-emerald-400"
                         }`}
                     >
                       {pageNumber}
@@ -444,7 +443,7 @@ export function NotificationsPanel() {
                 })}
               </div>
             ) : null}
-            <div className="text-sm text-gray-300">
+            <div className="text-sm" style={{ color: "var(--surface-muted-text)" }}>
               {totalPages > 0
                 ? t("profile.notifications.pagination.pageWithTotal", {
                   current: String(currentPage),
@@ -456,7 +455,7 @@ export function NotificationsPanel() {
               type="button"
               onClick={handleNextPage}
               disabled={!canGoNext}
-              className="inline-flex items-center gap-1 px-4 py-2 rounded-lg border border-gray-600 text-gray-200 disabled:opacity-60"
+              className="inline-flex items-center gap-1 px-4 py-2 rounded-lg border border-[var(--surface-border)] text-[var(--page-text)] disabled:opacity-60"
             >
               {t("profile.notifications.pagination.next")}
               <ChevronRight className="h-4 w-4" />
@@ -489,23 +488,27 @@ function SenderProfileModal({ memberId, isOpen, onClose }: SenderProfileModalPro
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center px-4"
+      style={{ backgroundColor: "var(--surface-overlay)" }}
+      onClick={onClose}
+    >
       <div
-        className="w-full max-w-lg rounded-2xl border border-gray-700 bg-gray-900 p-6 shadow-2xl"
+        className="w-full max-w-lg theme-card rounded-3xl p-6"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="text-lg font-semibold text-white">{t("profile.notifications.modal.title")}</h3>
-            <p className="text-sm text-gray-400">{t("profile.notifications.modal.subtitle")}</p>
+            <h3 className="text-lg font-semibold" style={{ color: "var(--page-text)" }}>{t("profile.notifications.modal.title")}</h3>
+            <p className="text-sm" style={{ color: "var(--surface-muted-text)" }}>{t("profile.notifications.modal.subtitle")}</p>
           </div>
-          <button type="button" onClick={onClose} className="text-gray-400 hover:text-white">
+          <button type="button" onClick={onClose} className="text-[var(--surface-muted-text)] hover:text-emerald-500">
             <X className="h-5 w-5" />
           </button>
         </div>
 
         {isLoading ? (
-          <p className="text-gray-300">{t("profile.notifications.modal.loading")}</p>
+          <p className="text-[var(--surface-muted-text)]">{t("profile.notifications.modal.loading")}</p>
         ) : error ? (
           <p className="text-red-400">
             {t("profile.notifications.modal.error")}
@@ -518,43 +521,43 @@ function SenderProfileModal({ memberId, isOpen, onClose }: SenderProfileModalPro
                 <img
                   src={data.profileImageUrl}
                   alt={t("profile.info.avatar.alt", { name: data.nickname ?? "" })}
-                  className="h-20 w-20 rounded-full object-cover border-2 border-emerald-500/60"
+                  className="h-20 w-20 rounded-full object-cover border-2 border-emerald-400"
                   referrerPolicy="no-referrer"
                 />
               ) : (
-                <div className="h-20 w-20 rounded-full bg-gray-700 text-white text-2xl font-semibold flex items-center justify-center border border-gray-600">
+                <div className="h-20 w-20 rounded-full bg-[var(--surface-panel-muted)] text-2xl font-semibold flex items-center justify-center border border-[var(--surface-border)]" style={{ color: "var(--page-text)" }}>
                   {getInitialFromName(data.nickname ?? "")}
                 </div>
               )}
               <div>
-                <p className="text-sm text-gray-400">{t("profile.notifications.modal.fields.nickname")}</p>
-                <p className="text-xl text-white font-semibold">{data.nickname || "-"}</p>
+                <p className="text-sm" style={{ color: "var(--surface-muted-text)" }}>{t("profile.notifications.modal.fields.nickname")}</p>
+                <p className="text-xl font-semibold" style={{ color: "var(--page-text)" }}>{data.nickname || "-"}</p>
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <p className="text-sm text-gray-400">{t("profile.notifications.modal.fields.country")}</p>
-                <p className="text-gray-200">{data.country || "-"}</p>
+                <p className="text-sm" style={{ color: "var(--surface-muted-text)" }}>{t("profile.notifications.modal.fields.country")}</p>
+                <p>{data.country || "-"}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-400">{t("profile.notifications.modal.fields.englishLevel")}</p>
-                <p className="text-gray-200">{translateEnglishLevel(data.englishLevel, t)}</p>
+                <p className="text-sm" style={{ color: "var(--surface-muted-text)" }}>{t("profile.notifications.modal.fields.englishLevel")}</p>
+                <p>{translateEnglishLevel(data.englishLevel, t)}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-400">{t("profile.notifications.modal.fields.lastSeen")}</p>
-                <p className="text-gray-200">{formatLastSeenSummary(data.lastSeenAt)}</p>
+                <p className="text-sm" style={{ color: "var(--surface-muted-text)" }}>{t("profile.notifications.modal.fields.lastSeen")}</p>
+                <p>{formatLastSeenSummary(data.lastSeenAt)}</p>
               </div>
             </div>
             <div>
-              <p className="text-sm text-gray-400 mb-1">{t("profile.notifications.modal.fields.description")}</p>
-              <p className="text-gray-200 whitespace-pre-line">
+              <p className="text-sm mb-1" style={{ color: "var(--surface-muted-text)" }}>{t("profile.notifications.modal.fields.description")}</p>
+              <p className="whitespace-pre-line">
                 {data.description?.trim()
                   ? data.description
                   : t("profile.notifications.modal.descriptionEmpty")}
               </p>
             </div>
             <div>
-              <p className="text-sm text-gray-400 mb-1">{t("profile.notifications.modal.fields.interests")}</p>
+              <p className="text-sm mb-1" style={{ color: "var(--surface-muted-text)" }}>{t("profile.notifications.modal.fields.interests")}</p>
               {data.interests && data.interests.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                   {data.interests.map((interest, index) => (
@@ -567,12 +570,12 @@ function SenderProfileModal({ memberId, isOpen, onClose }: SenderProfileModalPro
                   ))}
                 </div>
               ) : (
-                <p className="text-gray-400 text-sm">{t("profile.notifications.modal.interestsEmpty")}</p>
+                <p className="text-sm" style={{ color: "var(--surface-muted-text)" }}>{t("profile.notifications.modal.interestsEmpty")}</p>
               )}
             </div>
           </div>
         ) : (
-          <p className="text-gray-300">{t("profile.notifications.modal.notFound")}</p>
+          <p className="text-[var(--surface-muted-text)]">{t("profile.notifications.modal.notFound")}</p>
         )}
       </div>
     </div>

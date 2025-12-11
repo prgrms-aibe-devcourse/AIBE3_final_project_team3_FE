@@ -3,27 +3,223 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --page-bg: #f6f7fb;
+  --page-text: #0f172a;
+  --main-surface: linear-gradient(135deg, #f9fbff, #f2f5fb 55%, #e9f0fb 100%);
+  --header-bg: rgba(241, 245, 249, 0.92);
+  --header-border: rgba(148, 163, 184, 0.55);
+  --footer-bg: #f8fafc;
+  --footer-border: #d5deef;
+  --footer-text: #0f172a;
+  --footer-muted: #475569;
+  --auth-bg: #ffffff;
+  --auth-heading: #0f172a;
+  --auth-subtext: #475569;
+  --auth-input-bg: #ffffff;
+  --auth-input-border: #cbd5f5;
+  --auth-input-text: #0f172a;
+  --auth-input-placeholder: #94a3b8;
+  --surface-panel: #ffffff;
+  --surface-panel-muted: #edf2fb;
+  --surface-popover: rgba(255, 255, 255, 0.98);
+  --surface-field: #f8faff;
+  --surface-border: rgba(15, 23, 42, 0.12);
+  --surface-border-strong: rgba(15, 23, 42, 0.2);
+  --surface-inset: #e2e8f0;
+  --surface-shadow: 0 18px 35px rgba(15, 23, 42, 0.08);
+  --surface-overlay: rgba(15, 23, 42, 0.2);
+  --surface-muted-text: #475569;
+  --card-surface: linear-gradient(145deg, #ffffff, #f5f7ff 55%, #e9efff);
+  --card-border: rgba(15, 23, 42, 0.08);
+  --card-shadow: 0 20px 45px rgba(15, 23, 42, 0.12);
+  --chat-self-bg: linear-gradient(140deg, #ecfdf5, #d1fae5 55%, #a7f3d0);
+  --chat-self-text: #064e3b;
+  --chat-self-border: rgba(16, 185, 129, 0.35);
+  --chat-self-shadow: 0 18px 38px rgba(16, 185, 129, 0.2);
+  --chat-other-bg: linear-gradient(140deg, #ffffff, #f6f8ff 60%, #edf2ff);
+  --chat-other-text: #0f172a;
+  --chat-other-border: rgba(15, 23, 42, 0.08);
+  --chat-other-shadow: 0 14px 32px rgba(15, 23, 42, 0.12);
+  --badge-grammar-bg: rgba(248, 113, 113, 0.2);
+  --badge-grammar-text: #b91c1c;
+  --badge-grammar-border: rgba(248, 113, 113, 0.45);
+  --badge-vocabulary-bg: rgba(96, 165, 250, 0.22);
+  --badge-vocabulary-text: #1d4ed8;
+  --badge-vocabulary-border: rgba(96, 165, 250, 0.5);
+  --badge-translation-bg: rgba(196, 181, 253, 0.25);
+  --badge-translation-text: #6b21a8;
+  --badge-translation-border: rgba(196, 181, 253, 0.55);
+  --badge-default-bg: rgba(148, 163, 184, 0.2);
+  --badge-default-text: #1f2937;
+  --badge-default-border: rgba(148, 163, 184, 0.45);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+[data-theme="dark"] {
+  --page-bg: #1a253a;
+  --page-text: #e6edf9;
+  --main-surface: linear-gradient(135deg, #24324a, #1f2c43 70%, #1a253a 100%);
+  --header-bg: rgba(20, 28, 45, 0.95);
+  --header-border: rgba(65, 78, 105, 0.7);
+  --footer-bg: #172237;
+  --footer-border: #233149;
+  --footer-text: #e5ecfa;
+  --footer-muted: #a9b6cf;
+  --auth-bg: #1c2840;
+  --auth-heading: #f4f7ff;
+  --auth-subtext: #cbd7f1;
+  --auth-input-bg: #253551;
+  --auth-input-border: #3b4b69;
+  --auth-input-text: #f4f7ff;
+  --auth-input-placeholder: #a8b4d1;
+  --surface-panel: #1d2538;
+  --surface-panel-muted: #141c2c;
+  --surface-popover: #222b3f;
+  --surface-field: #192033;
+  --surface-border: rgba(148, 163, 184, 0.24);
+  --surface-border-strong: rgba(148, 163, 184, 0.4);
+  --surface-inset: #0f1722;
+  --surface-shadow: 0 18px 35px rgba(3, 7, 18, 0.6);
+  --surface-overlay: rgba(0, 0, 0, 0.65);
+  --surface-muted-text: #cbd5f5;
+  --card-surface: linear-gradient(145deg, #1f273a, #151c2c 60%, #0f1624);
+  --card-border: rgba(148, 163, 184, 0.2);
+  --card-shadow: 0 25px 45px rgba(0, 0, 0, 0.65);
+  --chat-self-bg: linear-gradient(140deg, #065f46, #047857 55%, #059669);
+  --chat-self-text: #ecfdf5;
+  --chat-self-border: rgba(16, 185, 129, 0.5);
+  --chat-self-shadow: 0 22px 40px rgba(0, 0, 0, 0.55);
+  --chat-other-bg: rgba(255, 255, 255, 0.05);
+  --chat-other-text: #e2e8f0;
+  --chat-other-border: rgba(148, 163, 184, 0.3);
+  --chat-other-shadow: 0 18px 38px rgba(0, 0, 0, 0.6);
+  --badge-grammar-bg: rgba(248, 113, 113, 0.16);
+  --badge-grammar-text: #fecaca;
+  --badge-grammar-border: rgba(248, 113, 113, 0.45);
+  --badge-vocabulary-bg: rgba(147, 197, 253, 0.18);
+  --badge-vocabulary-text: #bfdbfe;
+  --badge-vocabulary-border: rgba(147, 197, 253, 0.45);
+  --badge-translation-bg: rgba(216, 180, 254, 0.2);
+  --badge-translation-text: #ddd6fe;
+  --badge-translation-border: rgba(216, 180, 254, 0.5);
+  --badge-default-bg: rgba(148, 163, 184, 0.25);
+  --badge-default-text: #e5e7eb;
+  --badge-default-border: rgba(148, 163, 184, 0.5);
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
+  color: var(--page-text);
+  background: var(--page-bg);
   font-family: Arial, Helvetica, sans-serif;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+.app-shell {
+  min-height: 100vh;
+  background: var(--page-bg);
+  color: var(--page-text);
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+.app-main {
+  background: var(--main-surface);
+  transition: background 0.4s ease;
+}
+
+.auth-page {
+  background: var(--auth-bg);
+  color: var(--auth-heading);
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+.theme-toggle {
+  border-color: rgba(15, 118, 110, 0.35);
+  background: transparent;
+  color: inherit;
+}
+
+.theme-toggle:hover {
+  border-color: rgba(16, 185, 129, 0.6);
+}
+
+.app-header {
+  color: var(--page-text);
+}
+
+.app-header .text-gray-200,
+.app-header .text-gray-300,
+.app-header .text-white {
+  color: inherit !important;
+}
+
+[data-theme="light"] .text-white,
+[data-theme="light"] .text-gray-50,
+[data-theme="light"] .text-gray-100,
+[data-theme="light"] .text-gray-200 {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .text-gray-300,
+[data-theme="light"] .text-gray-400 {
+  color: #1f2937 !important;
+}
+
+[data-theme="light"] .text-gray-500,
+[data-theme="light"] .text-gray-600 {
+  color: #334155 !important;
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
   }
+}
+
+.theme-overlay {
+  background-color: var(--surface-overlay);
+  transition: background-color 0.3s ease;
+}
+
+.theme-surface {
+  background: var(--surface-panel);
+  border: 1px solid var(--surface-border);
+  color: var(--page-text);
+  transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+.theme-surface-muted {
+  background: var(--surface-panel-muted);
+  border: 1px solid var(--surface-border);
+  color: var(--page-text);
+  transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+.theme-popover {
+  background: var(--surface-popover);
+  border: 1px solid var(--surface-border);
+  box-shadow: var(--surface-shadow);
+  color: var(--page-text);
+  transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.theme-field {
+  background: var(--surface-field);
+  border: 1px solid var(--surface-border);
+  color: var(--page-text);
+  transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+.theme-card {
+  background: var(--card-surface);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--card-shadow);
+  color: var(--page-text);
+  transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.theme-chip {
+  background: var(--surface-inset);
+  color: var(--surface-muted-text);
+  transition: background 0.3s ease, color 0.3s ease;
 }
 
 /* Custom Scrollbar Styles */

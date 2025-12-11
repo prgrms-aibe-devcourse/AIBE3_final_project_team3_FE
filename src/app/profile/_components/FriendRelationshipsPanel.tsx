@@ -55,7 +55,6 @@ const resolveFriendName = (friend: FriendListItem, index: number) => {
 const resolveFriendCountry = (friend: FriendListItem) => {
   return friend.countryName || friend.country || "-";
 };
-
 type TranslateFn = (key: string, params?: Record<string, string>) => string;
 
 const ENGLISH_LEVEL_LABEL_KEYS: Record<MemberProfileUpdateReq["englishLevel"], string> = {
@@ -219,27 +218,27 @@ export function FriendRelationshipsPanel() {
   };
 
   return (
-    <div className="bg-gray-800 border border-gray-600 rounded-lg p-6 shadow-sm">
-      <div className="flex items-center justify-between mb-4">
+    <div className="theme-card rounded-3xl p-6">
+      <div className="flex items-center justify-between mb-4 gap-4">
         <div>
-          <h2 className="text-xl font-semibold text-white">{t("profile.friends.title")}</h2>
-          <p className="text-sm text-gray-400">{t("profile.friends.subtitle")}</p>
+          <h2 className="text-xl font-semibold" style={{ color: "var(--page-text)" }}>{t("profile.friends.title")}</h2>
+          <p className="text-sm" style={{ color: "var(--surface-muted-text)" }}>{t("profile.friends.subtitle")}</p>
         </div>
         <div className="text-right">
-          <p className="text-sm text-gray-400">{t("profile.friends.total", { count: String(totalCount ?? 0) })}</p>
-          {isFetching && !isLoading ? <p className="text-xs text-gray-500">{t("profile.friends.updating")}</p> : null}
+          <p className="text-sm" style={{ color: "var(--surface-muted-text)" }}>{t("profile.friends.total", { count: String(totalCount ?? 0) })}</p>
+          {isFetching && !isLoading ? <p className="text-xs text-[var(--surface-muted-text)]">{t("profile.friends.updating")}</p> : null}
         </div>
       </div>
 
       {isLoading ? (
-        <p className="text-gray-300">{t("profile.friends.loading")}</p>
+        <p className="text-[var(--surface-muted-text)]">{t("profile.friends.loading")}</p>
       ) : error ? (
         <p className="text-red-400">
           {t("profile.friends.error")}
           {error.message ? `: ${error.message}` : ""}
         </p>
       ) : friends.length === 0 ? (
-        <p className="text-gray-400">{t("profile.friends.empty")}</p>
+        <p className="text-[var(--surface-muted-text)]">{t("profile.friends.empty")}</p>
       ) : (
         <>
           <ul className="space-y-3">
@@ -252,7 +251,7 @@ export function FriendRelationshipsPanel() {
               return (
                 <li
                   key={key}
-                  className="rounded-lg border border-gray-700 px-4 py-3 flex flex-col gap-3 hover:border-emerald-500/60 transition-colors cursor-pointer"
+                  className="rounded-2xl border border-[var(--surface-border)] px-4 py-3 flex flex-col gap-3 bg-[var(--surface-panel)] hover:border-emerald-300 transition-colors cursor-pointer"
                   onClick={() => openFriendDetail(friendId)}
                   role="button"
                   tabIndex={0}
@@ -265,22 +264,22 @@ export function FriendRelationshipsPanel() {
                           alt={t("profile.info.avatar.alt", {
                             name: resolveFriendName(friend, index),
                           })}
-                          className="h-10 w-10 rounded-full object-cover border border-gray-700"
+                          className="h-10 w-10 rounded-full object-cover border border-[var(--surface-border)]"
                           referrerPolicy="no-referrer"
                         />
                       ) : (
-                        <div className="h-10 w-10 rounded-full bg-gray-700 text-white text-sm font-semibold flex items-center justify-center border border-gray-600">
+                        <div className="h-10 w-10 rounded-full bg-[var(--surface-panel-muted)] text-sm font-semibold flex items-center justify-center border border-[var(--surface-border)]" style={{ color: "var(--page-text)" }}>
                           {resolveFriendInitial(friend, index)}
                         </div>
                       )}
                       <div>
-                        <p className="text-white font-medium">{resolveFriendName(friend, index)}</p>
-                        <p className="text-xs text-gray-400">
+                        <p className="font-medium" style={{ color: "var(--page-text)" }}>{resolveFriendName(friend, index)}</p>
+                        <p className="text-xs" style={{ color: "var(--surface-muted-text)" }}>
                           {resolveFriendCountry(friend)} · {resolveFriendLevel(friend, t)}
                         </p>
                       </div>
                     </div>
-                    <span className={`text-xs ${friend.isOnline ? "text-emerald-400" : "text-gray-400"}`}>
+                    <span className={`text-xs ${friend.isOnline ? "text-emerald-500" : "text-[var(--surface-muted-text)]"}`}>
                       {friend.isOnline
                         ? t("profile.friends.status.online")
                         : t("profile.friends.status.offline")}
@@ -290,7 +289,7 @@ export function FriendRelationshipsPanel() {
                     <button
                       type="button"
                       onClick={(event) => handleDetailClick(event, friend)}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-lg border border-gray-600 text-gray-200 hover:border-emerald-400 disabled:opacity-60"
+                      className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-lg border border-[var(--surface-border)] text-[var(--page-text)] hover:border-emerald-400 disabled:opacity-60"
                       disabled={typeof friendId !== "number"}
                     >
                       <Eye className="h-4 w-4" />
@@ -299,7 +298,7 @@ export function FriendRelationshipsPanel() {
                     <button
                       type="button"
                       onClick={(event) => handleRemoveFriend(event, friend)}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-lg border border-red-500/60 text-red-300 hover:bg-red-500/10 disabled:opacity-60"
+                      className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-lg border border-red-400/70 text-red-500 hover:bg-red-500/10 disabled:opacity-60"
                       disabled={typeof friendId !== "number" || isDeleting}
                     >
                       <Trash2 className="h-4 w-4" />
@@ -318,7 +317,7 @@ export function FriendRelationshipsPanel() {
               type="button"
               onClick={handlePrevPage}
               disabled={!canGoPrev}
-              className="inline-flex items-center gap-1 px-4 py-2 rounded-lg border border-gray-600 text-gray-200 disabled:opacity-60"
+              className="inline-flex items-center gap-1 px-4 py-2 rounded-lg border border-[var(--surface-border)] text-[var(--page-text)] disabled:opacity-60"
             >
               <ChevronLeft className="h-4 w-4" />
               {t("profile.friends.buttons.previous")}
@@ -333,8 +332,8 @@ export function FriendRelationshipsPanel() {
                       type="button"
                       onClick={() => handlePageSelect(pageNumber)}
                       className={`min-w-[2.5rem] px-3 py-1.5 rounded-lg border text-sm transition-colors ${isActive
-                        ? "border-emerald-500 text-white bg-emerald-500/10"
-                        : "border-gray-600 text-gray-300 hover:border-emerald-400"
+                        ? "border-emerald-500 text-emerald-600 bg-emerald-500/10"
+                        : "border-[var(--surface-border)] text-[var(--surface-muted-text)] hover:border-emerald-400"
                         }`}
                     >
                       {pageNumber}
@@ -343,14 +342,14 @@ export function FriendRelationshipsPanel() {
                 })}
               </div>
             ) : null}
-            <div className="text-sm text-gray-300">
+            <div className="text-sm" style={{ color: "var(--surface-muted-text)" }}>
               {typeof totalPages === "number"
                 ? t("profile.friends.pagination.pageWithTotal", {
                   current: String(currentPage),
                   total: String(Math.max(totalPages, 1)),
                 })
                 : t("profile.friends.pagination.page", { current: String(currentPage) })}
-              <span className="ml-2 text-xs text-gray-500">
+              <span className="ml-2 text-xs" style={{ color: "var(--surface-muted-text)" }}>
                 {t("profile.friends.pagination.perPage", { count: String(friendPageSize) })}
               </span>
             </div>
@@ -358,7 +357,7 @@ export function FriendRelationshipsPanel() {
               type="button"
               onClick={handleNextPage}
               disabled={!canGoNext}
-              className="inline-flex items-center gap-1 px-4 py-2 rounded-lg border border-gray-600 text-gray-200 disabled:opacity-60"
+              className="inline-flex items-center gap-1 px-4 py-2 rounded-lg border border-[var(--surface-border)] text-[var(--page-text)] disabled:opacity-60"
             >
               {t("profile.friends.buttons.next")}
               <ChevronRight className="h-4 w-4" />
@@ -387,22 +386,26 @@ function FriendDetailModal({ friendId, isOpen, onClose }: FriendDetailModalProps
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center px-4"
+      style={{ backgroundColor: "var(--surface-overlay)" }}
+      onClick={onClose}
+    >
       <div
-        className="w-full max-w-lg rounded-2xl border border-gray-700 bg-gray-900 p-6 shadow-2xl"
+        className="w-full max-w-lg theme-card rounded-3xl p-6"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="text-lg font-semibold text-white">{t("profile.friends.modal.title")}</h3>
+            <h3 className="text-lg font-semibold" style={{ color: "var(--page-text)" }}>{t("profile.friends.modal.title")}</h3>
           </div>
-          <button type="button" onClick={onClose} className="text-gray-400 hover:text-white">
+          <button type="button" onClick={onClose} className="text-[var(--surface-muted-text)] hover:text-emerald-500">
             <X className="h-5 w-5" />
           </button>
         </div>
 
         {isLoading ? (
-          <p className="text-gray-300">{t("profile.friends.messages.detailLoading")}</p>
+          <p className="text-[var(--surface-muted-text)]">{t("profile.friends.messages.detailLoading")}</p>
         ) : error ? (
           <p className="text-red-400">
             {t("profile.friends.messages.detailError")}
@@ -415,58 +418,66 @@ function FriendDetailModal({ friendId, isOpen, onClose }: FriendDetailModalProps
                 <img
                   src={data.profileImageUrl}
                   alt={t("profile.info.avatar.alt", { name: data.nickname ?? "" })}
-                  className="h-20 w-20 rounded-full object-cover border-2 border-emerald-500/60"
+                  className="h-20 w-20 rounded-full object-cover border-2 border-emerald-400"
                   referrerPolicy="no-referrer"
                 />
               ) : (
-                <div className="h-20 w-20 rounded-full bg-gray-700 text-white text-2xl font-semibold flex items-center justify-center border border-gray-600">
+                <div className="h-20 w-20 rounded-full bg-[var(--surface-panel-muted)] text-2xl font-semibold flex items-center justify-center border border-[var(--surface-border)]" style={{ color: "var(--page-text)" }}>
                   {resolveFriendInitial(data, 0)}
                 </div>
               )}
               <div>
-                <p className="text-sm text-gray-400">{t("profile.friends.modal.fields.nickname")}</p>
-                <p className="text-xl text-white font-semibold">{data.nickname || "-"}</p>
+                <p className="text-sm" style={{ color: "var(--surface-muted-text)" }}>{t("profile.friends.modal.fields.nickname")}</p>
+                <p className="text-xl font-semibold" style={{ color: "var(--page-text)" }}>{data.nickname || "-"}</p>
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <p className="text-sm text-gray-400">{t("profile.friends.modal.fields.country")}</p>
-                <p className="text-gray-200">{data.country || "-"}</p>
+                <p className="text-sm" style={{ color: "var(--surface-muted-text)" }}>{t("profile.friends.modal.fields.country")}</p>
+                <p>{data.country || "-"}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-400">{t("profile.friends.modal.fields.englishLevel")}</p>
-                <p className="text-gray-200">{translateEnglishLevel(data.englishLevel, t)}</p>
+                <p className="text-sm" style={{ color: "var(--surface-muted-text)" }}>{t("profile.friends.modal.fields.englishLevel")}</p>
+                <p>{translateEnglishLevel(data.englishLevel, t)}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-400">{t("profile.friends.modal.fields.lastSeen")}</p>
-                <p className="text-gray-200">{formatLastSeen(data.lastSeenAt)}</p>
+                <p className="text-sm" style={{ color: "var(--surface-muted-text)" }}>{t("profile.friends.modal.fields.lastSeen")}</p>
+                <p>{formatLastSeen(data.lastSeenAt)}</p>
               </div>
             </div>
             <div>
-              <p className="text-sm text-gray-400 mb-1">{t("profile.friends.modal.fields.description")}</p>
-              <p className="text-gray-200 whitespace-pre-line">
+              <p className="text-sm mb-1" style={{ color: "var(--surface-muted-text)" }}>{t("profile.friends.modal.fields.description")}</p>
+              <p className="whitespace-pre-line">
                 {data.description?.trim()
                   ? data.description
                   : t("profile.friends.messages.descriptionEmpty")}
               </p>
             </div>
             <div>
-              <p className="text-sm text-gray-400 mb-1">{t("profile.friends.modal.fields.interests")}</p>
+              <p className="text-sm mb-1" style={{ color: "var(--surface-muted-text)" }}>{t("profile.friends.modal.fields.interests")}</p>
               {data.interests && data.interests.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                   {data.interests.map((interest, index) => (
-                    <span key={`${interest}-${index}`} className="px-3 py-1 rounded-full bg-emerald-600/20 text-emerald-200 text-xs">
+                    <span
+                      key={`${interest}-${index}`}
+                      className="px-3 py-1 rounded-full text-xs font-medium"
+                      style={{
+                        backgroundColor: "var(--surface-panel-muted)",
+                        color: "var(--page-text)",
+                        border: "1px solid var(--surface-border)",
+                      }}
+                    >
                       {interest}
                     </span>
                   ))}
                 </div>
               ) : (
-                <p className="text-gray-400 text-sm">{t("profile.friends.messages.interestsEmpty")}</p>
+                <p className="text-sm" style={{ color: "var(--surface-muted-text)" }}>{t("profile.friends.messages.interestsEmpty")}</p>
               )}
             </div>
           </div>
         ) : (
-          <p className="text-gray-300">{t("profile.friends.messages.detailEmpty")}</p>
+          <p className="text-[var(--surface-muted-text)]">{t("profile.friends.messages.detailEmpty")}</p>
         )}
       </div>
     </div>

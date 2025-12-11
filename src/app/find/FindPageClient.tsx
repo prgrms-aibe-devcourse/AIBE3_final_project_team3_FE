@@ -55,6 +55,8 @@ const buildPageNumbers = (currentPage: number, totalPages?: number | null, maxLi
 
 function FindPageContent() {
   const { t } = useLanguage();
+  const secondaryButtonClass =
+    "px-4 py-2 rounded border border-[var(--surface-border)] bg-[var(--surface-panel-muted)] text-[var(--page-text)] transition-colors disabled:opacity-60 disabled:cursor-not-allowed hover:bg-[var(--surface-panel)]";
   const [showOnlineOnly, setShowOnlineOnly] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const pageIndex = Math.max(currentPage - 1, 0);
@@ -301,7 +303,7 @@ function FindPageContent() {
               setShowOnlineOnly(event.target.checked);
               setCurrentPage(1);
             }}
-            className="h-4 w-4 rounded border-gray-500 bg-gray-700 text-emerald-500 focus:ring-emerald-500"
+            className="h-4 w-4 rounded border-[var(--surface-border)] bg-[var(--surface-field)] text-emerald-500 focus:ring-emerald-500"
           />
           {t('find.filters.onlineOnly')}
         </label>
@@ -334,7 +336,7 @@ function FindPageContent() {
             type="button"
             onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
             disabled={!canGoPrev}
-            className="px-4 py-2 rounded bg-gray-700 text-white disabled:bg-gray-600/60 disabled:text-gray-400"
+            className={secondaryButtonClass}
           >
             {t('find.pagination.previous')}
           </button>
@@ -366,7 +368,7 @@ function FindPageContent() {
             type="button"
             onClick={() => setCurrentPage((prev) => prev + 1)}
             disabled={!canGoNext}
-            className="px-4 py-2 rounded bg-gray-700 text-white disabled:bg-gray-600/60 disabled:text-gray-400"
+            className={secondaryButtonClass}
           >
             {t('find.pagination.next')}
           </button>
@@ -411,7 +413,7 @@ function FindPageContent() {
             type="button"
             onClick={() => setFriendPage((prev) => Math.max(prev - 1, 1))}
             disabled={!canFriendGoPrev}
-            className="px-4 py-2 rounded bg-gray-700 text-white disabled:bg-gray-600/60 disabled:text-gray-400"
+            className={secondaryButtonClass}
           >
             {t('find.pagination.previous')}
           </button>
@@ -452,7 +454,7 @@ function FindPageContent() {
             type="button"
             onClick={() => setFriendPage((prev) => prev + 1)}
             disabled={!canFriendGoNext}
-            className="px-4 py-2 rounded bg-gray-700 text-white disabled:bg-gray-600/60 disabled:text-gray-400"
+            className={secondaryButtonClass}
           >
             {t('find.pagination.next')}
           </button>
@@ -473,7 +475,13 @@ function FindPageContent() {
     if (activeTab === "ai") {
       return (
         <div className="space-y-10">
-          <div className="bg-gradient-to-r from-gray-800 via-emerald-900/30 to-gray-800 border border-emerald-800/50 rounded-2xl p-8 flex flex-col gap-4">
+          <div
+            className="rounded-2xl p-8 flex flex-col gap-4"
+            style={{
+              background: "linear-gradient(135deg, var(--surface-panel), rgba(16,185,129,0.12) 60%, var(--surface-panel))",
+              border: "1px solid rgba(16,185,129,0.35)",
+            }}
+          >
             <div>
               <p className="text-emerald-300 text-sm font-semibold uppercase tracking-[0.2em]">{t('find.ai.tag')}</p>
               <h2 className="text-3xl font-bold text-white mt-2">{t('find.ai.title')}</h2>
@@ -490,7 +498,7 @@ function FindPageContent() {
               <button
                 type="button"
                 onClick={() => router.push("/learning-notes")}
-                className="px-6 py-3 rounded-xl border border-gray-600 text-white font-semibold hover:bg-gray-800/60 transition-colors"
+                className="px-6 py-3 rounded-xl border border-[var(--surface-border)] font-semibold text-[var(--page-text)] hover:bg-[var(--surface-panel)] transition-colors"
               >
                 {t('find.ai.notesButton')}
               </button>
@@ -499,7 +507,7 @@ function FindPageContent() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {AI_ROOM_TYPE_OPTIONS.map((option) => (
-              <div key={option.type} className="bg-gray-800 border border-gray-700 rounded-2xl p-6 flex flex-col gap-4">
+              <div key={option.type} className="theme-surface rounded-2xl p-6 flex flex-col gap-4">
                 <div className="flex items-center gap-2">
                   <h3 className="text-xl font-semibold text-white">{t(option.titleKey)}</h3>
                   {option.badgeKey ? (
@@ -511,7 +519,7 @@ function FindPageContent() {
                 <button
                   type="button"
                   onClick={() => handleSelectAIRoomType(option.type)}
-                  className="mt-auto inline-flex items-center justify-center px-4 py-2 rounded-lg bg-gray-700 hover:bg-emerald-500 text-white font-medium transition-colors"
+                  className="mt-auto inline-flex items-center justify-center px-4 py-2 rounded-lg bg-[var(--surface-panel-muted)] text-[var(--page-text)] font-medium transition-colors hover:bg-emerald-500 hover:text-white"
                 >
                   {t('find.ai.promptButton')}
                 </button>
@@ -519,7 +527,7 @@ function FindPageContent() {
             ))}
           </div>
 
-          <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6">
+          <div className="theme-surface rounded-2xl p-6">
             <p className="text-sm text-gray-300">
               <span className="font-semibold text-white/80 mr-1">{t('find.ai.tip.prefix')}</span>
               {t('find.ai.tip.body', {
@@ -536,16 +544,25 @@ function FindPageContent() {
     return renderPeopleContent();
   };
 
-  const TabButton = ({ tab, label, Icon }: { tab: ActiveTab; label: string; Icon: React.ElementType }) => (
-    <button
-      onClick={() => setActiveTab(tab)}
-      className={`flex items-center gap-2 px-4 py-2 rounded-t-lg transition-colors ${activeTab === tab ? "bg-gray-800 text-emerald-400" : "text-gray-400 hover:bg-gray-700/50 hover:text-white"
-        }`}
-    >
-      <Icon size={18} />
-      <span className="font-medium">{label}</span>
-    </button>
-  );
+  const TabButton = ({ tab, label, Icon }: { tab: ActiveTab; label: string; Icon: React.ElementType }) => {
+    const isActive = activeTab === tab;
+    return (
+      <button
+        type="button"
+        onClick={() => setActiveTab(tab)}
+        className={`relative flex items-center gap-2 px-5 py-3 rounded-2xl border font-medium transition-all shadow-sm ${isActive
+          ? "bg-[var(--card-surface)] text-emerald-500 border-emerald-300 shadow-[0_12px_30px_rgba(15,23,42,0.18)]"
+          : "text-[var(--surface-muted-text)] border-transparent hover:text-[var(--page-text)] hover:bg-[var(--surface-panel-muted)]"
+          }`}
+      >
+        <Icon size={18} className={isActive ? "text-emerald-500" : "text-inherit"} />
+        <span>{label}</span>
+        <span
+          className={`pointer-events-none absolute left-1/2 -bottom-1 h-1 w-8 -translate-x-1/2 rounded-full bg-emerald-400 transition-opacity ${isActive ? "opacity-100" : "opacity-0"}`}
+        />
+      </button>
+    );
+  };
 
   return (
     <>
@@ -555,9 +572,12 @@ function FindPageContent() {
           <p className="text-gray-300">{t('find.page.header.subtitle')}</p>
         </div>
 
-        <div className="border-b border-gray-700 mb-8">
-          <div className="flex justify-between items-center">
-            <div className="flex gap-2">
+        <div className="border-b border-[var(--surface-border)] mb-8">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div
+              className="flex flex-wrap gap-2 p-1 rounded-3xl border border-[var(--surface-border)]"
+              style={{ background: "var(--surface-panel-muted)" }}
+            >
               <TabButton tab="1v1" label={t('find.tabs.people')} Icon={MessageSquare} />
               <TabButton tab="friends" label={t('find.tabs.friends')} Icon={UserRoundCheck} />
               <TabButton tab="group" label={t('find.tabs.groups')} Icon={Users} />
@@ -567,7 +587,7 @@ function FindPageContent() {
               <button
                 type="button"
                 onClick={handlePlusClick}
-                className="text-gray-400 hover:text-white transition-colors"
+                className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--surface-border)] text-[var(--surface-muted-text)] transition-all hover:border-emerald-400 hover:text-emerald-500"
               >
                 <Plus size={22} />
               </button>

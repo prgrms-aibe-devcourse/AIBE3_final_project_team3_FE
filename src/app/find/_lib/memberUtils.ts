@@ -12,29 +12,47 @@ export type FriendshipState = "FRIEND" | "REQUEST_SENT" | "REQUEST_RECEIVED" | "
 
 type EnglishLevelKey = "BEGINNER" | "INTERMEDIATE" | "ADVANCED" | "NATIVE";
 
-const ENGLISH_LEVEL_META: Record<
-  EnglishLevelKey,
-  { labelKey: string; icon: string; badgeClass: string }
-> = {
+type EnglishLevelMeta = {
+  labelKey: string;
+  badgeStyle: {
+    backgroundColor: string;
+    borderColor: string;
+    color?: string;
+  };
+};
+
+const ENGLISH_LEVEL_META: Record<EnglishLevelKey, EnglishLevelMeta> = {
   BEGINNER: {
     labelKey: "find.profile.englishLevels.BEGINNER",
-    icon: "A1",
-    badgeClass: "bg-emerald-900/40 text-emerald-200 border border-emerald-700/50",
+    badgeStyle: {
+      backgroundColor: "rgba(16,185,129,0.15)",
+      borderColor: "rgba(16,185,129,0.45)",
+      color: "var(--page-text)",
+    },
   },
   INTERMEDIATE: {
     labelKey: "find.profile.englishLevels.INTERMEDIATE",
-    icon: "B1",
-    badgeClass: "bg-blue-900/30 text-blue-200 border border-blue-600/40",
+    badgeStyle: {
+      backgroundColor: "rgba(59,130,246,0.12)",
+      borderColor: "rgba(59,130,246,0.4)",
+      color: "var(--page-text)",
+    },
   },
   ADVANCED: {
     labelKey: "find.profile.englishLevels.ADVANCED",
-    icon: "C1",
-    badgeClass: "bg-purple-900/30 text-purple-200 border border-purple-600/40",
+    badgeStyle: {
+      backgroundColor: "rgba(168,85,247,0.12)",
+      borderColor: "rgba(168,85,247,0.4)",
+      color: "var(--page-text)",
+    },
   },
   NATIVE: {
     labelKey: "find.profile.englishLevels.NATIVE",
-    icon: "PRO",
-    badgeClass: "bg-amber-900/30 text-amber-200 border border-amber-600/40",
+    badgeStyle: {
+      backgroundColor: "rgba(251,191,36,0.18)",
+      borderColor: "rgba(251,191,36,0.5)",
+      color: "var(--page-text)",
+    },
   },
 };
 

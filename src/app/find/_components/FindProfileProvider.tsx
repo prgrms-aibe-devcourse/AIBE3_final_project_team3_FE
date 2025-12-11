@@ -394,8 +394,7 @@ export function FindProfileProvider({ children }: { children: React.ReactNode })
 
   const englishLevelMeta = resolveEnglishLevelMeta(modalEnglishLevel);
   const modalEnglishLevelDisplay = t(englishLevelMeta.labelKey);
-  const modalEnglishLevelBadgeClass = englishLevelMeta.badgeClass;
-  const modalEnglishLevelIcon = englishLevelMeta.icon;
+  const modalEnglishLevelStyle = englishLevelMeta.badgeStyle;
 
   const modalInterests = selectedFriendDetail
     ? normaliseInterests(selectedFriendDetail.interests)
@@ -443,7 +442,7 @@ export function FindProfileProvider({ children }: { children: React.ReactNode })
     }
 
     if (isProfilePending) {
-      return <span className="text-xs text-gray-300">{t('find.profile.friendship.loading')}</span>;
+      return <span className="text-xs" style={{ color: "var(--surface-muted-text)" }}>{t('find.profile.friendship.loading')}</span>;
     }
 
     if (selectedProfileError) {
@@ -456,7 +455,7 @@ export function FindProfileProvider({ children }: { children: React.ReactNode })
     }
 
     if (!modalFriendshipState) {
-      return <span className="text-xs text-gray-400">{t('find.profile.friendship.unavailable')}</span>;
+      return <span className="text-xs" style={{ color: "var(--surface-muted-text)" }}>{t('find.profile.friendship.unavailable')}</span>;
     }
 
     return (
@@ -464,7 +463,7 @@ export function FindProfileProvider({ children }: { children: React.ReactNode })
         <span className={`px-3 py-1 text-xs font-semibold rounded-full ${FRIENDSHIP_BADGE_STYLE[modalFriendshipState]}`}>
           {t(FRIENDSHIP_STATUS_LABELS[modalFriendshipState])}
         </span>
-        <span className="text-xs text-gray-300">{t(FRIENDSHIP_STATUS_DESCRIPTIONS[modalFriendshipState])}</span>
+        <span className="text-xs" style={{ color: "var(--surface-muted-text)" }}>{t(FRIENDSHIP_STATUS_DESCRIPTIONS[modalFriendshipState])}</span>
       </>
     );
   };
@@ -476,7 +475,10 @@ export function FindProfileProvider({ children }: { children: React.ReactNode })
 
     if (modalFriendshipState === "REQUEST_SENT") {
       return (
-        <p className="text-sm text-blue-300 text-center bg-blue-900/40 px-4 py-3 rounded">
+        <p
+          className="text-sm text-center rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-panel)] px-4 py-3"
+          style={{ color: "var(--surface-muted-text)" }}
+        >
           {t('find.profile.friendship.pending', {
             requestId: myPendingRequestId ? ` (#${myPendingRequestId})` : '',
           })}
@@ -487,7 +489,7 @@ export function FindProfileProvider({ children }: { children: React.ReactNode })
     if (modalFriendshipState === "REQUEST_RECEIVED") {
       if (!opponentPendingRequestId) {
         return (
-          <p className="text-sm text-red-300 text-center bg-red-900/40 px-4 py-3 rounded">
+          <p className="text-sm text-center rounded-2xl border border-red-500/40 px-4 py-3 text-red-400">
             {t('find.profile.friendship.missingRequestInfo')}
           </p>
         );
@@ -503,7 +505,7 @@ export function FindProfileProvider({ children }: { children: React.ReactNode })
               void handleAcceptFriendRequest();
             }}
             disabled={isProcessing}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-700/70 disabled:cursor-not-allowed text-white px-4 py-3 rounded font-medium transition-colors"
+            className="w-full rounded-2xl bg-emerald-500 text-white px-4 py-3 font-semibold shadow-lg shadow-emerald-500/30 transition-colors hover:bg-emerald-400 disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {isAccepting ? t('find.profile.buttons.accepting') : t('find.profile.buttons.accept')}
           </button>
@@ -513,7 +515,7 @@ export function FindProfileProvider({ children }: { children: React.ReactNode })
               void handleRejectFriendRequest();
             }}
             disabled={isProcessing}
-            className="w-full bg-red-600 hover:bg-red-700 disabled:bg-red-700/70 disabled:cursor-not-allowed text-white px-4 py-3 rounded font-medium transition-colors"
+            className="w-full rounded-2xl border border-red-500/50 px-4 py-3 font-semibold text-red-400 hover:bg-red-500/10 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
           >
             {isRejecting ? t('find.profile.buttons.rejecting') : t('find.profile.buttons.reject')}
           </button>
@@ -529,7 +531,7 @@ export function FindProfileProvider({ children }: { children: React.ReactNode })
             void handleRemoveFriend();
           }}
           disabled={isDeleting}
-          className="w-full bg-red-700 hover:bg-red-800 disabled:bg-red-800/70 disabled:cursor-not-allowed text-white px-4 py-3 rounded font-medium transition-colors"
+          className="w-full rounded-2xl border border-red-500/50 px-4 py-3 font-semibold text-red-400 hover:bg-red-500/10 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
         >
           {isDeleting ? t('find.profile.buttons.removing') : t('find.profile.buttons.remove')}
         </button>
@@ -544,7 +546,7 @@ export function FindProfileProvider({ children }: { children: React.ReactNode })
             void handleSendFriendRequest();
           }}
           disabled={isSending}
-          className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-700/70 disabled:cursor-not-allowed text-white px-4 py-3 rounded font-medium transition-colors"
+          className="w-full rounded-2xl bg-emerald-500 text-white px-4 py-3 font-semibold shadow-lg shadow-emerald-500/30 transition-colors hover:bg-emerald-400 disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {isSending ? t('find.profile.buttons.sending') : t('find.profile.buttons.send')}
         </button>
@@ -558,11 +560,14 @@ export function FindProfileProvider({ children }: { children: React.ReactNode })
     <FindProfileContext.Provider value={{ openProfile, closeProfile }}>
       {children}
       {selectedUser ? (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ backgroundColor: "var(--surface-overlay)" }}
+        >
+          <div className="theme-card rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex justify-between items-start mb-6">
-                <div className="flex items-center">
+                <div className="flex items-start gap-4">
                   <div className="relative w-20 h-20">
                     <Image
                       src={modalAvatarSrc}
@@ -570,44 +575,53 @@ export function FindProfileProvider({ children }: { children: React.ReactNode })
                       width={80}
                       height={80}
                       unoptimized
-                      className="rounded-full object-cover w-20 h-20"
+                      className="rounded-full object-cover w-20 h-20 border border-[var(--surface-border)]"
                     />
-                    <div className={`absolute -bottom-1 -right-1 w-6 h-6 border-2 border-gray-800 rounded-full ${modalPresence.badgeClass}`}></div>
+                    <div
+                      className={`absolute -bottom-1 -right-1 w-6 h-6 border-2 rounded-full ${modalPresence.badgeClass}`}
+                      style={{ borderColor: "var(--surface-panel)" }}
+                    ></div>
                   </div>
-                  <div className="ml-4">
-                    <h2 className="text-2xl font-bold text-white">{modalDisplayName}</h2>
-                    <div className="flex items-center gap-2 text-gray-300">
+                  <div className="space-y-2">
+                    <h2 className="text-2xl font-bold" style={{ color: "var(--page-text)" }}>{modalDisplayName}</h2>
+                    <div className="flex items-center gap-2 text-sm" style={{ color: "var(--surface-muted-text)" }}>
                       {modalCountryFlag ? (
                         <span className="text-xl" aria-hidden>
                           {modalCountryFlag}
                         </span>
                       ) : null}
-                      <span className="text-gray-400">{modalCountryDisplay}</span>
+                      <span>{modalCountryDisplay}</span>
                     </div>
                     {modalLastSeenDisplay && (
-                      <p className="text-gray-400 text-xs mt-1">
+                      <p className="text-xs" style={{ color: "var(--surface-muted-text)" }}>
                         {t('find.profile.details.lastSeen', { time: modalLastSeenDisplay })}
                       </p>
                     )}
                     <div
-                      className={`mt-2 inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold ${modalEnglishLevelBadgeClass}`}
+                      className="mt-2 inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold border"
+                      style={{
+                        backgroundColor: modalEnglishLevelStyle.backgroundColor,
+                        borderColor: modalEnglishLevelStyle.borderColor,
+                        color: modalEnglishLevelStyle.color ?? "var(--page-text)",
+                      }}
                     >
-                      <span aria-hidden>{modalEnglishLevelIcon}</span>
                       <span>{modalEnglishLevelDisplay}</span>
                     </div>
                     <div className="mt-3 flex flex-wrap items-center gap-2">
                       {renderFriendshipStatus()}
                     </div>
                     {friendSinceDisplay && (
-                      <p className="mt-2 text-xs text-gray-300">
+                      <p className="text-xs" style={{ color: "var(--surface-muted-text)" }}>
                         {t('find.profile.details.friendSince', { date: friendSinceDisplay })}
                       </p>
                     )}
                     {isFriendDetailPending && (
-                      <p className="mt-2 text-xs text-gray-300">{t('find.profile.details.loadingFriendDetail')}</p>
+                      <p className="text-xs" style={{ color: "var(--surface-muted-text)" }}>
+                        {t('find.profile.details.loadingFriendDetail')}
+                      </p>
                     )}
                     {friendDetailErrorMessage && (
-                      <p className="mt-2 text-xs text-red-400">
+                      <p className="text-xs text-red-400">
                         {t('find.profile.details.friendDetailError')}
                         {friendDetailErrorMessage ? ` (${friendDetailErrorMessage})` : ""}
                       </p>
@@ -617,7 +631,7 @@ export function FindProfileProvider({ children }: { children: React.ReactNode })
                 <button
                   type="button"
                   onClick={closeProfile}
-                  className="text-gray-400 hover:text-white text-2xl"
+                  className="text-2xl text-[var(--surface-muted-text)] hover:text-emerald-400"
                 >
                   ×
                 </button>
@@ -625,37 +639,43 @@ export function FindProfileProvider({ children }: { children: React.ReactNode })
 
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-lg font-semibold text-white mb-2">{t('find.profile.sections.about')}</h3>
-                  <p className="text-gray-300">{modalDescriptionDisplay}</p>
+                  <h3 className="text-lg font-semibold" style={{ color: "var(--page-text)" }}>{t('find.profile.sections.about')}</h3>
+                  <p className="text-sm" style={{ color: "var(--surface-muted-text)" }}>{modalDescriptionDisplay}</p>
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold text-white mb-2">{t('find.profile.sections.interests')}</h3>
-                  <div className="flex flex-wrap gap-2">
+                  <h3 className="text-lg font-semibold" style={{ color: "var(--page-text)" }}>{t('find.profile.sections.interests')}</h3>
+                  <div className="flex flex-wrap gap-2 mt-2">
                     {modalInterests.map((interest, index) => (
-                      <span key={index} className="px-3 py-1 bg-emerald-600 text-white rounded-full text-sm">
+                      <span
+                        key={index}
+                        className="px-3 py-1 rounded-full text-xs font-medium"
+                        style={{ backgroundColor: "rgba(16,185,129,0.12)", color: "var(--page-text)" }}
+                      >
                         {interest}
                       </span>
                     ))}
                     {modalInterests.length === 0 && (
-                      <span className="text-sm text-gray-400">{t('find.profile.sections.noInterests')}</span>
+                      <span className="text-sm" style={{ color: "var(--surface-muted-text)" }}>
+                        {t('find.profile.sections.noInterests')}
+                      </span>
                     )}
                   </div>
                 </div>
               </div>
 
-              <div className="mt-8 space-y-4">
+              <div className="mt-8 space-y-3">
                 <button
                   type="button"
                   onClick={() => startChat(selectedUser)}
-                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-3 rounded font-medium transition-colors"
+                  className="w-full rounded-2xl bg-emerald-500 text-white px-4 py-3 font-semibold shadow-lg shadow-emerald-500/30 hover:bg-emerald-400 transition-colors"
                 >
                   {t('find.profile.buttons.chat')}
                 </button>
                 <button
                   type="button"
                   onClick={() => startGroupChatInvite(selectedUser)}
-                  className="w-full bg-gray-700 hover:bg-gray-600 text-white px-4 py-3 rounded font-medium transition-colors"
+                  className="w-full rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-panel)] px-4 py-3 font-semibold text-[var(--page-text)] hover:border-emerald-400 transition-colors"
                 >
                   {t('find.profile.buttons.invite')}
                 </button>
@@ -663,7 +683,7 @@ export function FindProfileProvider({ children }: { children: React.ReactNode })
                 <button
                   type="button"
                   onClick={() => viewUserPosts(selectedUser)}
-                  className="w-full bg-gray-600 hover:bg-gray-700 text-white px-4 py-3 rounded font-medium transition-colors"
+                  className="w-full rounded-2xl border border-[var(--surface-border)] px-4 py-3 font-semibold text-[var(--page-text)] hover:border-emerald-300 transition-colors"
                 >
                   {t('find.profile.buttons.posts')}
                 </button>

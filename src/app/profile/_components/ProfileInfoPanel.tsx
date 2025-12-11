@@ -368,30 +368,33 @@ export function ProfileInfoPanel() {
   const resolvedEmail = profile.email || editForm.email || accountEmail || "";
 
   return (
-    <div className="grid grid-cols-1 gap-8">
+    <div className="grid grid-cols-1 gap-8 text-[var(--page-text)]">
       <div>
-        <div className="bg-gray-800 rounded-lg shadow-sm border border-gray-600 p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-semibold text-white">{t("profile.info.sectionTitle")}</h2>
+        <div className="theme-card rounded-3xl p-6">
+          <div className="flex flex-wrap justify-between gap-4 items-center mb-6">
+            <h2 className="text-xl font-semibold" style={{ color: "var(--page-text)" }}>{t("profile.info.sectionTitle")}</h2>
             {!isEditing ? (
               <button
+                type="button"
                 onClick={() => setIsEditing(true)}
-                className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors"
+                className="rounded-2xl bg-emerald-500 px-4 py-2 text-white font-semibold shadow-lg shadow-emerald-500/30 transition-colors hover:bg-emerald-400"
               >
                 {t("profile.info.actions.edit")}
               </button>
             ) : (
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <button
+                  type="button"
                   onClick={handleSave}
                   disabled={isSaving}
-                  className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="rounded-2xl bg-emerald-500 px-4 py-2 text-white font-semibold shadow-lg shadow-emerald-500/30 transition-colors hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isSaving ? t("profile.info.actions.saving") : t("profile.info.actions.save")}
                 </button>
                 <button
+                  type="button"
                   onClick={handleCancel}
-                  className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+                  className="rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-panel-muted)] px-4 py-2 font-semibold text-[var(--page-text)] transition-colors hover:border-emerald-300"
                 >
                   {t("profile.info.actions.cancel")}
                 </button>
@@ -413,7 +416,7 @@ export function ProfileInfoPanel() {
               changeButtonDisabled={isUploadingAvatar}
               isUploadingAvatar={isUploadingAvatar}
             >
-              {resolvedEmail && <p className="text-xs text-gray-400">{resolvedEmail}</p>}
+              {resolvedEmail && <p className="text-xs" style={{ color: "var(--surface-muted-text)" }}>{resolvedEmail}</p>}
             </ProfileSummaryHeader>
             <input
               ref={fileInputRef}
@@ -426,7 +429,7 @@ export function ProfileInfoPanel() {
             />
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
+              <label className="block text-sm font-semibold mb-1" style={{ color: "var(--page-text)" }}>
                 {t("profile.info.labels.name")}
               </label>
               {isEditing ? (
@@ -434,15 +437,15 @@ export function ProfileInfoPanel() {
                   type="text"
                   value={editForm.name}
                   onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-600 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-field)] px-4 py-3 text-[var(--page-text)] focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
                 />
               ) : (
-                <p className="text-gray-200">{profile.name}</p>
+                <p>{profile.name}</p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
+              <label className="block text-sm font-semibold mb-1" style={{ color: "var(--page-text)" }}>
                 {t("profile.info.labels.nickname")}
               </label>
               {isEditing ? (
@@ -450,15 +453,15 @@ export function ProfileInfoPanel() {
                   type="text"
                   value={editForm.nickname}
                   onChange={(e) => setEditForm({ ...editForm, nickname: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-600 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-field)] px-4 py-3 text-[var(--page-text)] focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
                 />
               ) : (
-                <p className="text-gray-200">{profile.nickname || "-"}</p>
+                <p>{profile.nickname || "-"}</p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
+              <label className="block text-sm font-semibold mb-1" style={{ color: "var(--page-text)" }}>
                 {t("profile.info.labels.email")}
               </label>
               {isEditing ? (
@@ -468,18 +471,18 @@ export function ProfileInfoPanel() {
                     value={editForm.email ?? accountEmail ?? ""}
                     readOnly
                     disabled
-                    className="w-full px-3 py-2 border border-gray-600 bg-gray-800 text-gray-400 rounded-lg cursor-not-allowed"
+                    className="w-full rounded-2xl border border-dashed border-[var(--surface-border)] bg-[var(--surface-panel-muted)] px-4 py-3 text-[var(--surface-muted-text)] cursor-not-allowed"
                     aria-readonly="true"
                   />
-                  <p className="text-xs text-gray-500 mt-1">{t("profile.info.notes.emailReadOnly")}</p>
+                  <p className="text-xs mt-1" style={{ color: "var(--surface-muted-text)" }}>{t("profile.info.notes.emailReadOnly")}</p>
                 </>
               ) : (
-                <p className="text-gray-200">{resolvedEmail || t("profile.info.notes.emailMissing")}</p>
+                <p>{resolvedEmail || t("profile.info.notes.emailMissing")}</p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
+              <label className="block text-sm font-semibold mb-1" style={{ color: "var(--page-text)" }}>
                 {t("profile.info.labels.about")}
               </label>
               {isEditing ? (
@@ -487,24 +490,24 @@ export function ProfileInfoPanel() {
                   value={editForm.description}
                   onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
                   rows={4}
-                  className="w-full px-3 py-2 border border-gray-600 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-field)] px-4 py-3 text-[var(--page-text)] focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
                 />
               ) : (
-                <p className="text-gray-200 whitespace-pre-line">
+                <p className="whitespace-pre-line" style={{ color: "var(--page-text)" }}>
                   {profile.description || t("profile.info.messages.descriptionEmpty")}
                 </p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
+              <label className="block text-sm font-semibold mb-1" style={{ color: "var(--page-text)" }}>
                 {t("profile.info.labels.country")}
               </label>
               {isEditing ? (
                 <select
                   value={editForm.country}
                   onChange={(e) => setEditForm({ ...editForm, country: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-600 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-field)] px-4 py-3 text-[var(--page-text)] focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
                 >
                   <option value="">{t("profile.info.placeholders.country")}</option>
                   {COUNTRY_OPTIONS.map((option) => (
@@ -514,14 +517,14 @@ export function ProfileInfoPanel() {
                   ))}
                 </select>
               ) : (
-                <p className="text-gray-200">
+                <p>
                   {profile.countryName || getCountryLabel(profile.countryCode) || "-"}
                 </p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
+              <label className="block text-sm font-semibold mb-1" style={{ color: "var(--page-text)" }}>
                 {t("profile.info.labels.englishLevel")}
               </label>
               {isEditing ? (
@@ -535,7 +538,7 @@ export function ProfileInfoPanel() {
                       level: nextLevel,
                     });
                   }}
-                  className="w-full px-3 py-2 border border-gray-600 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-field)] px-4 py-3 text-[var(--page-text)] focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
                 >
                   {ENGLISH_LEVEL_OPTIONS.map((option) => (
                     <option key={option} value={option}>
@@ -544,14 +547,14 @@ export function ProfileInfoPanel() {
                   ))}
                 </select>
               ) : (
-                <p className="text-gray-200">
+                <p>
                   {t(ENGLISH_LEVEL_LABEL_KEYS[profile.level])}
                 </p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
+              <label className="block text-sm font-semibold mb-1" style={{ color: "var(--page-text)" }}>
                 {t("profile.info.labels.interests")}
               </label>
               {isEditing ? (
@@ -561,33 +564,38 @@ export function ProfileInfoPanel() {
                     value={interestDraft}
                     onChange={(e) => setInterestDraft(e.target.value)}
                     placeholder={t("profile.info.placeholders.interests")}
-                    className="w-full px-3 py-2 border border-gray-600 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-field)] px-4 py-3 text-[var(--page-text)] focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
                   />
-                  <p className="text-xs text-gray-400 mt-1">{t("profile.info.helpers.interests")}</p>
+                  <p className="text-xs mt-1" style={{ color: "var(--surface-muted-text)" }}>{t("profile.info.helpers.interests")}</p>
                 </div>
               ) : profile.interests.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                   {profile.interests.map((interest, index) => (
                     <span
                       key={`${interest}-${index}`}
-                      className="px-3 py-1 bg-emerald-600 text-white rounded-full text-xs"
+                      className="px-3 py-1 rounded-full text-xs font-medium"
+                      style={{
+                        background: "var(--surface-panel-muted)",
+                        color: "var(--page-text)",
+                        border: "1px solid var(--surface-border)",
+                      }}
                     >
                       {interest}
                     </span>
                   ))}
                 </div>
               ) : (
-                <p className="text-gray-400 text-sm">{t("profile.info.messages.interestsEmpty")}</p>
+                <p className="text-sm" style={{ color: "var(--surface-muted-text)" }}>{t("profile.info.messages.interestsEmpty")}</p>
               )}
             </div>
 
-            <div className="mt-8 border-t border-gray-700 pt-6">
-              <h3 className="text-sm font-semibold text-red-400 mb-2">{t("profile.info.danger.title")}</h3>
-              <p className="text-sm text-gray-400 mb-4">{t("profile.info.danger.description")}</p>
+            <div className="mt-8 border-t border-[var(--surface-border)] pt-6">
+              <h3 className="text-sm font-semibold text-red-500 mb-2">{t("profile.info.danger.title")}</h3>
+              <p className="text-sm mb-4" style={{ color: "var(--surface-muted-text)" }}>{t("profile.info.danger.description")}</p>
               <button
                 onClick={handleDeleteAccount}
                 disabled={isDeletingAccount}
-                className="px-4 py-2 rounded-lg bg-red-600 text-white font-medium hover:bg-red-500 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                className="px-4 py-2 rounded-2xl border border-red-500/40 bg-[var(--surface-panel-muted)] text-red-400 font-semibold transition-colors hover:border-red-500/70 hover:bg-red-500/5 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {isDeletingAccount
                   ? t("profile.info.danger.deleting")

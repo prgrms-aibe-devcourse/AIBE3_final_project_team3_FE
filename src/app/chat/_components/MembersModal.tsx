@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { Users, UserPlus, MessageSquare, Shield, ShieldAlert, MoreVertical, UserX, Crown } from "lucide-react";
-import { ChatRoomMember } from "@/global/types/chat.types";
-import { useKickMemberMutation, useTransferOwnershipMutation, useCreateDirectChat } from "@/global/api/useChatQuery";
+import ReportModal from "@/components/ReportModal";
+import { useCreateDirectChat, useKickMemberMutation, useTransferOwnershipMutation } from "@/global/api/useChatQuery";
 import { useSendFriendRequest } from "@/global/api/useFriendshipMutation";
 import { useToastStore } from "@/global/stores/useToastStore";
-import ReportModal from "@/components/ReportModal";
+import { ChatRoomMember } from "@/global/types/chat.types";
+import { Crown, MessageSquare, MoreVertical, Shield, ShieldAlert, UserPlus, Users, UserX } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 interface MembersModalProps {
   isOpen: boolean;
@@ -54,7 +54,7 @@ export default function MembersModal({ isOpen, onClose, roomId, members, ownerId
 
   const handleActionClick = (action: string, member: ChatRoomMember) => {
     setOpenMenuId(null); // Close menu after action
-    
+
     switch (action) {
       case '강퇴하기':
         if (window.confirm(`'${member.nickname}'님을 정말로 강퇴하시겠습니까?`)) {
@@ -104,18 +104,19 @@ export default function MembersModal({ isOpen, onClose, roomId, members, ownerId
   };
 
   return (
-    <div 
-      className="fixed inset-0 bg-black bg-opacity-60 z-40 flex items-center justify-center"
+    <div
+      className="fixed inset-0 z-40 flex items-center justify-center px-4"
+      style={{ backgroundColor: "var(--surface-overlay)" }}
       onClick={onClose}
     >
-      <div 
-        className="bg-gray-800 rounded-xl shadow-2xl w-full max-w-md m-4 flex flex-col"
+      <div
+        className="theme-card rounded-3xl shadow-2xl w-full max-w-md flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-4 border-b border-gray-700 flex-shrink-0">
-          <h2 className="text-lg font-semibold text-white flex items-center">
-            <Users size={20} className="mr-3 text-gray-400" />
+        <div className="p-5 border-b flex-shrink-0" style={{ borderColor: "var(--surface-border)" }}>
+          <h2 className="text-lg font-semibold flex items-center" style={{ color: "var(--page-text)" }}>
+            <Users size={20} className="mr-3 text-[var(--surface-muted-text)]" />
             채팅방 멤버 ({members.length}명)
           </h2>
         </div>
@@ -123,12 +124,15 @@ export default function MembersModal({ isOpen, onClose, roomId, members, ownerId
         {/* Member List */}
         <div className="flex-1 overflow-y-auto p-4 space-y-3 max-h-[60vh]">
           {sortedMembers.map((member) => (
-            <div key={member.id} className="group flex items-center justify-between p-2 rounded-lg hover:bg-gray-700/50">
+            <div key={member.id} className="group flex items-center justify-between p-2 rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-panel)] hover:border-emerald-400 transition-colors">
               <div className="flex items-center">
-                <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-lg font-semibold text-white">
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-lg font-semibold"
+                  style={{ background: "var(--surface-panel-muted)", color: "var(--page-text)" }}
+                >
                   {member.nickname.charAt(0).toUpperCase()}
                 </div>
-                <p className="ml-4 font-medium text-gray-200">
+                <p className="ml-4 font-medium" style={{ color: "var(--page-text)" }}>
                   {member.nickname}
                   {member.id === currentUserId && <span className="ml-2 text-sm font-semibold text-cyan-400">(나)</span>}
                   {member.id === ownerId && <span className="ml-1 text-sm font-semibold text-yellow-400">(방장)</span>}
@@ -137,40 +141,40 @@ export default function MembersModal({ isOpen, onClose, roomId, members, ownerId
               {member.id !== currentUserId && (
                 <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                   {!member.isFriend && (
-                    <button onClick={() => handleActionClick('친구추가', member)} className="p-2 text-gray-400 hover:text-white hover:bg-gray-600 rounded-full transition-colors" title="친구 추가">
+                    <button onClick={() => handleActionClick('친구추가', member)} className="p-2 text-[var(--surface-muted-text)] rounded-full transition-colors hover:bg-[var(--surface-panel-muted)]" title="친구 추가">
                       <UserPlus size={18} />
                     </button>
                   )}
-                  <button onClick={() => handleActionClick('1:1대화', member)} className="p-2 text-gray-400 hover:text-white hover:bg-gray-600 rounded-full transition-colors" title="1:1 대화">
+                  <button onClick={() => handleActionClick('1:1대화', member)} className="p-2 text-[var(--surface-muted-text)] rounded-full transition-colors hover:bg-[var(--surface-panel-muted)]" title="1:1 대화">
                     <MessageSquare size={18} />
                   </button>
                   <div className="relative" ref={openMenuId === member.id ? menuRef : null}>
-                    <button onClick={() => toggleMenu(member.id)} className="p-2 text-gray-400 hover:text-white hover:bg-gray-600 rounded-full transition-colors" title="더 보기">
+                    <button onClick={() => toggleMenu(member.id)} className="p-2 text-[var(--surface-muted-text)] rounded-full transition-colors hover:bg-[var(--surface-panel-muted)]" title="더 보기">
                       <MoreVertical size={18} />
                     </button>
                     {openMenuId === member.id && (
-                      <div className="absolute right-0 mt-2 w-48 bg-gray-900 border border-gray-700 rounded-md shadow-lg z-20">
+                      <div className="absolute right-0 mt-2 w-48 theme-card rounded-2xl z-20 shadow-lg">
                         <ul className="py-1">
                           <li>
-                            <button onClick={() => handleActionClick('차단하기', member)} className="w-full text-left flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-red-500/20 hover:text-red-400">
+                            <button onClick={() => handleActionClick('차단하기', member)} className="w-full text-left flex items-center px-4 py-2 text-sm text-[var(--surface-muted-text)] hover:bg-red-500/10 hover:text-red-400">
                               <Shield size={16} className="mr-3" /> 차단하기
                             </button>
                           </li>
                           <li>
-                            <button onClick={() => handleActionClick('신고하기', member)} className="w-full text-left flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-red-500/20 hover:text-red-400">
+                            <button onClick={() => handleActionClick('신고하기', member)} className="w-full text-left flex items-center px-4 py-2 text-sm text-[var(--surface-muted-text)] hover:bg-red-500/10 hover:text-red-400">
                               <ShieldAlert size={16} className="mr-3" /> 신고하기
                             </button>
                           </li>
                           {isOwner && (
                             <>
-                              <div className="my-1 h-px bg-gray-700" />
+                              <div className="my-1 h-px" style={{ background: "var(--surface-border)" }} />
                               <li>
-                                <button onClick={() => handleActionClick('강퇴하기', member)} className="w-full text-left flex items-center px-4 py-2 text-sm text-red-400 hover:bg-red-500/20">
+                                <button onClick={() => handleActionClick('강퇴하기', member)} className="w-full text-left flex items-center px-4 py-2 text-sm text-red-400 hover:bg-red-500/10">
                                   <UserX size={16} className="mr-3" /> 강퇴하기
                                 </button>
                               </li>
                               <li>
-                                <button onClick={() => handleActionClick('방장 위임', member)} className="w-full text-left flex items-center px-4 py-2 text-sm text-yellow-400 hover:bg-yellow-500/20">
+                                <button onClick={() => handleActionClick('방장 위임', member)} className="w-full text-left flex items-center px-4 py-2 text-sm text-yellow-400 hover:bg-yellow-500/10">
                                   <Crown size={16} className="mr-3" /> 방장 위임
                                 </button>
                               </li>
@@ -187,10 +191,10 @@ export default function MembersModal({ isOpen, onClose, roomId, members, ownerId
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-gray-700 flex-shrink-0 text-right">
+        <div className="p-4 border-t flex-shrink-0 text-right" style={{ borderColor: "var(--surface-border)" }}>
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-emerald-600 text-white font-semibold rounded-lg hover:bg-emerald-700 transition-colors"
+            className="px-4 py-2 rounded-2xl bg-emerald-500 text-white font-semibold shadow-lg shadow-emerald-500/30 hover:bg-emerald-400 transition-colors"
           >
             닫기
           </button>

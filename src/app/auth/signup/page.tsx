@@ -103,13 +103,13 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="auth-page min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-[color:var(--auth-heading)]">
             {t("auth.signup.title")}
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
+          <p className="mt-2 text-center text-sm text-[color:var(--auth-subtext)]">
             {t("auth.signup.subtitlePrefix")}
             <Link
               href="/auth/login"
@@ -125,7 +125,7 @@ export default function SignupPage() {
             <div>
               <label
                 htmlFor="name"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-sm font-medium text-[color:var(--auth-heading)]"
               >
                 {t("auth.signup.fields.name")}
               </label>
@@ -134,7 +134,7 @@ export default function SignupPage() {
                 name="name"
                 type="text"
                 required
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-[color:var(--auth-input-border)] bg-[color:var(--auth-input-bg)] placeholder:text-[color:var(--auth-input-placeholder)] text-[color:var(--auth-input-text)] rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 placeholder={t("auth.signup.placeholders.name")}
                 value={formData.name}
                 onChange={(e) =>
@@ -146,7 +146,7 @@ export default function SignupPage() {
             <div>
               <label
                 htmlFor="nickname"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-sm font-medium text-[color:var(--auth-heading)]"
               >
                 {t("auth.signup.fields.nickname")}
               </label>
@@ -155,7 +155,7 @@ export default function SignupPage() {
                 name="nickname"
                 type="text"
                 required
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-[color:var(--auth-input-border)] bg-[color:var(--auth-input-bg)] placeholder:text-[color:var(--auth-input-placeholder)] text-[color:var(--auth-input-text)] rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 placeholder={t("auth.signup.placeholders.nickname")}
                 value={formData.nickname}
                 onChange={(e) =>
@@ -167,7 +167,7 @@ export default function SignupPage() {
             <div>
               <label
                 htmlFor="email"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-sm font-medium text-[color:var(--auth-heading)]"
               >
                 {t("auth.signup.fields.email")}
               </label>
@@ -177,7 +177,7 @@ export default function SignupPage() {
                 type="email"
                 autoComplete="email"
                 required
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-[color:var(--auth-input-border)] bg-[color:var(--auth-input-bg)] placeholder:text-[color:var(--auth-input-placeholder)] text-[color:var(--auth-input-text)] rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 placeholder={t("auth.signup.placeholders.email")}
                 value={formData.email}
                 onChange={(e) =>
@@ -189,7 +189,7 @@ export default function SignupPage() {
             <div>
               <label
                 htmlFor="country"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-sm font-medium text-[color:var(--auth-heading)]"
               >
                 {t("auth.signup.fields.country")}
               </label>
@@ -197,7 +197,7 @@ export default function SignupPage() {
                 id="country"
                 name="country"
                 required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white text-gray-900 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                className="mt-1 block w-full px-3 py-2 border border-[color:var(--auth-input-border)] bg-[color:var(--auth-input-bg)] text-[color:var(--auth-input-text)] rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 value={formData.country}
                 onChange={(e) =>
                   setFormData({
@@ -223,7 +223,7 @@ export default function SignupPage() {
               >
                 <label
                   htmlFor="level"
-                  className="block text-sm font-medium text-gray-700"
+                  className="block text-sm font-medium text-[color:var(--auth-heading)]"
                 >
                   {t("auth.signup.fields.level")}
                 </label>
@@ -254,7 +254,7 @@ export default function SignupPage() {
                 id="level"
                 name="level"
                 required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white text-gray-900 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                className="mt-1 block w-full px-3 py-2 border border-[color:var(--auth-input-border)] bg-[color:var(--auth-input-bg)] text-[color:var(--auth-input-text)] rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 value={formData.level}
                 onChange={(e) =>
                   setFormData({ ...formData, level: e.target.value as EnglishLevel })
@@ -274,7 +274,7 @@ export default function SignupPage() {
             <div>
               <label
                 htmlFor="interests"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-sm font-medium text-[color:var(--auth-heading)]"
               >
                 {t("auth.signup.fields.interests")}
               </label>
@@ -283,14 +283,14 @@ export default function SignupPage() {
                 name="interests"
                 type="text"
                 required
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-[color:var(--auth-input-border)] bg-[color:var(--auth-input-bg)] placeholder:text-[color:var(--auth-input-placeholder)] text-[color:var(--auth-input-text)] rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 placeholder={t("auth.signup.placeholders.interests")}
                 value={formData.interests}
                 onChange={(e) =>
                   setFormData({ ...formData, interests: e.target.value })
                 }
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-[color:var(--auth-subtext)] mt-1">
                 {t("auth.signup.helpers.interests")}
               </p>
             </div>
@@ -298,7 +298,7 @@ export default function SignupPage() {
             <div>
               <label
                 htmlFor="password"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-sm font-medium text-[color:var(--auth-heading)]"
               >
                 {t("auth.signup.fields.password")}
               </label>
@@ -308,7 +308,7 @@ export default function SignupPage() {
                 type="password"
                 autoComplete="new-password"
                 required
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-[color:var(--auth-input-border)] bg-[color:var(--auth-input-bg)] placeholder:text-[color:var(--auth-input-placeholder)] text-[color:var(--auth-input-text)] rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 placeholder={t("auth.signup.placeholders.password")}
                 value={formData.password}
                 onChange={(e) =>
@@ -320,7 +320,7 @@ export default function SignupPage() {
             <div>
               <label
                 htmlFor="confirmPassword"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-sm font-medium text-[color:var(--auth-heading)]"
               >
                 {t("auth.signup.fields.confirmPassword")}
               </label>
@@ -330,7 +330,7 @@ export default function SignupPage() {
                 type="password"
                 autoComplete="new-password"
                 required
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-[color:var(--auth-input-border)] bg-[color:var(--auth-input-bg)] placeholder:text-[color:var(--auth-input-placeholder)] text-[color:var(--auth-input-text)] rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 placeholder={t("auth.signup.placeholders.confirmPassword")}
                 value={formData.confirmPassword}
                 onChange={(e) =>
@@ -342,7 +342,7 @@ export default function SignupPage() {
             <div>
               <label
                 htmlFor="description"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-sm font-medium text-[color:var(--auth-heading)]"
               >
                 {t("auth.signup.fields.description")}
               </label>
@@ -351,7 +351,7 @@ export default function SignupPage() {
                 name="description"
                 required
                 rows={4}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                className="mt-1 block w-full px-3 py-2 border border-[color:var(--auth-input-border)] bg-[color:var(--auth-input-bg)] placeholder:text-[color:var(--auth-input-placeholder)] text-[color:var(--auth-input-text)] rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 placeholder={t("auth.signup.placeholders.description")}
                 value={formData.description}
                 onChange={(e) =>
@@ -376,10 +376,10 @@ export default function SignupPage() {
           <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300" />
+                <div className="w-full border-t border-[color:var(--auth-input-border)]" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-gray-50 text-gray-500">
+                <span className="px-2 bg-[color:var(--auth-bg)] text-[color:var(--auth-subtext)]">
                   {t("auth.signup.divider")}
                 </span>
               </div>
@@ -388,7 +388,7 @@ export default function SignupPage() {
             <div className="mt-6 grid grid-cols-2 gap-3">
               <button
                 type="button"
-                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+                className="w-full inline-flex justify-center py-2 px-4 border border-[color:var(--auth-input-border)] rounded-md shadow-sm bg-[color:var(--auth-input-bg)] text-sm font-medium text-[color:var(--auth-subtext)] hover:bg-[color:var(--auth-bg)]"
               >
                 <span className="sr-only">{t("auth.signup.buttons.googleSr")}</span>
                 <span>{t("auth.signup.buttons.google")}</span>
@@ -396,7 +396,7 @@ export default function SignupPage() {
 
               <button
                 type="button"
-                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+                className="w-full inline-flex justify-center py-2 px-4 border border-[color:var(--auth-input-border)] rounded-md shadow-sm bg-[color:var(--auth-input-bg)] text-sm font-medium text-[color:var(--auth-subtext)] hover:bg-[color:var(--auth-bg)]"
               >
                 <span className="sr-only">{t("auth.signup.buttons.githubSr")}</span>
                 <span>{t("auth.signup.buttons.github")}</span>
@@ -405,11 +405,11 @@ export default function SignupPage() {
           </div>
         </form>
 
-        <div className="mt-8 bg-blue-50 p-4 rounded-lg">
-          <h3 className="text-sm font-medium text-blue-800 mb-2">
+        <div className="mt-8 rounded-lg border border-[color:var(--auth-input-border)] bg-[color:var(--auth-bg)] p-4">
+          <h3 className="text-sm font-medium text-[color:var(--auth-heading)] mb-2">
             {t("auth.signup.helpers.gettingStartedTitle")}
           </h3>
-          <p className="text-sm text-blue-700">
+          <p className="text-sm text-[color:var(--auth-subtext)]">
             {t("auth.signup.helpers.gettingStartedDescription")}
           </p>
         </div>

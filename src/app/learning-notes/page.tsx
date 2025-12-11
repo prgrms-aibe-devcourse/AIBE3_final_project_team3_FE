@@ -42,23 +42,49 @@ function NoteCard({
   const fb = note.feedback;
   const tag = normalizeTag(fb.tag);
 
-  const tagColor =
-    {
-      Grammar: "bg-red-900/40 text-red-300 border border-red-700",
-      Vocabulary: "bg-blue-900/40 text-blue-300 border border-blue-700",
-      Translation: "bg-purple-900/40 text-purple-300 border border-purple-700",
-    }[tag] ?? "bg-gray-700 text-gray-300";
+  const badgeStyleMap: Record<
+    string,
+    { background: string; text: string; border: string }
+  > = {
+    Grammar: {
+      background: "var(--badge-grammar-bg)",
+      text: "var(--badge-grammar-text)",
+      border: "var(--badge-grammar-border)",
+    },
+    Vocabulary: {
+      background: "var(--badge-vocabulary-bg)",
+      text: "var(--badge-vocabulary-text)",
+      border: "var(--badge-vocabulary-border)",
+    },
+    Translation: {
+      background: "var(--badge-translation-bg)",
+      text: "var(--badge-translation-text)",
+      border: "var(--badge-translation-border)",
+    },
+  };
+
+  const badgeStyle =
+    badgeStyleMap[tag] ?? {
+      background: "var(--badge-default-bg)",
+      text: "var(--badge-default-text)",
+      border: "var(--badge-default-border)",
+    };
 
   return (
-    <div className="bg-gray-800 border border-gray-700 rounded-lg shadow-md p-4">
+    <div className="theme-card rounded-2xl p-4">
       <div className="flex justify-between items-start w-full">
         {/* ---------- Left Section ---------- */}
         <div className="flex-1 max-w-[80%]">
           <h4 className="font-semibold text-white mb-2">상세 피드백</h4>
 
-          <div className="bg-gray-800 p-3 rounded-md border border-gray-700 shadow-sm">
+          <div className="theme-surface-muted p-3 rounded-md shadow-sm">
             <span
-              className={`px-2 py-1 rounded text-xs font-semibold inline-block mb-2 ${tagColor}`}
+              className="px-2 py-1 rounded text-xs font-semibold inline-block mb-2 border"
+              style={{
+                background: badgeStyle.background,
+                color: badgeStyle.text,
+                borderColor: badgeStyle.border,
+              }}
             >
               {tag}
             </span>
@@ -88,7 +114,7 @@ function NoteCard({
             onClick={() => onToggleCompletion(fb.id, fb.marked)}
             className={`w-10 h-10 rounded-lg flex items-center justify-center ${isCompleted
               ? "bg-green-600 text-white"
-              : "bg-gray-700 text-gray-400 hover:bg-gray-600"
+              : "bg-[var(--surface-panel-muted)] text-[var(--surface-muted-text)] hover:bg-[var(--surface-panel)]"
               }`}
           >
             {isCompleted ? "✓" : "○"}
@@ -96,7 +122,7 @@ function NoteCard({
 
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="w-10 h-10 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-700"
+            className="w-10 h-10 rounded-lg flex items-center justify-center text-gray-400 hover:bg-[var(--surface-panel-muted)]"
           >
             {isExpanded ? "▲" : "▼"}
           </button>
@@ -104,7 +130,7 @@ function NoteCard({
       </div>
 
       {isExpanded && (
-        <div className="mt-4 border-t border-gray-700 bg-gray-700 p-4 rounded-md">
+        <div className="mt-4 border-t border-[var(--surface-border)] bg-[var(--surface-panel-muted)] p-4 rounded-md">
           <p className="text-gray-300">
             <span className="font-semibold text-gray-400">원본 문장: </span>
             {note.note.originalContent}
@@ -164,8 +190,8 @@ export default function LearningNotesPage() {
   };
 
   return (
-    <div className="p-8 min-h-screen">
-      <div className="max-w-4xl mx-auto">
+    <div className="p-8 min-h-screen" style={{ background: "var(--page-bg)" }}>
+      <div className="max-w-4xl mx-auto theme-surface rounded-3xl p-8 shadow-xl">
         <h1 className="text-4xl font-bold text-white mb-2">
           {t("learningNotes.title")}
         </h1>
@@ -192,7 +218,7 @@ export default function LearningNotesPage() {
                 onClick={() => setActiveTab(tagKey as any)}
                 className={`px-4 py-2 rounded-md ${activeTab === tagKey
                   ? "bg-indigo-600 text-white"
-                  : "bg-gray-800 text-gray-300 border border-gray-700"
+                  : "border border-[var(--surface-border)] bg-[var(--surface-panel-muted)] text-[var(--page-text)]"
                   }`}
               >
                 {{
@@ -217,7 +243,7 @@ export default function LearningNotesPage() {
                 onClick={() => setFilter(f.key as any)}
                 className={`px-4 py-2 rounded-md ${filter === f.key
                   ? "bg-green-600 text-white"
-                  : "bg-gray-800 text-gray-300 border border-gray-700"
+                  : "border border-[var(--surface-border)] bg-[var(--surface-panel-muted)] text-[var(--page-text)]"
                   }`}
               >
                 {f.label}
@@ -229,7 +255,7 @@ export default function LearningNotesPage() {
         {/* 카드 리스트 */}
         <div className="space-y-4">
           {notes.length === 0 ? (
-            <div className="p-6 bg-gray-800 border border-gray-700 rounded-md text-gray-400">
+            <div className="p-6 theme-surface-muted rounded-md text-gray-400">
               {t("learningNotes.empty")}
             </div>
           ) : (
@@ -252,7 +278,7 @@ export default function LearningNotesPage() {
               onClick={() => setPage(p)}
               className={`px-3 py-1 rounded text-sm ${p === currentPage
                 ? "bg-indigo-600 text-white"
-                : "bg-gray-800 text-gray-300 border border-gray-700 hover:bg-gray-700"
+                : "border border-[var(--surface-border)] bg-[var(--surface-panel-muted)] text-[var(--page-text)] hover:bg-[var(--surface-panel)]"
                 }`}
             >
               {p + 1}

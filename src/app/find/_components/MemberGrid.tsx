@@ -30,7 +30,7 @@ export default function MemberGrid({ members = [], source }: MemberGridProps) {
         return (
           <div
             key={user.id}
-            className="bg-gray-800 border border-gray-600 rounded-lg p-6 hover:border-emerald-500 transition-all duration-300 cursor-pointer"
+            className="theme-card rounded-2xl p-6 hover:border-emerald-400 transition-all duration-300 cursor-pointer hover:-translate-y-1"
             onClick={() => openProfile(user, source)}
           >
             <div className="flex items-center mb-4">
@@ -43,7 +43,10 @@ export default function MemberGrid({ members = [], source }: MemberGridProps) {
                   unoptimized
                   className="rounded-full object-cover w-16 h-16"
                 />
-                <div className={`absolute -bottom-1 -right-1 w-5 h-5 border-2 border-gray-800 rounded-full ${presence.badgeClass}`}></div>
+                <div
+                  className={`absolute -bottom-1 -right-1 w-5 h-5 border-2 rounded-full ${presence.badgeClass}`}
+                  style={{ borderColor: "var(--surface-panel)" }}
+                ></div>
               </div>
               <div className="ml-4">
                 <h3 className="text-lg font-semibold text-white">{user.nickname}</h3>

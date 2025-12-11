@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { Send, Paperclip, Mic, Loader2 } from "lucide-react";
+import { Loader2, Mic, Paperclip, Send } from "lucide-react";
+import { useRef, useState } from "react";
 
 type MessageInputProps = {
   onSendMessage: (message: { text: string; isTranslateEnabled: boolean }) => void;
@@ -43,7 +43,13 @@ export default function MessageInput({
   };
 
   return (
-    <div className="flex-shrink-0 p-4 bg-gray-800 border-t border-gray-700">
+    <div
+      className="flex-shrink-0 p-4 border-t"
+      style={{
+        background: "var(--surface-panel)",
+        borderColor: "var(--surface-border)",
+      }}
+    >
       <input
         type="file"
         ref={fileInputRef}
@@ -55,7 +61,9 @@ export default function MessageInput({
           htmlFor="auto-translate"
           className="flex items-center cursor-pointer"
         >
-          <span className="mr-2 text-sm text-gray-300">자동 번역</span>
+          <span className="mr-2 text-sm text-gray-600" style={{ color: "var(--surface-muted-text)" }}>
+            자동 번역
+          </span>
           <div className="relative">
             <input
               id="auto-translate"
@@ -64,11 +72,13 @@ export default function MessageInput({
               checked={isTranslateEnabled}
               onChange={() => setIsTranslateEnabled(!isTranslateEnabled)}
             />
-            <div className="block bg-gray-600 w-10 h-5 rounded-full"></div>
             <div
-              className={`dot absolute left-1 top-0.5 bg-white w-4 h-4 rounded-full transition-transform ${
-                isTranslateEnabled ? "translate-x-full !bg-emerald-400" : ""
-              }`}
+              className="block w-10 h-5 rounded-full"
+              style={{ background: "var(--surface-inset)" }}
+            ></div>
+            <div
+              className={`dot absolute left-1 top-0.5 bg-white w-4 h-4 rounded-full transition-transform ${isTranslateEnabled ? "translate-x-full !bg-emerald-400" : ""
+                }`}
             ></div>
           </div>
         </label>
@@ -79,7 +89,7 @@ export default function MessageInput({
           onChange={(e) => setText(e.target.value)}
           onKeyPress={handleKeyPress}
           placeholder="Type a message..."
-          className="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-sm text-white resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500 placeholder-gray-400 disabled:opacity-50"
+          className="flex-1 theme-field rounded-lg px-4 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500 placeholder-gray-400 disabled:opacity-50"
           rows={1}
           style={{ minHeight: "40px", maxHeight: "120px" }}
           onInput={(e) => {
@@ -93,7 +103,7 @@ export default function MessageInput({
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={isUploading}
-            className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-full transition-colors disabled:opacity-50"
+            className="p-2 text-gray-400 rounded-full transition-colors disabled:opacity-50 hover:bg-[var(--surface-panel-muted)]"
           >
             {isUploading ? (
               <Loader2 size={20} className="animate-spin" />
@@ -102,7 +112,7 @@ export default function MessageInput({
             )}
           </button>
           <button
-            className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-full transition-colors disabled:opacity-50"
+            className="p-2 text-gray-400 rounded-full transition-colors disabled:opacity-50 hover:bg-[var(--surface-panel-muted)]"
             disabled={isUploading}
           >
             <Mic size={20} />

@@ -33,29 +33,38 @@ export default function Home() {
       </section>
 
       {/* Translation Feature */}
-      <section className="py-16 bg-gray-800/50 rounded-lg border border-gray-700">
-        <div className="text-center">
-          <h2 className="text-3xl font-bold mb-6 text-white">
+      <section
+        className="py-16 rounded-3xl border theme-card shadow-2xl transition-colors"
+        style={{ borderColor: "var(--surface-border)" }}
+      >
+        <div className="text-center px-4 md:px-12">
+          <h2 className="text-3xl font-bold mb-6" style={{ color: "var(--page-text)" }}>
             {t("home.translation.title")}
           </h2>
-          <p className="text-xl text-gray-200 mb-8 max-w-3xl mx-auto">
+          <p
+            className="text-xl mb-8 max-w-3xl mx-auto"
+            style={{ color: "var(--surface-muted-text)" }}
+          >
             {t("home.translation.description")}
           </p>
-          <div className="bg-gray-900 p-6 rounded-lg shadow-md max-w-2xl mx-auto border border-gray-700">
+          <div
+            className="p-6 md:p-8 rounded-2xl border shadow-inner max-w-2xl mx-auto"
+            style={{ background: "var(--surface-panel)", borderColor: "var(--surface-border)" }}
+          >
             <div className="text-left">
-              <p className="text-gray-400 text-sm mb-2">
+              <p className="text-sm mb-2" style={{ color: "var(--surface-muted-text)" }}>
                 {t("home.translation.inputLabel")}
               </p>
-              <p className="text-lg mb-4 text-gray-200">
+              <p className="text-lg mb-4" style={{ color: "var(--page-text)" }}>
                 "I want to go to the 도서관 to study"
               </p>
-              <p className="text-gray-400 text-sm mb-2">
+              <p className="text-sm mb-2" style={{ color: "var(--surface-muted-text)" }}>
                 {t("home.translation.outputLabel")}
               </p>
               <p className="text-lg text-emerald-400">
                 "I want to go to the library to study"
               </p>
-              <p className="text-sm text-gray-400 mt-3">
+              <p className="text-sm mt-3" style={{ color: "var(--surface-muted-text)" }}>
                 ✓ "도서관 → library" {t("home.translation.saved")}
               </p>
             </div>

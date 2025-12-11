@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import ThemeToggle from "@/components/ThemeToggle";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useLogout } from "@/global/api/useAuthQuery";
 import { useAcceptFriendRequest, useRejectFriendRequest } from "@/global/api/useFriendshipMutation";
@@ -360,7 +361,10 @@ export default function Header() {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 bg-gray-800/95 backdrop-blur-sm shadow-lg border-b border-gray-600 z-50">
+    <header
+      className="app-header fixed top-0 left-0 right-0 backdrop-blur-sm shadow-lg border-b z-50"
+      style={{ backgroundColor: "var(--header-bg)", borderColor: "var(--header-border)" }}
+    >
       <div className="container mx-auto px-4 relative">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
@@ -418,11 +422,12 @@ export default function Header() {
 
           {/* Auth Buttons */}
           <div className="hidden md:flex items-center space-x-4">
+            <ThemeToggle />
             {/* Language Dropdown */}
             <div className="relative language-dropdown">
               <button
                 onClick={() => setIsLangMenuOpen(!isLangMenuOpen)}
-                className="flex items-center space-x-1 text-gray-200 hover:text-emerald-400 transition-colors p-2 rounded-lg hover:bg-gray-700/50"
+                className={`flex items-center gap-2 rounded-2xl border px-3 py-1.5 text-sm font-medium transition-colors bg-[var(--surface-panel)] text-[var(--page-text)] ${isLangMenuOpen ? "border-emerald-400" : "border-[var(--surface-border)] hover:border-emerald-400"}`}
               >
                 <span className="text-xl">{language === 'ko' ? '🇰🇷' : '🇺🇸'}</span>
                 <svg className={`w-4 h-4 transition-transform ${isLangMenuOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -431,17 +436,24 @@ export default function Header() {
               </button>
 
               {isLangMenuOpen && (
-                <div className="absolute right-0 mt-2 w-32 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-50 py-1">
+                <div
+                  className="absolute right-0 mt-2 w-36 rounded-2xl shadow-2xl border theme-card z-50 py-1"
+                  style={{ borderColor: "var(--surface-border)" }}
+                >
                   <button
                     onClick={() => { setLanguage('ko'); setIsLangMenuOpen(false); }}
-                    className={`w-full text-left px-4 py-2 text-sm flex items-center space-x-2 hover:bg-gray-700 ${language === 'ko' ? 'text-emerald-400 bg-gray-700/50' : 'text-gray-300'}`}
+                    className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 rounded-xl transition-colors ${language === 'ko'
+                      ? 'border border-emerald-400/60 text-emerald-400 bg-emerald-500/10'
+                      : 'border border-transparent text-[var(--page-text)] hover:border-emerald-300/60'}`}
                   >
                     <span>🇰🇷</span>
                     <span>{t("header.language.korean")}</span>
                   </button>
                   <button
                     onClick={() => { setLanguage('en'); setIsLangMenuOpen(false); }}
-                    className={`w-full text-left px-4 py-2 text-sm flex items-center space-x-2 hover:bg-gray-700 ${language === 'en' ? 'text-emerald-400 bg-gray-700/50' : 'text-gray-300'}`}
+                    className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 rounded-xl transition-colors ${language === 'en'
+                      ? 'border border-emerald-400/60 text-emerald-400 bg-emerald-500/10'
+                      : 'border border-transparent text-[var(--page-text)] hover:border-emerald-300/60'}`}
                   >
                     <span>🇺🇸</span>
                     <span>{t("header.language.english")}</span>
@@ -454,7 +466,9 @@ export default function Header() {
             <div className="relative notifications-dropdown">
               <button
                 onClick={() => setShowNotifications(!showNotifications)}
-                className={`relative p-2 rounded-full transition-colors ${showNotifications ? "text-emerald-400 bg-gray-700/50" : "text-gray-200 hover:text-emerald-400 hover:bg-gray-700/50"}`}
+                className={`relative flex h-10 w-10 items-center justify-center rounded-2xl border transition-colors bg-[var(--surface-panel)] ${showNotifications
+                  ? "border-emerald-400 text-emerald-400"
+                  : "border-[var(--surface-border)] text-[var(--page-text)] hover:border-emerald-400"}`}
                 title={t("header.notifications.title")}
               >
                 <svg
@@ -473,63 +487,65 @@ export default function Header() {
 
               {/* Notifications Dropdown */}
               {showNotifications && (
-                <div className="absolute right-0 top-full mt-2 w-80 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-50 max-h-96 overflow-hidden">
-                  <div className="p-3 border-b border-gray-600 flex justify-between items-center">
-                    <h3 className="text-sm font-medium text-white">
-                      {t("header.notifications.title")}
-                    </h3>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => {
-                          void refetchNotifications();
-                        }}
-                        disabled={isNotificationsFetching}
-                        className="text-xs text-gray-300 hover:text-white disabled:opacity-60"
-                      >
-                        {isNotificationsFetching
-                          ? t("header.notifications.refreshing")
-                          : t("header.notifications.refresh")}
-                      </button>
-                      {unreadCount > 0 && (
+                <div className="absolute right-0 top-full mt-2 w-80 theme-card rounded-3xl shadow-2xl border z-50 max-h-96 overflow-hidden"
+                  style={{ borderColor: "var(--surface-border)" }}>
+                  <div className="p-3 border-b" style={{ borderColor: "var(--surface-border)" }}>
+                    <div className="flex items-center justify-between gap-3">
+                      <h3 className="text-sm font-semibold" style={{ color: "var(--page-text)" }}>
+                        {t("header.notifications.title")}
+                      </h3>
+                      <div className="flex items-center gap-2 text-xs">
                         <button
-                          onClick={handleMarkAllAsRead}
-                          disabled={isMarkingAll}
-                          className="text-xs text-emerald-400 hover:text-emerald-300 disabled:opacity-60"
+                          onClick={() => {
+                            void refetchNotifications();
+                          }}
+                          disabled={isNotificationsFetching}
+                          className="text-[var(--surface-muted-text)] hover:text-[var(--page-text)] disabled:opacity-60"
                         >
-                          {isMarkingAll
-                            ? t("header.notifications.marking")
-                            : t("header.notifications.markAll")}
+                          {isNotificationsFetching
+                            ? t("header.notifications.refreshing")
+                            : t("header.notifications.refresh")}
                         </button>
-                      )}
-                      <button
-                        onClick={() => {
-                          if (!notifications.length) {
-                            alert("삭제할 알림이 없습니다.");
-                            return;
-                          }
-                          const confirmed = window.confirm("전체 알림을 삭제하시겠습니까?");
-                          if (!confirmed) {
-                            return;
-                          }
-                          deleteAllNotificationsMutation();
-                          setShowNotifications(false);
-                        }}
-                        className={`flex h-6 w-6 items-center justify-center rounded text-sm ${notifications.length === 0
-                          ? "text-gray-500 cursor-not-allowed"
-                          : "text-gray-400 hover:bg-gray-700 hover:text-red-400"
-                          }`}
-                        aria-label="Delete all notifications"
-                        aria-disabled={notifications.length === 0}
-                      >
-                        ×
-                      </button>
+                        {unreadCount > 0 && (
+                          <button
+                            onClick={handleMarkAllAsRead}
+                            disabled={isMarkingAll}
+                            className="text-emerald-400 hover:text-emerald-300 disabled:opacity-60"
+                          >
+                            {isMarkingAll
+                              ? t("header.notifications.marking")
+                              : t("header.notifications.markAll")}
+                          </button>
+                        )}
+                        <button
+                          onClick={() => {
+                            if (!notifications.length) {
+                              alert("삭제할 알림이 없습니다.");
+                              return;
+                            }
+                            const confirmed = window.confirm("전체 알림을 삭제하시겠습니까?");
+                            if (!confirmed) {
+                              return;
+                            }
+                            deleteAllNotificationsMutation();
+                            setShowNotifications(false);
+                          }}
+                          className={`flex h-6 w-6 items-center justify-center rounded-full text-sm transition-colors ${notifications.length === 0
+                            ? "text-[var(--surface-muted-text)] cursor-not-allowed"
+                            : "text-[var(--surface-muted-text)] hover:text-red-400 hover:bg-red-400/10"}`}
+                          aria-label="Delete all notifications"
+                          aria-disabled={notifications.length === 0}
+                        >
+                          ×
+                        </button>
+                      </div>
                     </div>
                   </div>
                   <div className="max-h-80 overflow-y-auto">
                     {notifications.length === 0 ? (
                       <div className="p-4 text-center">
                         <div className="text-2xl mb-2">🔔</div>
-                        <p className="text-gray-400 text-sm">
+                        <p className="text-sm" style={{ color: "var(--surface-muted-text)" }}>
                           No notifications
                         </p>
                       </div>
@@ -537,17 +553,16 @@ export default function Header() {
                       notifications.map((notification) => (
                         <div
                           key={notification.id}
-                          className={`relative p-3 border-b transition-colors rounded-sm ${notification.isRead
-                            ? "border-gray-700 bg-gray-800/40 hover:bg-gray-750/60"
-                            : "border-emerald-700/60 bg-emerald-950/30 hover:bg-emerald-900/40 shadow-[0_0_12px_rgba(16,185,129,0.25)]"
-                            }`}
+                          className={`relative p-3 rounded-2xl border transition-colors mb-2 ${notification.isRead
+                            ? "bg-[var(--surface-panel)] border-[var(--surface-border)]"
+                            : "bg-emerald-500/10 border-emerald-400/60 shadow-[0_0_18px_rgba(16,185,129,0.25)]"}`}
                         >
                           {!notification.isRead && (
                             <span className="absolute left-0 top-0 h-full w-1 bg-emerald-400 rounded-r" aria-hidden />
                           )}
                           <button
                             onClick={() => handleDeleteNotification(notification.id)}
-                            className="absolute top-1 right-1 flex h-8 w-8 items-center justify-center rounded-full text-gray-200 hover:bg-gray-700 hover:text-red-400 text-lg"
+                            className="absolute top-1 right-1 flex h-8 w-8 items-center justify-center rounded-full text-[var(--surface-muted-text)] hover:bg-red-500/10 hover:text-red-400 text-lg"
                             aria-label="Delete notification"
                             disabled={deletingId === notification.id}
                           >
@@ -560,20 +575,19 @@ export default function Header() {
                             <div className="flex-1 min-w-0 pr-10">
                               <p
                                 className={`text-sm ${notification.isRead
-                                  ? "text-gray-200"
-                                  : "text-white font-semibold tracking-tight"
-                                  }`}
+                                  ? "text-[var(--page-text)]"
+                                  : "text-[var(--page-text)] font-semibold tracking-tight"}`}
                               >
                                 {notification.message}
                               </p>
-                              <p className="text-xs text-gray-400 mt-1 flex items-center gap-2">
+                              <p className="text-xs mt-1 flex items-center gap-2" style={{ color: "var(--surface-muted-text)" }}>
                                 {formatTimeAgo(notification.createdAt)}
                                 {notification.isRead ? (
-                                  <span className="px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wider bg-gray-700 text-gray-200">
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wider border border-[var(--surface-border)]" style={{ color: "var(--surface-muted-text)" }}>
                                     Read
                                   </span>
                                 ) : (
-                                  <span className="px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wider bg-emerald-500/20 text-emerald-300">
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wider border border-emerald-400/50 text-emerald-400 bg-emerald-500/10">
                                     New
                                   </span>
                                 )}
@@ -593,7 +607,7 @@ export default function Header() {
                                 {notification.senderId ? (
                                   <button
                                     onClick={() => handleViewSenderProfile(notification.senderId)}
-                                    className="text-gray-300 text-xs hover:text-white"
+                                    className="text-xs" style={{ color: "var(--surface-muted-text)" }}
                                   >
                                     View profile
                                   </button>
@@ -611,7 +625,7 @@ export default function Header() {
                                         void handleNotificationAction(notification, "accept");
                                       }}
                                       disabled={friendRequestActionId === notification.id}
-                                      className="bg-emerald-600 text-white px-3 py-1 rounded text-xs hover:bg-emerald-700 transition-colors disabled:opacity-60"
+                                      className="bg-emerald-500 text-white px-3 py-1 rounded-2xl text-xs shadow-lg shadow-emerald-500/30 hover:bg-emerald-400 transition-colors disabled:opacity-60"
                                     >
                                       {friendRequestActionId === notification.id
                                         ? "Processing..."
@@ -623,7 +637,7 @@ export default function Header() {
                                         void handleNotificationAction(notification, "decline");
                                       }}
                                       disabled={friendRequestActionId === notification.id}
-                                      className="bg-gray-600 text-white px-3 py-1 rounded text-xs hover:bg-gray-700 transition-colors disabled:opacity-60"
+                                      className="border border-[var(--surface-border)] px-3 py-1 rounded-2xl text-xs text-[var(--page-text)] hover:border-emerald-400 transition-colors disabled:opacity-60"
                                     >
                                       {friendRequestActionId === notification.id
                                         ? "Processing..."
@@ -668,13 +682,18 @@ export default function Header() {
 
         {/* Mobile Menu */}
         {isMenuOpen && (
-          <div className="md:hidden pb-4 bg-gray-800/95">
+          <div className="md:hidden pb-4" style={{ backgroundColor: "var(--header-bg)" }}>
+            <div className="px-4 py-3">
+              <ThemeToggle variant="mobile" />
+            </div>
             <nav className="flex flex-col space-y-2 px-4">
               {/* Mobile Notifications */}
               <div className="py-2">
                 <button
                   onClick={() => setShowNotifications(!showNotifications)}
-                  className={`flex items-center justify-between w-full transition-colors ${showNotifications ? "text-emerald-400" : "text-gray-200 hover:text-emerald-400"}`}
+                  className={`flex items-center justify-between w-full transition-colors ${showNotifications
+                    ? "text-emerald-400"
+                    : "text-[var(--page-text)] hover:text-emerald-400"}`}
                 >
                   <span className="flex items-center space-x-2">
                     <svg
@@ -695,9 +714,10 @@ export default function Header() {
 
                 {/* Mobile Notifications List */}
                 {showNotifications && (
-                  <div className="mt-2 bg-gray-750 rounded-lg border border-gray-600 max-h-60 overflow-y-auto">
-                    <div className="p-2 border-b border-gray-600 flex justify-between items-center">
-                      <span className="text-xs font-medium text-white">
+                  <div className="mt-2 rounded-3xl border theme-card max-h-60 overflow-y-auto"
+                    style={{ borderColor: "var(--surface-border)" }}>
+                    <div className="p-3 border-b flex justify-between items-center" style={{ borderColor: "var(--surface-border)" }}>
+                      <span className="text-xs font-semibold" style={{ color: "var(--page-text)" }}>
                         {t("header.notifications.title")}
                       </span>
                       <div className="flex items-center gap-2">
@@ -706,7 +726,7 @@ export default function Header() {
                             void refetchNotifications();
                           }}
                           disabled={isNotificationsFetching}
-                          className="text-xs text-gray-300 hover:text-white disabled:opacity-60"
+                          className="text-xs text-[var(--surface-muted-text)] hover:text-[var(--page-text)] disabled:opacity-60"
                         >
                           {isNotificationsFetching
                             ? t("header.notifications.refreshing")
@@ -725,9 +745,9 @@ export default function Header() {
                     {notifications.map((notification) => (
                       <div
                         key={notification.id}
-                        className={`relative p-2 border-b last:border-b-0 rounded ${notification.isRead
-                          ? "border-gray-700 bg-gray-800/30"
-                          : "border-emerald-700/50 bg-emerald-950/30 shadow-[0_0_10px_rgba(16,185,129,0.2)]"
+                        className={`relative p-3 border-b last:border-b-0 rounded-2xl ${notification.isRead
+                          ? "bg-[var(--surface-panel)] border-[var(--surface-border)]"
+                          : "bg-emerald-500/10 border-emerald-400/60 shadow-[0_0_14px_rgba(16,185,129,0.25)]"
                           }`}
                       >
                         {!notification.isRead && (
@@ -735,7 +755,7 @@ export default function Header() {
                         )}
                         <button
                           onClick={() => handleDeleteNotification(notification.id)}
-                          className="absolute top-1 right-1 flex h-8 w-8 items-center justify-center rounded-full text-gray-200 hover:bg-gray-700 hover:text-red-400 text-lg"
+                          className="absolute top-1 right-1 flex h-8 w-8 items-center justify-center rounded-full text-[var(--surface-muted-text)] hover:bg-red-500/10 hover:text-red-400 text-lg"
                           aria-label="Delete notification"
                           disabled={deletingId === notification.id}
                         >
@@ -747,23 +767,23 @@ export default function Header() {
                           </div>
                           <div className="flex-1 min-w-0 pr-10">
                             <p
-                              className={`text-xs ${notification.isRead ? "text-gray-200" : "text-white font-semibold"
+                              className={`text-xs ${notification.isRead ? "text-[var(--page-text)]" : "text-[var(--page-text)] font-semibold"}
                                 }`}
                             >
                               {notification.message}
                             </p>
-                            <p className="text-[11px] text-gray-400 mt-1 flex items-center gap-2">
+                            <p className="text-[11px] mt-1 flex items-center gap-2" style={{ color: "var(--surface-muted-text)" }}>
                               {formatTimeAgo(notification.createdAt)}
                               {notification.isRead ? (
-                                <span className="px-1.5 py-0.5 rounded-full bg-gray-700 text-gray-200 uppercase tracking-wide">Read</span>
+                                <span className="px-1.5 py-0.5 rounded-full border border-[var(--surface-border)] uppercase tracking-wide" style={{ color: "var(--surface-muted-text)" }}>Read</span>
                               ) : (
-                                <span className="px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 uppercase tracking-wide">New</span>
+                                <span className="px-1.5 py-0.5 rounded-full border border-emerald-400/50 text-emerald-400 bg-emerald-500/10 uppercase tracking-wide">New</span>
                               )}
                             </p>
                             {notification.senderId ? (
                               <button
                                 onClick={() => handleViewSenderProfile(notification.senderId)}
-                                className="text-gray-300 text-xs mt-1 hover:text-white"
+                                className="text-xs mt-1" style={{ color: "var(--surface-muted-text)" }}
                               >
                                 View profile
                               </button>
@@ -784,7 +804,7 @@ export default function Header() {
                                     void handleNotificationAction(notification, "accept");
                                   }}
                                   disabled={friendRequestActionId === notification.id}
-                                  className="bg-emerald-600 text-white px-2 py-1 rounded text-[11px] hover:bg-emerald-700 transition-colors disabled:opacity-60"
+                                  className="bg-emerald-500 text-white px-2 py-1 rounded-2xl text-[11px] hover:bg-emerald-400 transition-colors disabled:opacity-60"
                                 >
                                   {friendRequestActionId === notification.id ? "Processing" : "Accept"}
                                 </button>
@@ -794,7 +814,7 @@ export default function Header() {
                                     void handleNotificationAction(notification, "decline");
                                   }}
                                   disabled={friendRequestActionId === notification.id}
-                                  className="bg-gray-600 text-white px-2 py-1 rounded text-[11px] hover:bg-gray-700 transition-colors disabled:opacity-60"
+                                  className="border border-[var(--surface-border)] px-2 py-1 rounded-2xl text-[11px] text-[var(--page-text)] hover:border-emerald-400 transition-colors disabled:opacity-60"
                                 >
                                   {friendRequestActionId === notification.id ? "Processing" : "Decline"}
                                 </button>
