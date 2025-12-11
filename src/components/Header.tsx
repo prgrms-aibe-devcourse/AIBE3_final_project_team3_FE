@@ -614,9 +614,8 @@ export default function Header() {
                                 ) : null}
                               </div>
 
-                              {/* Action buttons for certain notification types */}
-                              {(notification.type === "friend_request" ||
-                                notification.type === "chat_invitation") &&
+                              {/* Action buttons for friend requests */}
+                              {notification.type === "friend_request" &&
                                 !notification.isRead && (
                                   <div className="flex space-x-2 mt-2">
                                     <button
