@@ -7,12 +7,14 @@ type MessageInputProps = {
   onSendMessage: (message: { text: string; isTranslateEnabled: boolean }) => void;
   onFileSelect: (file: File) => void;
   isUploading: boolean;
+  showTranslateToggle?: boolean;
 };
 
 export default function MessageInput({
   onSendMessage,
   onFileSelect,
   isUploading,
+  showTranslateToggle = true,
 }: MessageInputProps) {
   const [text, setText] = useState("");
   const [isTranslateEnabled, setIsTranslateEnabled] = useState(false);
@@ -20,7 +22,7 @@ export default function MessageInput({
 
   const handleSend = () => {
     if (text.trim() && !isUploading) {
-      onSendMessage({ text, isTranslateEnabled: isTranslateEnabled });
+      onSendMessage({ text, isTranslateEnabled: showTranslateToggle ? isTranslateEnabled : false });
       setText("");
     }
   };
@@ -56,33 +58,35 @@ export default function MessageInput({
         onChange={handleFileChange}
         className="hidden"
       />
-      <div className="flex items-center justify-end px-2 mb-2">
-        <label
-          htmlFor="auto-translate"
-          className="flex items-center cursor-pointer"
-        >
-          <span className="mr-2 text-sm text-gray-600" style={{ color: "var(--surface-muted-text)" }}>
-            자동 번역
-          </span>
-          <div className="relative">
-            <input
-              id="auto-translate"
-              type="checkbox"
-              className="sr-only"
-              checked={isTranslateEnabled}
-              onChange={() => setIsTranslateEnabled(!isTranslateEnabled)}
-            />
-            <div
-              className="block w-10 h-5 rounded-full"
-              style={{ background: "var(--surface-inset)" }}
-            ></div>
-            <div
-              className={`dot absolute left-1 top-0.5 bg-white w-4 h-4 rounded-full transition-transform ${isTranslateEnabled ? "translate-x-full !bg-emerald-400" : ""
-                }`}
-            ></div>
-          </div>
-        </label>
-      </div>
+      {showTranslateToggle && (
+        <div className="flex items-center justify-end px-2 mb-2">
+          <label
+            htmlFor="auto-translate"
+            className="flex items-center cursor-pointer"
+          >
+            <span className="mr-2 text-sm text-gray-600" style={{ color: "var(--surface-muted-text)" }}>
+              자동 번역
+            </span>
+            <div className="relative">
+              <input
+                id="auto-translate"
+                type="checkbox"
+                className="sr-only"
+                checked={isTranslateEnabled}
+                onChange={() => setIsTranslateEnabled(!isTranslateEnabled)}
+              />
+              <div
+                className="block w-10 h-5 rounded-full"
+                style={{ background: "var(--surface-inset)" }}
+              ></div>
+              <div
+                className={`dot absolute left-1 top-0.5 bg-white w-4 h-4 rounded-full transition-transform ${isTranslateEnabled ? "translate-x-full !bg-emerald-400" : ""
+                  }`}
+              ></div>
+            </div>
+          </label>
+        </div>
+      )}
       <div className="flex items-end gap-3">
         <textarea
           value={text}

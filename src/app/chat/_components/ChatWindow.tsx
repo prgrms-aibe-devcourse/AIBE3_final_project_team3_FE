@@ -277,6 +277,18 @@ export default function ChatWindow({
     return typeof member.id === "number" ? member.id : null;
   })();
   const isOwner = typeof roomDetails?.ownerId === "number" && resolvedMemberId === roomDetails.ownerId;
+  const isAiRoom = roomDetails?.type === "ai";
+
+  const roomStatusLabel = (() => {
+    if (!roomDetails) return "";
+    if (roomDetails.type === "direct") {
+      return subscriberCount === 2 ? "온라인" : "오프라인";
+    }
+    if (roomDetails.type === "ai") {
+      return "AI 튜터";
+    }
+    return `${subscriberCount}명 접속 중 / ${totalMemberCount}명`;
+  })();
   // --- End Dynamic Menu Items ---
 
   return (
@@ -303,12 +315,9 @@ export default function ChatWindow({
           </div>
           <div className="ml-4 min-w-0 text-left">
             <h2 className="font-semibold text-white truncate group-hover:text-emerald-400 transition-colors">{roomDetails.name}</h2>
-            <p className="text-xs text-gray-400">
-              {roomDetails.type === "direct"
-                ? (subscriberCount === 2 ? "온라인" : "오프라인")
-                : `${subscriberCount}명 접속 중 / ${totalMemberCount}명`
-              }
-            </p>
+            {roomStatusLabel && (
+              <p className="text-xs text-gray-400">{roomStatusLabel}</p>
+            )}
           </div>
         </button>
         <div className="flex items-center space-x-4">
@@ -543,6 +552,7 @@ export default function ChatWindow({
         }}
         onFileSelect={handleFileSelect}
         isUploading={isUploadingFile}
+        showTranslateToggle={!isAiRoom}
       />
 
       {/* Member List Modal */}
