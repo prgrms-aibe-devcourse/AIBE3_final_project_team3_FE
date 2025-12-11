@@ -29,7 +29,12 @@ const getPreferredTheme = (): Theme => {
 };
 
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
-    const [theme, setThemeState] = useState<Theme>(() => getPreferredTheme());
+    const [theme, setThemeState] = useState<Theme>("light");
+
+    useEffect(() => {
+        // Resolve the preferred theme on the client to avoid hydration mismatches
+        setThemeState(getPreferredTheme());
+    }, []);
 
     useEffect(() => {
         const root = document.documentElement;
