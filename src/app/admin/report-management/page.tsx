@@ -13,7 +13,6 @@ import AdminGuard from "../AdminGuard";
 
 const statusBadgeClasses: Record<ReportStatus, string> = {
   WAITING: "bg-amber-500/15 text-amber-500 border border-amber-400/40",
-  REVIEWING: "bg-blue-500/15 text-blue-500 border border-blue-400/40",
   APPROVED: "bg-emerald-500/15 text-emerald-500 border border-emerald-400/40",
   REJECTED: "bg-rose-500/15 text-rose-500 border border-rose-400/40",
 };

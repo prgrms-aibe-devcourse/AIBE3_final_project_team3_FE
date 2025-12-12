@@ -33,7 +33,6 @@
     },
     "statuses": {
       "waiting": "Waiting",
-      "reviewing": "Reviewing",
       "approved": "Approved",
       "rejected": "Rejected"
     },

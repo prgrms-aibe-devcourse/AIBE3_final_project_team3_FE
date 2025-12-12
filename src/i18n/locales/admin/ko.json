@@ -33,7 +33,6 @@
     },
     "statuses": {
       "waiting": "대기",
-      "reviewing": "검토 중",
       "approved": "승인",
       "rejected": "거절"
     },
