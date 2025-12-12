@@ -6,6 +6,7 @@ import { usePostsQuery } from "@/global/api/usePostQuery";
 import { PostSortType } from "@/global/types/post.types";
 import { useAdminPostDeleteMutation } from "@/global/hooks/useAdminPostDeleteMutation";
 import { useToastStore } from "@/global/stores/useToastStore";
+import { useLoginStore } from "@/global/stores/useLoginStore"; // ✅ 관리자 검증
 
 // 🔵 삭제 이유 선택 옵션
 const DELETE_REASONS = [
@@ -22,12 +23,15 @@ export default function BoardListPage() {
   const [page, setPage] = useState(0);
   const { data, isLoading, error } = usePostsQuery(sort, page, 20);
 
-  const { addToast } = useToastStore(); // 🔵
-  const deleteMutation = useAdminPostDeleteMutation(); // 🔵
+  const { addToast } = useToastStore();
+  const deleteMutation = useAdminPostDeleteMutation();
 
-  const [menuOpenId, setMenuOpenId] = useState<number | null>(null); // 🔵 게시글 메뉴
-  const [deleteTarget, setDeleteTarget] = useState<number | null>(null); // 🔵 삭제 모달용 Post ID
-  const [reasonCode, setReasonCode] = useState<number>(1); // 🔵 default reason
+  const { role } = useLoginStore();           // ✅ 로그인 정보에서
+  const isAdmin = role === "ROLE_ADMIN";      // ✅ 관리자 여부
+
+  const [menuOpenId, setMenuOpenId] = useState<number | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
+  const [reasonCode, setReasonCode] = useState<number>(1);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -111,16 +115,18 @@ export default function BoardListPage() {
                 <div className="flex justify-between items-start mb-2">
                   <h2 className="text-xl font-semibold flex-1">{post.title}</h2>
 
-                  {/* 🔵 관리자 메뉴 버튼 (⋮) */}
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setMenuOpenId(menuOpenId === post.id ? null : post.id);
-                    }}
-                    className="px-2 text-xl"
-                  >
-                    ⋮
-                  </button>
+                  {/* 🔵 관리자만 메뉴 버튼 (⋮) 보이게 */}
+                  {isAdmin && (
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setMenuOpenId(menuOpenId === post.id ? null : post.id);
+                      }}
+                      className="px-2 text-xl"
+                    >
+                      ⋮
+                    </button>
+                  )}
                 </div>
 
                 <p className="text-gray-600 mb-3 line-clamp-2">{post.content}</p>
@@ -137,11 +143,13 @@ export default function BoardListPage() {
                 </div>
               </Link>
 
-              {/* 🔵 관리자 메뉴 Dropdown */}
-              {menuOpenId === post.id && (
+              {/* 🔵 관리자 메뉴 Dropdown (관리자만 열 수 있음) */}
+              {isAdmin && menuOpenId === post.id && (
                 <div className="absolute right-4 top-12 bg-white shadow-lg rounded-lg border z-20 w-36">
                   <button
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation();    // 링크 클릭 방지
+                      e.preventDefault();
                       setDeleteTarget(post.id);
                       setMenuOpenId(null);
                     }}
@@ -158,10 +166,8 @@ export default function BoardListPage() {
         <div className="text-center py-12 text-gray-500">게시글이 없습니다.</div>
       )}
 
-      {/* -----------------------------
-           🔥 삭제 모달
-      ----------------------------- */}
-      {deleteTarget && (
+      {/* 🔥 삭제 모달 (관리자가 삭제 버튼 눌렀을 때만 deleteTarget 세팅됨) */}
+      {isAdmin && deleteTarget && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
           <div className="bg-white dark:bg-gray-800 p-6 rounded-lg w-96">
             <h2 className="text-xl font-bold mb-4">게시글 삭제</h2>
@@ -187,7 +193,7 @@ export default function BoardListPage() {
                 취소
               </button>
 
-              <button
+            <button
                 onClick={handleDelete}
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
               >
