@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTheme } from "@/contexts/ThemeContext";
 import { X, ShieldAlert, AlertTriangle, MessageSquareWarning, FileWarning } from "lucide-react";
 import { ReportCategory } from "@/global/types/report.types";
 import { useCreateReport } from "@/global/api/useReportMutation";
@@ -56,6 +57,7 @@ export default function ReportModal({
   const [reason, setReason] = useState("");
   const { mutate: createReport, isPending } = useCreateReport();
   const { addToast } = useToastStore();
+  const { theme } = useTheme();
 
   if (!isOpen) return null;
 
@@ -90,31 +92,48 @@ export default function ReportModal({
     onClose();
   };
 
+  const overlayClass = theme === "dark" ? "bg-black bg-opacity-70" : "bg-black bg-opacity-30";
+  const panelClass = theme === "dark" ? "bg-gray-800 text-white" : "bg-white text-gray-900";
+  const headerBorder = theme === "dark" ? "border-gray-700" : "border-gray-200";
+  const subtitleText = theme === "dark" ? "text-gray-400" : "text-gray-600";
+  const iconBtnClass = theme === "dark" ? "text-gray-400 hover:text-white" : "text-gray-600 hover:text-gray-900";
+  const reportedBoxClass = theme === "dark" ? "bg-gray-900/50 border border-gray-700 text-gray-200" : "bg-gray-50 border border-gray-200 text-gray-800";
+  const categoryUnselected = theme === "dark"
+    ? "border-gray-700 bg-gray-900/30 hover:border-gray-600 hover:bg-gray-900/50 text-gray-200"
+    : "border-gray-200 bg-white hover:border-gray-300 text-gray-800";
+  const categorySelected = theme === "dark"
+    ? "border-emerald-500 bg-emerald-500/10 text-emerald-400"
+    : "border-emerald-500 bg-emerald-50 text-emerald-600";
+  const textareaClass = theme === "dark"
+    ? "w-full px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-gray-200 placeholder-gray-500"
+    : "w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-gray-800 placeholder-gray-400";
+  const infoBoxClass = theme === "dark" ? "bg-blue-500/10 border border-blue-500/30 text-blue-300" : "bg-blue-50 border border-blue-100 text-blue-700";
+
   return (
     <div
-      className="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4"
+      className={`fixed inset-0 ${overlayClass} z-50 flex items-center justify-center p-4`}
       onClick={handleClose}
     >
       <div
-        className="bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh] animate-slide-in-right"
+        className={`${panelClass} rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh] animate-slide-in-right`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-6 border-b border-gray-700 flex items-center justify-between flex-shrink-0">
+        <div className={`p-6 border-b ${headerBorder} flex items-center justify-between flex-shrink-0`}>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center">
               <ShieldAlert size={22} className="text-red-400" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-white">사용자 신고</h2>
-              <p className="text-sm text-gray-400 mt-0.5">
+              <h2 className={`text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>사용자 신고</h2>
+              <p className={`text-sm ${subtitleText} mt-0.5`}>
                 {targetNickname}님을 신고합니다
               </p>
             </div>
           </div>
           <button
             onClick={handleClose}
-            className="text-gray-400 hover:text-white transition-colors"
+            className={`${iconBtnClass} transition-colors`}
             aria-label="닫기"
           >
             <X size={24} />
@@ -125,9 +144,9 @@ export default function ReportModal({
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {/* Reported Message (if exists) */}
           {reportedMessage && (
-            <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-4">
-              <p className="text-xs text-gray-400 mb-2 font-semibold">신고 대상 메시지</p>
-              <p className="text-sm text-gray-200 break-words">{reportedMessage}</p>
+            <div className={`${reportedBoxClass} rounded-lg p-4`}>
+              <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} mb-2 font-semibold`}>신고 대상 메시지</p>
+              <p className={`text-sm ${theme === 'dark' ? 'text-gray-200' : 'text-gray-800'} break-words`}>{reportedMessage}</p>
             </div>
           )}
 
@@ -149,23 +168,21 @@ export default function ReportModal({
                       w-full p-4 rounded-lg border-2 transition-all duration-200
                       flex items-start gap-3 text-left
                       ${
-                        isSelected
-                          ? "border-emerald-500 bg-emerald-500/10"
-                          : "border-gray-700 bg-gray-900/30 hover:border-gray-600 hover:bg-gray-900/50"
+                        isSelected ? categorySelected : categoryUnselected
                       }
                     `}
                   >
                     <Icon
                       size={20}
-                      className={`flex-shrink-0 mt-0.5 ${isSelected ? "text-emerald-400" : option.color}`}
+                      className={`flex-shrink-0 mt-0.5 ${isSelected ? (theme === 'dark' ? 'text-emerald-400' : 'text-emerald-600') : option.color}`}
                     />
                     <div className="flex-1">
                       <p
-                        className={`font-semibold text-sm ${isSelected ? "text-emerald-400" : "text-gray-200"}`}
+                        className={`font-semibold text-sm ${isSelected ? (theme === 'dark' ? 'text-emerald-400' : 'text-emerald-600') : theme === 'dark' ? 'text-gray-200' : 'text-gray-800'}`}
                       >
                         {option.label}
                       </p>
-                      <p className="text-xs text-gray-400 mt-1">{option.description}</p>
+                      <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} mt-1`}>{option.description}</p>
                     </div>
                     <div
                       className={`
@@ -193,10 +210,7 @@ export default function ReportModal({
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="추가로 전달하고 싶은 내용이 있다면 작성해주세요."
-              className="w-full px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg
-                       text-gray-200 placeholder-gray-500 resize-none
-                       focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500
-                       transition-all duration-200"
+              className={`${textareaClass} resize-none focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all duration-200`}
               rows={4}
               maxLength={500}
             />
@@ -206,8 +220,8 @@ export default function ReportModal({
           </div>
 
           {/* Info Box */}
-          <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
-            <p className="text-xs text-blue-300 leading-relaxed">
+          <div className={`${infoBoxClass} rounded-lg p-4`}>
+            <p className="text-xs leading-relaxed">
               신고는 익명으로 처리되며, 허위 신고 시 제재를 받을 수 있습니다.
               신고 내용은 관리자가 검토 후 적절한 조치를 취합니다.
             </p>
@@ -215,22 +229,18 @@ export default function ReportModal({
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-gray-700 flex gap-3 flex-shrink-0">
+        <div className={`p-6 border-t ${headerBorder} flex gap-3 flex-shrink-0`}>
           <button
             onClick={handleClose}
             disabled={isPending}
-            className="flex-1 px-4 py-3 bg-gray-700 text-white font-semibold rounded-lg
-                     hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className={`flex-1 px-4 py-3 font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${theme === 'dark' ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'}`}
           >
             취소
           </button>
           <button
             onClick={handleSubmit}
             disabled={!selectedCategory || isPending}
-            className="flex-1 px-4 py-3 bg-red-600 text-white font-semibold rounded-lg
-                     hover:bg-red-700 transition-colors
-                     disabled:opacity-50 disabled:cursor-not-allowed
-                     flex items-center justify-center gap-2"
+            className={`flex-1 px-4 py-3 font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${theme === 'dark' ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-red-600 text-white hover:bg-red-700'}`}
           >
             {isPending ? (
               <>

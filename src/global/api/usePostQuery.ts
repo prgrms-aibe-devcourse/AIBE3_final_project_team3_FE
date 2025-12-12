@@ -12,8 +12,8 @@ import {
   CustomResponse,
   PostSortType,
 } from '@/global/types/post.types';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
+import { API_BASE_URL } from '@/global/consts';
+import { useLoginStore } from '@/global/stores/useLoginStore';
 
 // ==================== 게시글 API ====================
 
@@ -22,17 +22,31 @@ export const usePostsQuery = (sort: PostSortType = PostSortType.LATEST, page = 0
   return useQuery({
     queryKey: ['posts', sort, page, size],
     queryFn: async () => {
-      const token = localStorage.getItem('accessToken');
+      const { accessToken: token } = useLoginStore.getState();
+      console.log('게시판 API 호출:', `${API_BASE_URL}/api/v1/posts?sort=${sort}&page=${page}&size=${size}`);
+      console.log('토큰:', token ? '있음' : '없음');
+      
       const response = await fetch(
         `${API_BASE_URL}/api/v1/posts?sort=${sort}&page=${page}&size=${size}`,
         {
+          method: 'GET',
           headers: {
             Authorization: `Bearer ${token}`,
           },
+          credentials: 'include',
         }
       );
-      if (!response.ok) throw new Error('게시글 목록 조회 실패');
+      
+      console.log('응답 상태:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API 에러 응답:', errorText);
+        throw new Error(`게시글 목록 조회 실패 (${response.status}): ${errorText}`);
+      }
+      
       const result: CustomResponse<PageResponse<PostSummary>> = await response.json();
+      console.log('API 응답 데이터:', result);
       return result.data;
     },
   });
@@ -43,14 +57,32 @@ export const usePostQuery = (postId: number) => {
   return useQuery({
     queryKey: ['post', postId],
     queryFn: async () => {
-      const token = localStorage.getItem('accessToken');
+      const { accessToken: token } = useLoginStore.getState();
+      console.log('게시글 상세 API 호출:', `${API_BASE_URL}/api/v1/posts/${postId}`);
+      console.log('토큰 상태:', token ? '있음' : '없음');
+      console.log('토큰 값:', token);
+      
+      const headers: HeadersInit = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
       const response = await fetch(`${API_BASE_URL}/api/v1/posts/${postId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        method: 'GET',
+        headers,
+        credentials: 'include',
       });
-      if (!response.ok) throw new Error('게시글 조회 실패');
+      
+      console.log('게시글 상세 응답 상태:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('게시글 상세 API 에러:', errorText);
+        throw new Error(`게시글 조회 실패 (${response.status}): ${errorText}`);
+      }
+      
       const result: CustomResponse<PostDetail> = await response.json();
+      console.log('게시글 상세 데이터:', result);
       return result.data;
     },
   });
@@ -61,7 +93,7 @@ export const useCreatePostMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (data: PostCreateRequest) => {
-      const token = localStorage.getItem('accessToken');
+      const { accessToken: token } = useLoginStore.getState();
       const formData = new FormData();
       formData.append('title', data.title);
       formData.append('content', data.content);
@@ -94,7 +126,7 @@ export const useUpdatePostMutation = (postId: number) => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (data: PostUpdateRequest) => {
-      const token = localStorage.getItem('accessToken');
+      const { accessToken: token } = useLoginStore.getState();
       const formData = new FormData();
       formData.append('title', data.title);
       formData.append('content', data.content);
@@ -128,7 +160,7 @@ export const useDeletePostMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (postId: number) => {
-      const token = localStorage.getItem('accessToken');
+      const { accessToken: token } = useLoginStore.getState();
       const response = await fetch(`${API_BASE_URL}/api/v1/posts/${postId}`, {
         method: 'DELETE',
         headers: {
@@ -148,7 +180,7 @@ export const useTogglePostLikeMutation = (postId: number) => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (isLiked: boolean) => {
-      const token = localStorage.getItem('accessToken');
+      const { accessToken: token } = useLoginStore.getState();
       const method = isLiked ? 'DELETE' : 'POST';
       const response = await fetch(`${API_BASE_URL}/api/v1/posts/${postId}/likes`, {
         method,
@@ -174,7 +206,7 @@ export const useCommentsQuery = (postId: number) => {
   return useQuery({
     queryKey: ['comments', postId],
     queryFn: async () => {
-      const token = localStorage.getItem('accessToken');
+      const { accessToken: token } = useLoginStore.getState();
       const response = await fetch(`${API_BASE_URL}/api/v1/posts/${postId}/comments`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -192,7 +224,7 @@ export const useCreateCommentMutation = (postId: number) => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (data: CommentCreateRequest) => {
-      const token = localStorage.getItem('accessToken');
+      const { accessToken: token } = useLoginStore.getState();
       const response = await fetch(`${API_BASE_URL}/api/v1/posts/${postId}/comments`, {
         method: 'POST',
         headers: {
@@ -216,7 +248,7 @@ export const useUpdateCommentMutation = (postId: number, commentId: number) => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (data: CommentUpdateRequest) => {
-      const token = localStorage.getItem('accessToken');
+      const { accessToken: token } = useLoginStore.getState();
       const response = await fetch(
         `${API_BASE_URL}/api/v1/posts/${postId}/comments/${commentId}`,
         {
@@ -243,7 +275,7 @@ export const useDeleteCommentMutation = (postId: number) => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (commentId: number) => {
-      const token = localStorage.getItem('accessToken');
+      const { accessToken: token } = useLoginStore.getState();
       const response = await fetch(
         `${API_BASE_URL}/api/v1/posts/${postId}/comments/${commentId}`,
         {
@@ -266,7 +298,7 @@ export const useToggleCommentLikeMutation = (postId: number, commentId: number) 
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (isLiked: boolean) => {
-      const token = localStorage.getItem('accessToken');
+      const { accessToken: token } = useLoginStore.getState();
       const method = isLiked ? 'DELETE' : 'POST';
       const response = await fetch(
         `${API_BASE_URL}/api/v1/posts/${postId}/comments/${commentId}/likes`,

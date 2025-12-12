@@ -1,19 +1,20 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePostQuery, useUpdatePostMutation } from '@/global/api/usePostQuery';
 
 interface EditPostPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export default function EditPostPage({ params }: EditPostPageProps) {
-  const postId = parseInt(params.id);
+  const { id } = use(params);
+  const postId = parseInt(id);
   const router = useRouter();
   const { data: post, isLoading } = usePostQuery(postId);
   const updatePostMutation = useUpdatePostMutation(postId);
@@ -112,7 +113,7 @@ export default function EditPostPage({ params }: EditPostPageProps) {
         </Link>
       </div>
 
-      <div className="bg-white border rounded-lg p-8">
+      <div className="border rounded-lg p-8" style={{ background: 'var(--surface-panel)', borderColor: 'var(--surface-border)' }}>
         <h1 className="text-3xl font-bold mb-6">게시글 수정</h1>
 
         <form onSubmit={handleSubmit}>

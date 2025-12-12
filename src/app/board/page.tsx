@@ -30,9 +30,13 @@ export default function BoardListPage() {
   }
 
   if (error) {
+    console.error('게시판 로딩 에러:', error);
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <div className="text-lg text-red-500">게시글을 불러오는데 실패했습니다.</div>
+        <div className="text-lg text-red-500">
+          게시글을 불러오는데 실패했습니다.
+          <div className="text-sm mt-2">에러: {error.message}</div>
+        </div>
       </div>
     );
   }
@@ -87,7 +91,8 @@ export default function BoardListPage() {
             <Link
               key={post.id}
               href={`/board/${post.id}`}
-              className="block bg-white border rounded-lg p-6 hover:shadow-lg transition"
+              className="block border rounded-lg p-6 hover:shadow-lg transition"
+              style={{ background: 'var(--surface-panel)', borderColor: 'var(--surface-border)', color: 'var(--page-text)' }}
             >
               <div className="flex justify-between items-start mb-2">
                 <h2 className="text-xl font-semibold flex-1">{post.title}</h2>
