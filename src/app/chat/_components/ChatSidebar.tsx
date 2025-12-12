@@ -308,7 +308,7 @@ export default function ChatSidebar({
                               const parsed = JSON.parse(lastMessage)
                               if (parsed.type && parsed.params) {
                                 return t(
-                                  `system.${parsed.type}`,
+                                  `chat.system.${parsed.type}`,
                                   parsed.params
                                 )
                               }

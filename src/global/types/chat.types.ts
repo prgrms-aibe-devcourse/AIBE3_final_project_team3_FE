@@ -90,6 +90,7 @@ export interface AIChatRoomResp {
 export interface RoomLastMessageUpdateResp {
   roomId: number;
   chatRoomType: "DIRECT" | "GROUP" | "AI";
+  senderId: number;
   lastMessageAt: string;
   latestSequence: number;
   lastMessageContent: string;

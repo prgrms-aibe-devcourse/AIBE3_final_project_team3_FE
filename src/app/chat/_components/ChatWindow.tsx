@@ -63,7 +63,7 @@ export default function ChatWindow({
   hasMore = false,
   isLoadingMore = false,
 }: ChatWindowProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageContainerRef = useRef<HTMLDivElement>(null);
   const shouldScrollRef = useRef(true);
@@ -161,7 +161,7 @@ export default function ChatWindow({
 
   const handleBlockUser = () => {
     // TODO: Implement block user logic
-    alert("사용자를 차단합니다. (구현 필요)");
+    alert(t('chat.ui.block_user_todo'));
     setIsMenuOpen(false);
   };
 
@@ -172,7 +172,7 @@ export default function ChatWindow({
 
   const handleLeaveRoom = () => {
     if (!roomDetails) return;
-    if (confirm("정말로 이 채팅방을 나가시겠습니까? 채팅 기록이 모두 삭제되며 복구할 수 없습니다.")) {
+    if (confirm(t('chat.ui.leave_confirm'))) {
       leaveRoom({
         roomId: roomDetails.id,
         chatRoomType: roomDetails.type,
@@ -248,10 +248,10 @@ export default function ChatWindow({
         <div>
           <div className="text-3xl mb-4">💬</div>
           <h2 className="text-2xl font-semibold text-gray-300">
-            채팅을 선택하여 메시지를 시작하세요
+            {t('chat.ui.select_chat_title')}
           </h2>
           <p className="text-gray-500 mt-2">
-            사이드바에서 친구, 그룹 또는 AI 튜터를 선택하세요.
+            {t('chat.ui.select_chat_desc')}
           </p>
         </div>
       </main>
@@ -260,15 +260,15 @@ export default function ChatWindow({
 
   // --- Dynamic Menu Items ---
   const groupMenuItems = [
-    { label: "친구 초대", icon: UserPlus, action: () => { setIsMenuOpen(false); setIsInviteModalOpen(true); } },
-    { label: "멤버 보기", icon: Users, action: () => { setIsMenuOpen(false); setIsMembersModalOpen(true); } },
-    { label: "채팅방 나가기", icon: LogOut, action: handleLeaveRoom, danger: true, disabled: isLeaving },
+    { label: t('chat.ui.invite'), icon: UserPlus, action: () => { setIsMenuOpen(false); setIsInviteModalOpen(true); } },
+    { label: t('chat.ui.members'), icon: Users, action: () => { setIsMenuOpen(false); setIsMembersModalOpen(true); } },
+    { label: t('chat.ui.leave'), icon: LogOut, action: handleLeaveRoom, danger: true, disabled: isLeaving },
   ];
 
   const directMenuItems = [
-    { label: "차단하기", icon: ShieldAlert, action: handleBlockUser, danger: true },
-    { label: "신고하기", icon: ShieldAlert, action: handleReportUser, danger: true },
-    { label: "채팅방 나가기", icon: LogOut, action: handleLeaveRoom, danger: true, disabled: isLeaving },
+    { label: t('chat.ui.block'), icon: ShieldAlert, action: handleBlockUser, danger: true },
+    { label: t('chat.ui.report'), icon: ShieldAlert, action: handleReportUser, danger: true },
+    { label: t('chat.ui.leave'), icon: LogOut, action: handleLeaveRoom, danger: true, disabled: isLeaving },
   ];
 
   const menuItems = roomDetails.type === 'group' ? groupMenuItems : directMenuItems;
@@ -293,12 +293,12 @@ export default function ChatWindow({
   const roomStatusLabel = (() => {
     if (!roomDetails) return "";
     if (roomDetails.type === "direct") {
-      return subscriberCount === 2 ? "온라인" : "오프라인";
+      return subscriberCount === 2 ? t('chat.ui.online') : t('chat.ui.offline');
     }
     if (roomDetails.type === "ai") {
-      return "AI 튜터";
+      return t('chat.ui.ai_tutor');
     }
-    return `${subscriberCount}명 접속 중 / ${totalMemberCount}명`;
+    return t('chat.ui.participants_count', { count: subscriberCount.toString(), total: totalMemberCount.toString() });
   })();
   // --- End Dynamic Menu Items ---
 
@@ -381,7 +381,7 @@ export default function ChatWindow({
             <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
           </div>
         ) : error ? (
-          <div className="text-center text-red-400">메시지를 불러오는 중 오류가 발생했습니다.</div>
+          <div className="text-center text-red-400">{t('chat.ui.error_loading')}</div>
         ) : (
           <>
             {isLoadingMore && (
@@ -390,7 +390,7 @@ export default function ChatWindow({
               </div>
             )}
             {!hasMore && messages.length > 0 && (
-              <div className="text-center text-xs text-gray-500 py-2">대화의 시작입니다.</div>
+              <div className="text-center text-xs text-gray-500 py-2">{t('chat.ui.start_conversation')}</div>
             )}
             {messages.map((msg) => {
               if (msg.messageType === 'SYSTEM') {
@@ -398,7 +398,7 @@ export default function ChatWindow({
                 try {
                   const parsed = JSON.parse(msg.content);
                   if (parsed.type && parsed.params) {
-                    systemMessage = t(`system.${parsed.type}`, parsed.params);
+                    systemMessage = t(`chat.system.${parsed.type}`, parsed.params);
                   } else if (parsed.fallback) {
                     systemMessage = parsed.fallback;
                   }
@@ -448,7 +448,7 @@ export default function ChatWindow({
                         onClick={() => senderMember && setSelectedMemberForProfile(senderMember)}
                         className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-white font-semibold text-sm hover:ring-2 hover:ring-gray-400 transition-all overflow-hidden cursor-pointer mt-5"
                         style={{ background: "var(--surface-panel-muted)" }}
-                        title={`${msg.sender}님의 프로필 보기`}
+                        title={t('chat.ui.view_profile', { name: msg.sender })}
                       >
                         {shouldShowFallback || !senderMemberId ? (
                           senderInitial
@@ -475,7 +475,7 @@ export default function ChatWindow({
                       <div
                         className={`p-3 rounded-2xl relative group border ${hasTranslation ? "cursor-pointer hover:opacity-95 transition" : ""}`}
                         onClick={() => hasTranslation && toggleOriginal(msg.id)}
-                        title={hasTranslation ? "클릭하여 원문/번역 전환" : ""}
+                        title={hasTranslation ? t('chat.ui.toggle_translation') : ""}
                         style={bubbleStyles}
                       >
 
@@ -521,7 +521,7 @@ export default function ChatWindow({
                                 className="text-[10px] tracking-wide px-1 rounded"
                                 style={{ border: "1px solid currentColor", opacity: 0.75 }}
                               >
-                                {isShowingOriginal ? "Original" : "Translated"}
+                                {isShowingOriginal ? t('chat.ui.original_label') : t('chat.ui.translated_label')}
                               </span>
                             </div>
                             {/* Learning Note Analysis Button */}
@@ -535,7 +535,7 @@ export default function ChatWindow({
                               disabled={isAnalyzing}
                               className={`absolute top-1/2 -translate-y-1/2 p-1.5 rounded-full theme-popover text-yellow-400 transition-all opacity-0 group-hover:opacity-100 z-10 ${isUser ? "-left-10" : "-right-10"
                                 } ${isAnalyzing ? "opacity-50 cursor-wait" : ""}`}
-                              title="AI 분석 및 Learning Note 저장"
+                              title={t('chat.ui.ai_analysis')}
                             >
                               {isAnalyzing && selectedMessageForAnalysis?.original === msg.content ? (
                                 <Loader2 size={16} className="animate-spin" />
@@ -552,7 +552,7 @@ export default function ChatWindow({
                             {msg.unreadCount}
                           </p>
                         )}
-                        <p className="text-xs text-gray-500">{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                        <p className="text-xs text-gray-500">{new Date(msg.createdAt).toLocaleTimeString(language === 'ko' ? 'ko-KR' : 'en-US', { hour: '2-digit', minute: '2-digit' })}</p>
                       </div>
                     </div>
                   </div>

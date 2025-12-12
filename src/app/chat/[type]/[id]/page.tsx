@@ -191,6 +191,32 @@ export default function ChatRoomPage() {
             [...prevMessages, receivedMessage].sort((a, b) => (a.sequence || 0) - (b.sequence || 0))
           );
 
+          // 채팅방 리스트 캐시 업데이트 (실시간 정렬용)
+          const roomType = chatRoomType;
+          const cacheKey = ['chatRooms', roomType];
+          queryClient.setQueryData<any[]>(cacheKey, (prevRooms) => {
+            if (!prevRooms) return prevRooms;
+
+            const updated = prevRooms.map((room: any) => {
+              if (room.id !== Number(roomId)) return room;
+
+              return {
+                ...room,
+                lastMessageAt: receivedMessage.createdAt,
+                lastMessageContent: receivedMessage.content,
+                // 본인이 보낸 메시지면 unreadCount = 0
+                unreadCount: receivedMessage.senderId === member?.id ? 0 : (room.unreadCount || 0)
+              };
+            });
+
+            // lastMessageAt 기준으로 재정렬
+            return updated.sort((a: any, b: any) => {
+              const timeA = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
+              const timeB = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0;
+              return timeB - timeA;
+            });
+          });
+
           // 방장 위임 시스템 메시지인 경우 채팅방 정보 업데이트
           if (receivedMessage.messageType === 'SYSTEM' && receivedMessage.content) {
             try {
