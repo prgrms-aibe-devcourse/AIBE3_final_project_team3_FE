@@ -104,9 +104,6 @@ export default function MiniGameStartPage() {
                 </option>
               ))}
             </select>
-            <p className="text-xs text-[var(--surface-muted-text)]">
-              최대 {safeTotalCount} 문제까지 선택할 수 있어요.
-            </p>
           </div>
 
           <button
