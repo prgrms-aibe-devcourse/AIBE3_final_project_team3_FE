@@ -368,52 +368,52 @@ export default function Header() {
       <div className="container mx-auto px-4 relative">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link href="/" className="text-xl font-bold text-emerald-400">
+          <Link href="/" className="text-xl font-bold text-emerald-400 flex-shrink-0">
             {t("header.brand")}
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex space-x-6 absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
+          <nav className="hidden lg:flex space-x-4 flex-1 justify-center mx-4 overflow-x-auto">
             <Link
               href="/"
-              className="text-gray-200 hover:text-emerald-400 transition-colors"
+              className="text-gray-200 hover:text-emerald-400 transition-colors whitespace-nowrap text-sm"
             >
               {t("header.nav.home")}
             </Link>
             <Link
               href="/chat"
-              className="text-gray-200 hover:text-emerald-400 transition-colors"
+              className="text-gray-200 hover:text-emerald-400 transition-colors whitespace-nowrap text-sm"
             >
               {t("header.nav.chat")}
             </Link>
             <Link
               href="/find"
-              className="text-gray-200 hover:text-emerald-400 transition-colors"
+              className="text-gray-200 hover:text-emerald-400 transition-colors whitespace-nowrap text-sm"
             >
               {t("header.nav.find")}
             </Link>
             <Link
               href="/board"
-              className="text-gray-200 hover:text-emerald-400 transition-colors"
+              className="text-gray-200 hover:text-emerald-400 transition-colors whitespace-nowrap text-sm"
             >
               {t("header.nav.board")}
             </Link>
             <Link
               href="/learning-notes"
-              className="text-gray-200 hover:text-emerald-400 transition-colors"
+              className="text-gray-200 hover:text-emerald-400 transition-colors whitespace-nowrap text-sm"
             >
               {t("header.nav.learningNotes")}
             </Link>
             <Link
               href="/profile"
-              className="text-gray-200 hover:text-emerald-400 transition-colors"
+              className="text-gray-200 hover:text-emerald-400 transition-colors whitespace-nowrap text-sm"
             >
               {t("header.nav.myPage")}
             </Link>
             {role === "ROLE_ADMIN" && (
               <Link
                 href="/admin/report-management"
-                className="text-red-400 hover:text-red-300 transition-colors font-semibold"
+                className="text-red-400 hover:text-red-300 transition-colors font-semibold whitespace-nowrap text-sm"
               >
                 {t("header.nav.admin")}
               </Link>
@@ -421,16 +421,16 @@ export default function Header() {
           </nav>
 
           {/* Auth Buttons */}
-          <div className="hidden md:flex items-center space-x-4">
+          <div className="hidden lg:flex items-center space-x-3 flex-shrink-0">
             <ThemeToggle />
             {/* Language Dropdown */}
             <div className="relative language-dropdown">
               <button
                 onClick={() => setIsLangMenuOpen(!isLangMenuOpen)}
-                className={`flex items-center gap-2 rounded-2xl border px-3 py-1.5 text-sm font-medium transition-colors bg-[var(--surface-panel)] text-[var(--page-text)] ${isLangMenuOpen ? "border-emerald-400" : "border-[var(--surface-border)] hover:border-emerald-400"}`}
+                className={`flex items-center gap-1 rounded-2xl border px-2 py-1.5 text-xs font-medium transition-colors bg-[var(--surface-panel)] text-[var(--page-text)] ${isLangMenuOpen ? "border-emerald-400" : "border-[var(--surface-border)] hover:border-emerald-400"}`}
               >
-                <span className="text-xl">{language === 'ko' ? '🇰🇷' : '🇺🇸'}</span>
-                <svg className={`w-4 h-4 transition-transform ${isLangMenuOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <span className="text-lg">{language === 'ko' ? '🇰🇷' : '🇺🇸'}</span>
+                <svg className={`w-3 h-3 transition-transform hidden sm:block ${isLangMenuOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
@@ -466,20 +466,20 @@ export default function Header() {
             <div className="relative notifications-dropdown">
               <button
                 onClick={() => setShowNotifications(!showNotifications)}
-                className={`relative flex h-10 w-10 items-center justify-center rounded-2xl border transition-colors bg-[var(--surface-panel)] ${showNotifications
+                className={`relative flex h-9 w-9 items-center justify-center rounded-2xl border text-sm transition-colors bg-[var(--surface-panel)] ${showNotifications
                   ? "border-emerald-400 text-emerald-400"
                   : "border-[var(--surface-border)] text-[var(--page-text)] hover:border-emerald-400"}`}
                 title={t("header.notifications.title")}
               >
                 <svg
-                  className="w-5 h-5"
+                  className="w-4 h-4"
                   fill="currentColor"
                   viewBox="0 0 20 20"
                 >
                   <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
                 </svg>
                 {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center min-w-5">
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center min-w-4 font-bold">
                     {unreadCount > 9 ? "9+" : unreadCount}
                   </span>
                 )}
@@ -659,7 +659,7 @@ export default function Header() {
 
           {/* Mobile Menu Button */}
           <button
-            className="md:hidden text-gray-200"
+            className="lg:hidden text-gray-200 flex-shrink-0 ml-2"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
           >
             <div className="w-6 h-6 flex flex-col justify-center">
@@ -681,7 +681,7 @@ export default function Header() {
 
         {/* Mobile Menu */}
         {isMenuOpen && (
-          <div className="md:hidden pb-4" style={{ backgroundColor: "var(--header-bg)" }}>
+          <div className="lg:hidden pb-4" style={{ backgroundColor: "var(--header-bg)" }}>
             <div className="px-4 py-3">
               <ThemeToggle variant="mobile" />
             </div>
