@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -13,13 +13,14 @@ import CommentSection from '@/app/board/_components/CommentSection';
 import { useLoginStore } from '@/global/stores/useLoginStore';
 
 interface PostDetailPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export default function PostDetailPage({ params }: PostDetailPageProps) {
-  const postId = parseInt(params.id);
+  const { id } = use(params);
+  const postId = parseInt(id);
   const router = useRouter();
   const { data: post, isLoading, error } = usePostQuery(postId);
   const deletePostMutation = useDeletePostMutation();
@@ -59,9 +60,13 @@ export default function PostDetailPage({ params }: PostDetailPageProps) {
   }
 
   if (error || !post) {
+    console.error('게시글 상세보기 에러:', error);
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <div className="text-lg text-red-500">게시글을 불러오는데 실패했습니다.</div>
+        <div className="text-lg text-red-500">
+          게시글을 불러오는데 실패했습니다.
+          {error && <div className="text-sm mt-2">에러: {error.message}</div>}
+        </div>
       </div>
     );
   }
@@ -78,7 +83,7 @@ export default function PostDetailPage({ params }: PostDetailPageProps) {
       </div>
 
       {/* 게시글 */}
-      <div className="bg-white border rounded-lg p-8">
+      <div className="border rounded-lg p-8" style={{ background: 'var(--surface-panel)', borderColor: 'var(--surface-border)' }}>
         {/* 헤더 */}
         <div className="mb-6 pb-6 border-b">
           <h1 className="text-3xl font-bold mb-4">{post.title}</h1>
@@ -100,7 +105,7 @@ export default function PostDetailPage({ params }: PostDetailPageProps) {
         {/* 본문 */}
         <div className="mb-6">
           <div className="prose max-w-none mb-6">
-            <p className="whitespace-pre-wrap text-gray-800">{post.content}</p>
+            <p className="whitespace-pre-wrap" style={{ color: 'var(--page-text)' }}>{post.content}</p>
           </div>
 
           {/* 이미지 */}

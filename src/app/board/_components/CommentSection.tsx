@@ -77,6 +77,7 @@ export default function CommentSection({ postId }: CommentSectionProps) {
           onChange={(e) => setNewComment(e.target.value)}
           placeholder="댓글을 작성하세요..."
           className="w-full p-3 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+          style={{ background: 'var(--surface-field)', borderColor: 'var(--surface-border)', color: 'var(--page-text)' }}
           rows={3}
         />
         <div className="flex justify-end mt-2">
@@ -188,7 +189,7 @@ function CommentItem({
 
   return (
     <div className={`${isReply ? 'ml-12' : ''}`}>
-      <div className="bg-gray-50 p-4 rounded-lg">
+      <div className="p-4 rounded-lg" style={{ background: 'var(--surface-panel-muted)', borderColor: 'var(--surface-border)' }}>
         <div className="flex justify-between items-start mb-2">
           <div>
             <span className="font-semibold">{comment.authorNickname}</span>
@@ -207,6 +208,7 @@ function CommentItem({
               value={editContent}
               onChange={(e) => setEditContent(e.target.value)}
               className="w-full p-2 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+              style={{ background: 'var(--surface-field)', borderColor: 'var(--surface-border)', color: 'var(--page-text)' }}
               rows={3}
             />
             <div className="flex gap-2 mt-2">
@@ -229,7 +231,7 @@ function CommentItem({
           </div>
         ) : (
           <>
-            <p className="text-gray-800 mb-2">{comment.content}</p>
+            <p className="mb-2" style={{ color: 'var(--page-text)' }}>{comment.content}</p>
             <div className="flex gap-4 text-sm">
               <button
                 onClick={handleLike}
@@ -273,6 +275,7 @@ function CommentItem({
               onChange={(e) => setReplyContent(e.target.value)}
               placeholder="답글을 작성하세요..."
               className="w-full p-2 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+              style={{ background: 'var(--surface-field)', borderColor: 'var(--surface-border)', color: 'var(--page-text)' }}
               rows={2}
             />
             <div className="flex gap-2 mt-2">

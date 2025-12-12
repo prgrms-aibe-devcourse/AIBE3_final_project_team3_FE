@@ -73,7 +73,7 @@ export default function WritePostPage() {
         </Link>
       </div>
 
-      <div className="bg-white border rounded-lg p-8">
+      <div className="border rounded-lg p-8" style={{ background: 'var(--surface-panel)', borderColor: 'var(--surface-border)' }}>
         <h1 className="text-3xl font-bold mb-6">게시글 작성</h1>
 
         <form onSubmit={handleSubmit}>
