@@ -4,20 +4,12 @@ import { useGetAiChatRoomsQuery, useGetDirectChatRoomsQuery, useGetGroupChatRoom
 import { connect, getStompClient } from "@/global/stomp/stompClient";
 import { ChatRoom, useChatStore } from "@/global/stores/useChatStore";
 import { useLoginStore } from '@/global/stores/useLoginStore';
-import { AIChatRoomResp, DirectChatRoomResp, GroupChatRoomResp, RoomLastMessageUpdateResp } from '@/global/types/chat.types';
+import { AIChatRoomResp, DirectChatRoomResp, GroupChatRoomSummaryResp, RoomLastMessageUpdateResp } from '@/global/types/chat.types';
 import type { IMessage } from "@stomp/stompjs";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import ChatSidebar from "./_components/ChatSidebar";
-
-type CachedRoomSummary = {
-  id: string | number;
-  lastMessageAt?: string | null;
-  unreadCount?: number;
-  lastMessageContent?: string | null;
-  [key: string]: unknown;
-};
 
 const resolveStoreMemberId = (value: unknown): number | undefined => {
   if (!value || typeof value !== "object") {
@@ -48,6 +40,7 @@ export default function ChatLayout({
   const { accessToken, hasHydrated } = useLoginStore();
   const queryClient = useQueryClient();
   const pathname = usePathname();
+  const userQueueSubscriptionRef = useRef<any>(null);
 
   // 인증 체크: Hydration 완료 후 토큰이 없으면 로그인 페이지로 리다이렉트
   useEffect(() => {
@@ -58,9 +51,6 @@ export default function ChatLayout({
 
   useEffect(() => {
     const parts = pathname.split('/');
-    // pathname format: /chat/[type]/[id] or /chat
-    // parts: ["", "chat", "type", "id", ...]
-
     const type = parts[2] as 'direct' | 'group' | 'ai' | undefined;
     const id = parts[3];
 
@@ -76,51 +66,84 @@ export default function ChatLayout({
   const { data: groupRoomsData } = useGetGroupChatRoomsQuery();
   const { data: aiRoomsData } = useGetAiChatRoomsQuery();
 
-  // WebSocket 구독: 채팅방 리스트 실시간 업데이트
+  // 개인 큐 구독 (채팅방 리스트 업데이트용)
   useEffect(() => {
     if (!member || !accessToken) return;
 
-    let subscription: any = null;
-
-    const setupSubscription = () => {
+    function subscribeToUserQueue() {
       const client = getStompClient();
-      const destination = `/user/queue/rooms/update`;
 
-      subscription = client.subscribe(
-        destination,
-        (message: IMessage) => {
-          const payload: RoomLastMessageUpdateResp = JSON.parse(message.body);
+      // 이미 구독 중이면 스킵
+      if (userQueueSubscriptionRef.current) {
+        console.log('[Layout User Queue] Already subscribed to user queue');
+        return;
+      }
 
-          // 캐시에서 해당 방의 lastMessageAt, unreadCount, lastMessage 업데이트 (API 재조회 없이)
-          const roomType = payload.chatRoomType.toLowerCase();
-          const cacheKey: (string | number)[] = ['chatRooms', roomType];
+      const destination = '/user/queue/rooms.update';
+      console.log(`[Layout User Queue] Subscribing to ${destination}`);
 
-          queryClient.setQueryData<CachedRoomSummary[] | undefined>(cacheKey, (prevRooms) => {
-            if (!prevRooms) return prevRooms;
-            return prevRooms.map((room) =>
-              room.id === payload.roomId
-                ? {
-                  ...room,
-                  lastMessageAt: payload.lastMessageAt,
-                  unreadCount: payload.unreadCount,
-                  lastMessageContent: payload.lastMessageContent
-                }
-                : room
-            );
+      const subscription = client.subscribe(destination, (message: IMessage) => {
+        const payload = JSON.parse(message.body);
+        console.log(`[Layout User Queue] Received message:`, payload);
+
+        // RoomLastMessageUpdateResp 처리
+        if (payload.chatRoomType && payload.latestSequence !== undefined) {
+          const update = payload as RoomLastMessageUpdateResp;
+          const roomType = update.chatRoomType.toLowerCase();
+          const cacheKey = ['chatRooms', roomType];
+
+          console.log(`[Layout User Queue Update] Processing RoomLastMessageUpdate for room ${update.roomId}, type=${roomType}, sequence=${update.latestSequence}`);
+
+          queryClient.setQueryData<any[]>(cacheKey, (prevRooms) => {
+            if (!prevRooms) {
+              console.warn(`[Layout User Queue Update] No cached rooms found for ${roomType}`);
+              return prevRooms;
+            }
+
+            const updated = prevRooms.map((room: any) => {
+              if (room.id !== update.roomId) return room;
+
+              let unreadCount = room.unreadCount || 0;
+              if (update.senderId !== currentMemberId) {
+                const lastReadSequence = room.lastReadSequence ?? 0;
+                unreadCount = Math.max(0, update.latestSequence - lastReadSequence);
+                console.log(`[Layout User Queue Update] Room ${update.roomId} unreadCount: ${unreadCount} (latestSeq=${update.latestSequence}, lastReadSeq=${lastReadSequence})`);
+              } else {
+                unreadCount = 0;
+                console.log(`[Layout User Queue Update] Room ${update.roomId} - own message, unreadCount=0`);
+              }
+
+              return {
+                ...room,
+                lastMessageAt: update.lastMessageAt,
+                lastMessageContent: update.lastMessageContent,
+                unreadCount: unreadCount
+              };
+            });
+
+            const sorted = updated.sort((a: any, b: any) => {
+              const timeA = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
+              const timeB = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0;
+              return timeB - timeA;
+            });
+
+            console.log(`[Layout User Queue Update] Updated and sorted ${roomType} rooms:`, sorted.map(r => ({ id: r.id, lastMessageAt: r.lastMessageAt, unreadCount: r.unreadCount })));
+            return sorted;
           });
         }
-      );
-    };
+      });
 
-    connect(accessToken, setupSubscription);
+      userQueueSubscriptionRef.current = subscription;
+      console.log(`[Layout User Queue] Successfully subscribed to user queue`);
+    }
 
-    return () => {
-      if (subscription) {
-        subscription.unsubscribe();
-        subscription = null;
-      }
-    };
-  }, [member, accessToken, queryClient]);
+    // STOMP 연결 후 구독 (재연결 시에도 자동 실행)
+    connect(accessToken, () => {
+      console.log('[Layout User Queue] STOMP connected, subscribing to user queue...');
+      subscribeToUserQueue();
+    });
+
+  }, [member, accessToken, queryClient, currentMemberId]);
 
   const rooms = useMemo(() => {
     if (!member) {
@@ -132,7 +155,6 @@ export default function ChatLayout({
       return {
         id: `direct-${room.id}`,
         name: partner.nickname,
-        // TODO: Backend should provide profileImageUrl in the DirectChatRoomResp > ChatRoomMember type.
         avatar: (partner as any).profileImageUrl,
         type: 'direct',
         unreadCount: room.unreadCount,
@@ -141,10 +163,11 @@ export default function ChatLayout({
       };
     });
 
-    const groupRooms: ChatRoom[] = (groupRoomsData || []).map((room: GroupChatRoomResp) => {
+    const groupRooms: ChatRoom[] = (groupRoomsData || []).map((room: GroupChatRoomSummaryResp) => {
       return {
         id: `group-${room.id}`,
         name: room.name,
+        topic: room.topic,
         avatar: '/img/group-chat-fallback.png',
         type: 'group',
         unreadCount: room.unreadCount,
@@ -157,7 +180,6 @@ export default function ChatLayout({
       return {
         id: `ai-${room.id}`,
         name: room.name,
-        // TODO: Backend should provide a representative image URL for AI chats.
         avatar: "🤖",
         type: 'ai',
         unreadCount: 0,
@@ -166,13 +188,14 @@ export default function ChatLayout({
       };
     });
 
-    // sort by last message time descending; rooms without timestamp go last
+    const parseTime = (value?: string) => {
+      if (!value) return 0;
+      const t = new Date(value).getTime();
+      return Number.isFinite(t) ? t : 0;
+    };
+
     const sortByLastMessage = (list: ChatRoom[]) =>
-      [...list].sort((a, b) => {
-        const ta = a.lastMessageTime ? new Date(a.lastMessageTime).getTime() : 0;
-        const tb = b.lastMessageTime ? new Date(b.lastMessageTime).getTime() : 0;
-        return tb - ta;
-      });
+      [...list].sort((a, b) => parseTime(b.lastMessageTime) - parseTime(a.lastMessageTime));
 
     return {
       direct: sortByLastMessage(directRooms),
@@ -197,7 +220,6 @@ export default function ChatLayout({
     router.push('/chat');
   };
 
-  // Hydration 중이거나 토큰이 없는 동안에는 아무것도 렌더링하지 않음
   if (!hasHydrated || !accessToken) {
     return null;
   }

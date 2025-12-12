@@ -1,6 +1,6 @@
 "use client";
 
-import { useUpdateGroupChatPasswordMutation } from "@/global/api/useChatQuery";
+import { useGetGroupChatRoomDetailQuery, useUpdateGroupChatPasswordMutation } from "@/global/api/useChatQuery";
 import { useSendFriendRequest } from "@/global/api/useFriendshipMutation";
 import { useToastStore } from "@/global/stores/useToastStore";
 import { ChatRoomMember } from "@/global/types/chat.types";
@@ -55,19 +55,27 @@ export default function ChatRoomInfoModal({
   const { mutate: sendFriendRequest } = useSendFriendRequest();
   const { addToast } = useToastStore();
 
+  // 그룹 채팅방일 때 상세 정보 조회
+  const isGroupChat = roomDetails?.type === "group";
+  const { data: groupDetailData } = useGetGroupChatRoomDetailQuery(
+    isOpen && isGroupChat && roomDetails ? roomDetails.id : null
+  );
+
   if (!isOpen || !roomDetails) return null;
 
-  const isGroupChat = roomDetails.type === "group";
-  const isDirectChat = roomDetails.type === "direct";
-  const isOwner = currentUserId === roomDetails.ownerId;
+  // 그룹 채팅방이면 상세 데이터 사용, 아니면 기본 roomDetails 사용
+  const effectiveRoomDetails = isGroupChat && groupDetailData ? groupDetailData : roomDetails;
+
+  const isDirectChat = effectiveRoomDetails.type === "direct";
+  const isOwner = currentUserId === effectiveRoomDetails.ownerId;
 
   // For direct chat, get partner info
-  const partner = isDirectChat && roomDetails.members
-    ? roomDetails.members.find((m) => m.id !== currentUserId)
+  const partner = isDirectChat && effectiveRoomDetails.members
+    ? effectiveRoomDetails.members.find((m) => m.id !== currentUserId)
     : null;
 
-  const owner = isGroupChat && roomDetails.members
-    ? roomDetails.members.find((m) => m.id === roomDetails.ownerId)
+  const owner = isGroupChat && effectiveRoomDetails.members
+    ? effectiveRoomDetails.members.find((m) => m.id === effectiveRoomDetails.ownerId)
     : null;
 
   const handleSendFriendRequest = () => {
@@ -109,7 +117,7 @@ export default function ChatRoomInfoModal({
     }
 
     updatePassword(
-      { roomId: roomDetails.id, newPassword: newPassword.trim() },
+      { roomId: effectiveRoomDetails.id, newPassword: newPassword.trim() },
       {
         onSuccess: () => {
           setIsPasswordChangeModalOpen(false);
@@ -156,16 +164,16 @@ export default function ChatRoomInfoModal({
                     className="w-16 h-16 rounded-full flex items-center justify-center text-3xl flex-shrink-0 border"
                     style={{ background: "var(--surface-panel-muted)", borderColor: "var(--surface-border)", color: "var(--page-text)" }}
                   >
-                    {roomDetails.avatar || "👥"}
+                    {effectiveRoomDetails.avatar || "👥"}
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="text-2xl font-bold truncate" style={{ color: "var(--page-text)" }}>
-                      {roomDetails.name}
+                      {effectiveRoomDetails.name}
                     </h3>
                     <div className="flex items-center gap-2 text-sm mt-1" style={{ color: "var(--surface-muted-text)" }}>
                       <Users size={14} />
                       <span>
-                        {subscriberCount || 0}명 접속 중 / {totalMemberCount || roomDetails.members?.length || 0}명
+                        {subscriberCount || 0}명 접속 중 / {totalMemberCount || effectiveRoomDetails.members?.length || 0}명
                       </span>
                     </div>
                   </div>
@@ -174,19 +182,19 @@ export default function ChatRoomInfoModal({
                 {/* Room Details */}
                 <div className="space-y-3">
                   {/* Description */}
-                  {roomDetails.description && (
+                  {effectiveRoomDetails.description && (
                     <div className="rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-panel)] p-4">
                       <p className="text-xs mb-1 font-semibold" style={{ color: "var(--surface-muted-text)" }}>설명</p>
-                      <p className="text-sm" style={{ color: "var(--page-text)" }}>{roomDetails.description}</p>
+                      <p className="text-sm" style={{ color: "var(--page-text)" }}>{effectiveRoomDetails.description}</p>
                     </div>
                   )}
 
                   {/* Topic */}
-                  {roomDetails.topic && (
+                  {effectiveRoomDetails.topic && (
                     <div className="flex items-center gap-2 text-sm" style={{ color: "var(--surface-muted-text)" }}>
                       <Hash size={16} className="text-emerald-400" />
                       <span>주제:</span>
-                      <span className="font-medium" style={{ color: "var(--page-text)" }}>{roomDetails.topic}</span>
+                      <span className="font-medium" style={{ color: "var(--page-text)" }}>{effectiveRoomDetails.topic}</span>
                     </div>
                   )}
 
@@ -206,7 +214,7 @@ export default function ChatRoomInfoModal({
                   )}
 
                   {/* Password */}
-                  {roomDetails.hasPassword && (
+                  {effectiveRoomDetails.hasPassword && (
                     <div className="flex items-center gap-2 text-sm" style={{ color: "var(--surface-muted-text)" }}>
                       <Lock size={16} className="text-red-400" />
                       {isOwner ? (
@@ -224,7 +232,7 @@ export default function ChatRoomInfoModal({
                   )}
 
                   {/* Password Set Option for Owner if no password */}
-                  {!roomDetails.hasPassword && isOwner && (
+                  {!effectiveRoomDetails.hasPassword && isOwner && (
                     <div className="flex items-center gap-2 text-sm" style={{ color: "var(--surface-muted-text)" }}>
                       <Lock size={16} className="text-[var(--surface-muted-text)]" />
                       <button
@@ -238,19 +246,19 @@ export default function ChatRoomInfoModal({
                   )}
 
                   {/* Created At */}
-                  {roomDetails.createdAt && (
+                  {effectiveRoomDetails.createdAt && (
                     <div className="flex items-center gap-2 text-sm" style={{ color: "var(--surface-muted-text)" }}>
                       <Calendar size={16} className="text-blue-400" />
                       <span>생성일:</span>
                       <span style={{ color: "var(--page-text)" }}>
-                        {new Date(roomDetails.createdAt).toLocaleDateString("ko-KR")}
+                        {new Date(effectiveRoomDetails.createdAt).toLocaleDateString("ko-KR")}
                       </span>
                     </div>
                   )}
                 </div>
 
                 {/* Members Preview */}
-                {roomDetails.members && roomDetails.members.length > 0 && (
+                {effectiveRoomDetails.members && effectiveRoomDetails.members.length > 0 && (
                   <div>
                     <div className="flex items-center justify-between mb-3">
                       <h4 className="text-sm font-semibold" style={{ color: "var(--page-text)" }}>멤버</h4>
@@ -265,8 +273,8 @@ export default function ChatRoomInfoModal({
                       </button>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {roomDetails.members.slice(0, 8).map((member) => {
-                        const isOwner = member.id === roomDetails.ownerId;
+                      {effectiveRoomDetails.members.slice(0, 8).map((member) => {
+                        const isOwner = member.id === effectiveRoomDetails.ownerId;
                         const hasProfileImage = Boolean(member.profileImageUrl && member.profileImageUrl.trim() !== "");
                         const shouldShowInitial = !hasProfileImage || failedMemberAvatarIds.has(member.id);
                         return (
@@ -300,12 +308,12 @@ export default function ChatRoomInfoModal({
                           </div>
                         );
                       })}
-                      {roomDetails.members.length > 8 && (
+                      {effectiveRoomDetails.members.length > 8 && (
                         <div
                           className="w-10 h-10 rounded-full flex items-center justify-center text-xs"
                           style={{ background: "var(--surface-panel-muted)", color: "var(--page-text)" }}
                         >
-                          +{roomDetails.members.length - 8}
+                          +{effectiveRoomDetails.members.length - 8}
                         </div>
                       )}
                     </div>

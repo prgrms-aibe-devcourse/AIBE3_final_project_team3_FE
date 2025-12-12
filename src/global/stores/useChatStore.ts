@@ -7,6 +7,7 @@ export type ChatRoomType = 'direct' | 'group' | 'ai';
 export interface ChatRoom {
   id: string;
   name: string;
+  topic?: string;
   avatar: string;
   lastMessage?: string;
   lastMessageTime?: string;

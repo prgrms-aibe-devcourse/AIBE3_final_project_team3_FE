@@ -7,6 +7,7 @@ import { useToastStore } from "@/global/stores/useToastStore";
 import { ChatRoomMember } from "@/global/types/chat.types";
 import { Crown, MessageSquare, MoreVertical, Shield, ShieldAlert, UserPlus, Users, UserX } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface MembersModalProps {
   isOpen: boolean;
@@ -19,6 +20,7 @@ interface MembersModalProps {
 }
 
 export default function MembersModal({ isOpen, onClose, roomId, members, ownerId, currentUserId, isOwner }: MembersModalProps) {
+  const { t } = useLanguage();
   const [openMenuId, setOpenMenuId] = useState<number | null>(null);
   const [reportTargetMember, setReportTargetMember] = useState<ChatRoomMember | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -57,12 +59,12 @@ export default function MembersModal({ isOpen, onClose, roomId, members, ownerId
 
     switch (action) {
       case '강퇴하기':
-        if (window.confirm(`'${member.nickname}'님을 정말로 강퇴하시겠습니까?`)) {
+        if (window.confirm(t('chat.ui.kick_confirm', { nickname: member.nickname }))) {
           kickMember({ roomId, memberId: member.id });
         }
         break;
       case '방장 위임':
-        if (window.confirm(`'${member.nickname}'님에게 방장을 위임하시겠습니까? 이 작업은 되돌릴 수 없습니다.`)) {
+        if (window.confirm(t('chat.ui.transfer_ownership_confirm', { nickname: member.nickname }))) {
           transferOwnership({ roomId, newOwnerId: member.id });
         }
         break;
@@ -75,15 +77,15 @@ export default function MembersModal({ isOpen, onClose, roomId, members, ownerId
           { receiverId: member.id },
           {
             onSuccess: () => {
-              addToast(`${member.nickname}님에게 친구 요청을 보냈습니다.`, 'success');
+              addToast(t('chat.ui.friend_request_sent', { nickname: member.nickname }), 'success');
             },
             onError: (error) => {
               const errorMessage = error.message || '';
               // "해당 요청을 처리할 수 없는 상태입니다" = 이미 친구 요청을 보낸 경우
               if (errorMessage.includes('처리할 수 없는 상태')) {
-                addToast('이미 친구 신청을 보낸 상태입니다.', 'info');
+                addToast(t('chat.ui.friend_request_already_sent'), 'info');
               } else {
-                addToast(errorMessage || '친구 요청을 보내지 못했습니다.', 'error');
+                addToast(errorMessage || t('chat.ui.friend_request_failed'), 'error');
               }
             }
           }
@@ -94,7 +96,7 @@ export default function MembersModal({ isOpen, onClose, roomId, members, ownerId
         break;
       // TODO: Implement other actions (차단하기 등)
       default:
-        alert(`${member.nickname}님에게 ${action} 액션을 실행합니다. (구현 필요)`);
+        alert(t('chat.ui.action_not_implemented', { nickname: member.nickname, action: action }));
         break;
     }
   };
@@ -117,7 +119,7 @@ export default function MembersModal({ isOpen, onClose, roomId, members, ownerId
         <div className="p-5 border-b flex-shrink-0" style={{ borderColor: "var(--surface-border)" }}>
           <h2 className="text-lg font-semibold flex items-center" style={{ color: "var(--page-text)" }}>
             <Users size={20} className="mr-3 text-[var(--surface-muted-text)]" />
-            채팅방 멤버 ({members.length}명)
+            {t('chat.ui.chat_members_count', { count: members.length.toString() })}
           </h2>
         </div>
 
@@ -134,22 +136,22 @@ export default function MembersModal({ isOpen, onClose, roomId, members, ownerId
                 </div>
                 <p className="ml-4 font-medium" style={{ color: "var(--page-text)" }}>
                   {member.nickname}
-                  {member.id === currentUserId && <span className="ml-2 text-sm font-semibold text-cyan-400">(나)</span>}
-                  {member.id === ownerId && <span className="ml-1 text-sm font-semibold text-yellow-400">(방장)</span>}
+                  {member.id === currentUserId && <span className="ml-2 text-sm font-semibold text-cyan-400">{t('chat.ui.me')}</span>}
+                  {member.id === ownerId && <span className="ml-1 text-sm font-semibold text-yellow-400">{t('chat.ui.owner')}</span>}
                 </p>
               </div>
               {member.id !== currentUserId && (
                 <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                   {!member.isFriend && (
-                    <button onClick={() => handleActionClick('친구추가', member)} className="p-2 text-[var(--surface-muted-text)] rounded-full transition-colors hover:bg-[var(--surface-panel-muted)]" title="친구 추가">
+                    <button onClick={() => handleActionClick('친구추가', member)} className="p-2 text-[var(--surface-muted-text)] rounded-full transition-colors hover:bg-[var(--surface-panel-muted)]" title={t('chat.ui.add_friend')}>
                       <UserPlus size={18} />
                     </button>
                   )}
-                  <button onClick={() => handleActionClick('1:1대화', member)} className="p-2 text-[var(--surface-muted-text)] rounded-full transition-colors hover:bg-[var(--surface-panel-muted)]" title="1:1 대화">
+                  <button onClick={() => handleActionClick('1:1대화', member)} className="p-2 text-[var(--surface-muted-text)] rounded-full transition-colors hover:bg-[var(--surface-panel-muted)]" title={t('chat.ui.direct_chat')}>
                     <MessageSquare size={18} />
                   </button>
                   <div className="relative" ref={openMenuId === member.id ? menuRef : null}>
-                    <button onClick={() => toggleMenu(member.id)} className="p-2 text-[var(--surface-muted-text)] rounded-full transition-colors hover:bg-[var(--surface-panel-muted)]" title="더 보기">
+                    <button onClick={() => toggleMenu(member.id)} className="p-2 text-[var(--surface-muted-text)] rounded-full transition-colors hover:bg-[var(--surface-panel-muted)]" title={t('chat.ui.more_options')}>
                       <MoreVertical size={18} />
                     </button>
                     {openMenuId === member.id && (
@@ -157,12 +159,12 @@ export default function MembersModal({ isOpen, onClose, roomId, members, ownerId
                         <ul className="py-1">
                           <li>
                             <button onClick={() => handleActionClick('차단하기', member)} className="w-full text-left flex items-center px-4 py-2 text-sm text-[var(--surface-muted-text)] hover:bg-red-500/10 hover:text-red-400">
-                              <Shield size={16} className="mr-3" /> 차단하기
+                              <Shield size={16} className="mr-3" /> {t('chat.ui.block')}
                             </button>
                           </li>
                           <li>
                             <button onClick={() => handleActionClick('신고하기', member)} className="w-full text-left flex items-center px-4 py-2 text-sm text-[var(--surface-muted-text)] hover:bg-red-500/10 hover:text-red-400">
-                              <ShieldAlert size={16} className="mr-3" /> 신고하기
+                              <ShieldAlert size={16} className="mr-3" /> {t('chat.ui.report')}
                             </button>
                           </li>
                           {isOwner && (
@@ -170,12 +172,12 @@ export default function MembersModal({ isOpen, onClose, roomId, members, ownerId
                               <div className="my-1 h-px" style={{ background: "var(--surface-border)" }} />
                               <li>
                                 <button onClick={() => handleActionClick('강퇴하기', member)} className="w-full text-left flex items-center px-4 py-2 text-sm text-red-400 hover:bg-red-500/10">
-                                  <UserX size={16} className="mr-3" /> 강퇴하기
+                                  <UserX size={16} className="mr-3" /> {t('chat.ui.kick')}
                                 </button>
                               </li>
                               <li>
                                 <button onClick={() => handleActionClick('방장 위임', member)} className="w-full text-left flex items-center px-4 py-2 text-sm text-yellow-400 hover:bg-yellow-500/10">
-                                  <Crown size={16} className="mr-3" /> 방장 위임
+                                  <Crown size={16} className="mr-3" /> {t('chat.ui.transfer_ownership')}
                                 </button>
                               </li>
                             </>
@@ -196,7 +198,7 @@ export default function MembersModal({ isOpen, onClose, roomId, members, ownerId
             onClick={onClose}
             className="px-4 py-2 rounded-2xl bg-emerald-500 text-white font-semibold shadow-lg shadow-emerald-500/30 hover:bg-emerald-400 transition-colors"
           >
-            닫기
+            {t('chat.ui.close')}
           </button>
         </div>
       </div>

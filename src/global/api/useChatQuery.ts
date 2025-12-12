@@ -5,16 +5,21 @@ import { useRouter } from "next/navigation";
 import { API_BASE_URL } from "../consts";
 import { useLoginStore } from "../stores/useLoginStore";
 import {
-    AIChatRoomResp,
-    AiFeedbackReq,
-    AiFeedbackResp,
-    ChatRoomPageDataResp,
-    ChatRoomResp,
-    CreateAIChatReq,
-    CreateGroupChatReq,
-    DirectChatRoomResp,
-    GroupChatRoomResp,
-    MessageResp
+AIChatRoomResp,
+AiFeedbackReq,
+AiFeedbackResp,
+ChatRoomPageDataResp,
+ChatRoomResp,
+CreateAIChatReq,
+CreateGroupChatReq,
+InviteGroupChatReq,
+DirectChatRoomResp,
+GroupChatRoomResp,
+GroupChatRoomSummaryResp,
+GroupChatRoomPublicResp,
+JoinRoomResp,
+MessageResp,
+ChatSearchResult
 } from "../types/chat.types";
 
 // --- Type Definitions ---
@@ -80,10 +85,25 @@ const fetchDirectChatRooms = async (): Promise<DirectChatRoomResp[]> => {
   return rooms || [];
 };
 
-const fetchGroupChatRooms = async (): Promise<GroupChatRoomResp[]> => {
+// [Plan C] 최적화: Summary DTO 사용
+const fetchGroupChatRooms = async (): Promise<GroupChatRoomSummaryResp[]> => {
   const response = await apiClient.GET("/api/v1/chats/rooms/group");
-  const rooms = await unwrap<GroupChatRoomResp[]>(response);
+  const rooms = await unwrap<GroupChatRoomSummaryResp[]>(response);
   return rooms || [];
+};
+
+// 단일 그룹 채팅방 상세 조회 (모달용)
+const fetchGroupChatRoomDetail = async (roomId: number): Promise<GroupChatRoomResp> => {
+  const response = await apiClient.GET("/api/v1/chats/rooms/group/{roomId}", {
+    params: {
+      path: { roomId },
+    },
+  });
+  const room = await unwrap<GroupChatRoomResp>(response);
+  if (!room) {
+    throw new Error("채팅방 정보를 불러올 수 없습니다.");
+  }
+  return room;
 };
 
 const fetchAiChatRooms = async (): Promise<AIChatRoomResp[]> => {
@@ -92,9 +112,26 @@ const fetchAiChatRooms = async (): Promise<AIChatRoomResp[]> => {
   return rooms || [];
 };
 
-const fetchPublicGroupChatRooms = async (): Promise<GroupChatRoomResp[]> => {
+const fetchChatSearch = async (keyword: string, chatRoomType: string): Promise<ChatSearchResult[]> => {
+  const response = await apiClient.GET("/api/v1/chats/search", {
+    params: {
+      query: {
+        chatRoomType: chatRoomType.toUpperCase() as "DIRECT" | "GROUP" | "AI",
+        keyword,
+      },
+    },
+  });
+
+  const page = await unwrap<any>(response);
+  if (page && Array.isArray(page.content)) {
+    return page.content as ChatSearchResult[];
+  }
+  return [];
+};
+
+const fetchPublicGroupChatRooms = async (): Promise<GroupChatRoomPublicResp[]> => {
   const response = await apiClient.GET("/api/v1/chats/rooms/group/public");
-  const rooms = await unwrap<GroupChatRoomResp[]>(response);
+  const rooms = await unwrap<GroupChatRoomPublicResp[]>(response);
   return rooms || [];
 };
 
@@ -135,18 +172,30 @@ export const useGetDirectChatRoomsQuery = () => {
   });
 };
 
+// [Plan C] 최적화: Summary DTO 사용
 export const useGetGroupChatRoomsQuery = () => {
   const { accessToken } = useLoginStore();
-  return useQuery<GroupChatRoomResp[], Error>({
+  return useQuery<GroupChatRoomSummaryResp[], Error>({
     queryKey: ["chatRooms", "group"],
     queryFn: fetchGroupChatRooms,
     enabled: !!accessToken,
   });
 };
 
+// 단일 그룹 채팅방 상세 조회 (모달용)
+export const useGetGroupChatRoomDetailQuery = (roomId: number | null) => {
+  const { accessToken } = useLoginStore();
+  return useQuery<GroupChatRoomResp, Error>({
+    queryKey: ["chatRooms", "group", "detail", roomId],
+    queryFn: () => fetchGroupChatRoomDetail(roomId!),
+    enabled: !!accessToken && roomId !== null,
+    staleTime: 0, // 항상 최신 데이터 조회
+  });
+};
+
 export const useGetPublicGroupChatRoomsQuery = () => {
   const { accessToken } = useLoginStore();
-  return useQuery<GroupChatRoomResp[], Error>({
+  return useQuery<GroupChatRoomPublicResp[], Error>({
     queryKey: ["chatRooms", "group", "public"],
     queryFn: fetchPublicGroupChatRooms,
     enabled: !!accessToken,
@@ -159,6 +208,16 @@ export const useGetAiChatRoomsQuery = () => {
     queryKey: ["chatRooms", "ai"],
     queryFn: fetchAiChatRooms,
     enabled: !!accessToken,
+  });
+};
+
+export const useChatSearchQuery = (keyword: string, chatRoomType: string) => {
+  const { accessToken } = useLoginStore();
+  return useQuery<ChatSearchResult[], Error>({
+    queryKey: ["chatSearch", chatRoomType, keyword],
+    queryFn: () => fetchChatSearch(keyword, chatRoomType),
+    enabled: !!accessToken && keyword.trim().length >= 2,
+    staleTime: 0,
   });
 };
 
@@ -275,8 +334,7 @@ interface JoinGroupChatVariables {
   password?: string;
 }
 
-const joinGroupChat = async (variables: JoinGroupChatVariables): Promise<GroupChatRoomResp> => {
-  // 비밀번호가 있고 공백이 아닌 경우에만 전송
+const joinGroupChat = async (variables: JoinGroupChatVariables): Promise<JoinRoomResp> => {
   const trimmedPassword = variables.password?.trim();
 
   const response = await apiClient.POST("/api/v1/chats/rooms/group/{roomId}/join", {
@@ -286,7 +344,7 @@ const joinGroupChat = async (variables: JoinGroupChatVariables): Promise<GroupCh
     body: trimmedPassword ? { password: trimmedPassword } : undefined,
   });
 
-  const unwrappedResponse = await unwrap<GroupChatRoomResp>(response);
+  const unwrappedResponse = await unwrap<JoinRoomResp>(response);
 
   if (!unwrappedResponse) {
     throw new Error("Failed to join group chat room: No data received.");
@@ -298,7 +356,7 @@ export const useJoinGroupChat = () => {
   const queryClient = useQueryClient();
   const router = useRouter();
 
-  return useMutation<GroupChatRoomResp, Error, JoinGroupChatVariables>({
+  return useMutation<JoinRoomResp, Error, JoinGroupChatVariables>({
     mutationFn: joinGroupChat,
     onSuccess: async (data) => {
       await Promise.all([

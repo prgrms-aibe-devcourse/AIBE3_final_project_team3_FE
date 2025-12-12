@@ -2,11 +2,12 @@
 
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCloseRoomMutation } from "@/global/api/useAdminCloseRoomQuery";
+import { GroupChatRoomPublicResp } from "@/global/types/chat.types";
 import { useGetPublicGroupChatRoomsQuery, useJoinGroupChat } from "@/global/api/useChatQuery";
 import { useLoginStore } from "@/global/stores/useLoginStore";
-import { GroupChatRoomResp } from "@/global/types/chat.types";
 import { Hash, Lock, MoreVertical, Users } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import Avatar from "boring-avatars"; // boring-avatars 임포트
 
 // Password Modal Component
 const PasswordModal = ({
@@ -150,7 +151,7 @@ const CloseRoomModal = ({
 };
 
 // Individual Group Room Card Component
-const GroupRoomCard = ({ room }: { room: GroupChatRoomResp }) => {
+const GroupRoomCard = ({ room }: { room: GroupChatRoomPublicResp }) => {
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isCloseModalOpen, setIsCloseModalOpen] = useState(false);
@@ -205,60 +206,75 @@ const GroupRoomCard = ({ room }: { room: GroupChatRoomResp }) => {
 
   return (
     <>
-      <div className="theme-card rounded-2xl p-5 flex flex-col justify-between hover:border-emerald-400 transition-all duration-300 relative hover:-translate-y-1">
-        {/* 헤더 + 메뉴 버튼 */}
-        <div className="flex justify-between items-start mb-2">
-          <div className="flex-1">
-            <h3 className="text-lg font-bold text-white break-all">{room.name}</h3>
-          </div>
-
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {room.hasPassword && <Lock size={16} className="text-gray-400" />}
-
-            {/* 관리자만 메뉴 보이기 */}
-            {role === "ROLE_ADMIN" && (
-              <div className="relative" ref={menuRef}>
-                <button
-                  onClick={() => setIsMenuOpen(!isMenuOpen)}
-                  className="p-1 rounded transition-colors hover:bg-[var(--surface-panel-muted)]"
-                  aria-label="메뉴"
-                >
-                  <MoreVertical size={18} className="text-gray-400" />
-                </button>
-
-                {isMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-40 theme-popover rounded-lg z-10">
-                    <button
-                      onClick={() => setIsCloseModalOpen(true)}
-                      className="w-full text-left px-4 py-2 text-red-400 hover:bg-[var(--surface-panel-muted)] rounded-lg transition-colors first:rounded-t-lg last:rounded-b-lg"
-                    >
-                      방 폐쇄하기
-                    </button>
-                  </div>
-                )}
-              </div>
+      <div className="theme-card rounded-2xl flex flex-col justify-between hover:border-emerald-400 transition-all duration-300 relative hover:-translate-y-1 overflow-hidden">
+        {/* 상단 아바타/이미지 영역 */}
+        <div className="h-32 w-full relative bg-gray-700 flex items-center justify-center overflow-hidden">
+            <Avatar
+                size={128} // 이미지 영역 크기에 맞게 조절
+                name={room.topic || room.name || `room-${room.id}`} // topic > name > id 순으로 시드 사용
+                variant="beam" // 'marble', 'beam', 'pixel', 'sunset', 'ring', 'bauhaus' 중 선택
+                colors={["#92A1C6", "#146A7C", "#F0AB3D", "#C271B4", "#C20D90"]} // 테마에 맞는 색상 팔레트
+            />
+            {room.hasPassword && (
+                <div className="absolute top-2 right-2 bg-black/60 p-1.5 rounded-full backdrop-blur-sm">
+                    <Lock size={14} className="text-white" />
+                </div>
             )}
-          </div>
         </div>
 
-        <p className="text-sm text-gray-400 mb-3 line-clamp-2 h-[40px]">{room.description || "채팅방 설명이 없습니다."}</p>
-        <div className="flex items-center text-xs text-gray-400 mb-4">
-          <Hash size={14} className="mr-1" />
-          <span>{room.topic || "자유 주제"}</span>
-        </div>
+        {/* 컨텐츠 영역 */}
+        <div className="p-5 flex flex-col flex-1">
+            <div className="flex justify-between items-start mb-2">
+            <div className="flex-1">
+                <h3 className="text-lg font-bold text-white break-all">{room.name}</h3>
+            </div>
 
-        <div className="flex justify-between items-center mt-4">
-          <div className="flex items-center text-sm text-gray-300">
-            <Users size={16} className="mr-2" />
-            <span>{room.memberCount} / 50</span>
-          </div>
-          <button
-            onClick={handleJoinRoom}
-            disabled={joinGroupChat.isPending}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors disabled:bg-[var(--surface-panel-muted)] disabled:text-[var(--surface-muted-text)] disabled:cursor-not-allowed"
-          >
-            {joinGroupChat.isPending ? "참가 중..." : "Join"}
-          </button>
+            <div className="flex items-center gap-2 flex-shrink-0">
+                {/* 관리자만 메뉴 보이기 */}
+                {role === "ROLE_ADMIN" && (
+                <div className="relative" ref={menuRef}>
+                    <button
+                    onClick={() => setIsMenuOpen(!isMenuOpen)}
+                    className="p-1 rounded transition-colors hover:bg-[var(--surface-panel-muted)]"
+                    aria-label="메뉴"
+                    >
+                    <MoreVertical size={18} className="text-gray-400" />
+                    </button>
+
+                    {isMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-40 theme-popover rounded-lg z-10">
+                        <button
+                        onClick={() => setIsCloseModalOpen(true)}
+                        className="w-full text-left px-4 py-2 text-red-400 hover:bg-[var(--surface-panel-muted)] rounded-lg transition-colors first:rounded-t-lg last:rounded-b-lg"
+                        >
+                        방 폐쇄하기
+                        </button>
+                    </div>
+                    )}
+                </div>
+                )}
+            </div>
+            </div>
+
+            <p className="text-sm text-gray-400 mb-3 line-clamp-2 h-[40px]">{room.description || "채팅방 설명이 없습니다."}</p>
+            <div className="flex items-center text-xs text-gray-400 mb-4">
+            <Hash size={14} className="mr-1" />
+            <span>{room.topic || "자유 주제"}</span>
+            </div>
+
+            <div className="flex justify-between items-center mt-auto pt-2">
+            <div className="flex items-center text-sm text-gray-300">
+                <Users size={16} className="mr-2" />
+                <span>{room.memberCount} / 50</span>
+            </div>
+            <button
+                onClick={handleJoinRoom}
+                disabled={joinGroupChat.isPending}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors disabled:bg-[var(--surface-panel-muted)] disabled:text-[var(--surface-muted-text)] disabled:cursor-not-allowed"
+            >
+                {joinGroupChat.isPending ? "참가 중..." : "Join"}
+            </button>
+            </div>
         </div>
       </div>
 
