@@ -38,6 +38,7 @@ function NoteCard({
   onToggleCompletion: (feedbackId: number, currentMarked: boolean) => void;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const { t } = useLanguage();
 
   const fb = note.feedback;
   const tag = normalizeTag(fb.tag);
@@ -75,7 +76,7 @@ function NoteCard({
       <div className="flex justify-between items-start w-full">
         {/* ---------- Left Section ---------- */}
         <div className="flex-1 max-w-[80%]">
-          <h4 className="font-semibold text-white mb-2">상세 피드백</h4>
+          <h4 className="font-semibold text-white mb-2">{t("learningNotes.detailFeedback")}</h4>
 
           <div className="theme-surface-muted p-3 rounded-md shadow-sm">
             <span
