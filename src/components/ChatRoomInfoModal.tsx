@@ -66,7 +66,7 @@ export default function ChatRoomInfoModal({
   // 그룹 채팅방이면 상세 데이터 사용, 아니면 기본 roomDetails 사용
   const effectiveRoomDetails = isGroupChat && groupDetailData ? groupDetailData : roomDetails;
 
-  const isDirectChat = effectiveRoomDetails.type === "direct";
+  const isDirectChat = roomDetails.type === "direct";
   const isOwner = currentUserId === effectiveRoomDetails.ownerId;
 
   // For direct chat, get partner info
@@ -164,7 +164,7 @@ export default function ChatRoomInfoModal({
                     className="w-16 h-16 rounded-full flex items-center justify-center text-3xl flex-shrink-0 border"
                     style={{ background: "var(--surface-panel-muted)", borderColor: "var(--surface-border)", color: "var(--page-text)" }}
                   >
-                    {effectiveRoomDetails.avatar || "👥"}
+                    {roomDetails.avatar || "👥"}
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="text-2xl font-bold truncate" style={{ color: "var(--page-text)" }}>
