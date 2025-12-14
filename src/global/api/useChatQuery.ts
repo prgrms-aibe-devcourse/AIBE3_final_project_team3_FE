@@ -201,11 +201,14 @@ const fetchPublicGroupChatRooms = async (page: number = 0, size: number = 12): P
   const safePage = Math.max(page, 0);
   const safeSize = size > 0 ? Math.min(size, 50) : 12;
 
-  const response = await apiClient.GET("/api/v1/chats/rooms/group/public", {
-    params: {
-      query: { page: safePage, size: safeSize },
-    },
-  });
+  const response = await apiClient.GET(
+    "/api/v1/chats/rooms/group/public",
+    {
+      params: {
+        query: { page: safePage, size: safeSize },
+      },
+    } as any,
+  );
 
   const pagePayload = await unwrap<any>(response);
   return extractPaginatedPayload<GroupChatRoomPublicResp>(pagePayload);
