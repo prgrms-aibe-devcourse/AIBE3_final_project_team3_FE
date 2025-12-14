@@ -39,13 +39,32 @@ export default function ChatRoomPage() {
   // useRoomClosedRedirect();
 
   // When message data is successfully loaded, it means markAsReadOnEnter was called on the backend.
-  // We can now invalidate the room list query to update the unread count badge.
+  // We optimistically update the unread count and lastReadSequence for the current room.
   useEffect(() => {
-    if (data) {
-      console.log('[Query Invalidation] Messages loaded, invalidating chatRooms query to update unread count.');
-      queryClient.invalidateQueries({ queryKey: ['chatRooms', chatRoomType] });
+    if (data && data.pages.length > 0) {
+      // The most recent page (first fetched) contains the updated lastReadSequence
+      const latestPage = data.pages[0];
+      const updatedLastReadSequence = latestPage.lastReadSequence;
+
+      console.log(`[Optimistic Update] Messages loaded for room ${roomId}. Setting unreadCount=0, lastReadSequence=${updatedLastReadSequence}`);
+      
+      queryClient.setQueryData(['chatRooms', chatRoomType], (oldData: any[]) => {
+        if (!oldData) return oldData;
+        
+        return oldData.map((room) => {
+          if (room.id === roomId) {
+            return { 
+              ...room, 
+              unreadCount: 0,
+              // Update lastReadSequence if provided by the backend
+              ...(updatedLastReadSequence !== undefined && { lastReadSequence: updatedLastReadSequence })
+            };
+          }
+          return room;
+        });
+      });
     }
-  }, [data, chatRoomType, queryClient]);
+  }, [data, chatRoomType, roomId, queryClient]);
 
   // Find room details from API data
   const roomDetails = useMemo(() => {

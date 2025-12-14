@@ -132,15 +132,21 @@ export default function ChatLayout({
                 // currentMemberId가 undefined이면(로딩중) 계산이 부정확할 수 있으나, 보통 로딩 후 구독됨.
                 const currentMyId = currentMemberId ?? resolveStoreMemberId(useLoginStore.getState().member);
 
-                const isOwnMessage = update.senderId === currentMyId;
+                // 타입 안전한 비교 (String 변환)
+                const isOwnMessage = String(update.senderId) === String(currentMyId);
+                let lastReadSequence = room.lastReadSequence ?? 0;
+
                 if (isOwnMessage) {
                   unreadCount = 0;
-                  console.log(`[Layout User Queue Update] Room ${update.roomId} - own message, unreadCount=0`);
+                  // 내가 보낸 메시지라면, 내 lastReadSequence도 최신으로 업데이트해야 함
+                  lastReadSequence = update.latestSequence;
+                  console.log(`[Layout User Queue Update] Room ${update.roomId} - own message, unreadCount=0, updating lastReadSeq to ${lastReadSequence}`);
                 } else if (isRoomCurrentlyOpen) {
                   unreadCount = 0;
-                  console.log(`[Layout User Queue Update] Room ${update.roomId} is currently open; keeping unreadCount=0`);
+                  // 방이 열려있으면 바로 읽은 것으로 처리
+                  lastReadSequence = update.latestSequence;
+                  console.log(`[Layout User Queue Update] Room ${update.roomId} is currently open; keeping unreadCount=0, updating lastReadSeq to ${lastReadSequence}`);
                 } else {
-                  const lastReadSequence = room.lastReadSequence ?? 0;
                   unreadCount = Math.max(0, update.latestSequence - lastReadSequence);
                   console.log(`[Layout User Queue Update] Room ${update.roomId} unreadCount: ${unreadCount} (latestSeq=${update.latestSequence}, lastReadSeq=${lastReadSequence})`);
                 }
@@ -149,7 +155,8 @@ export default function ChatLayout({
                   ...room,
                   lastMessageAt: update.lastMessageAt,
                   lastMessageContent: update.lastMessageContent,
-                  unreadCount: unreadCount
+                  unreadCount: unreadCount,
+                  lastReadSequence: lastReadSequence
                 };
               });
 
