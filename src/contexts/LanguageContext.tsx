@@ -15,6 +15,8 @@ import learningNotesEn from "../i18n/locales/learningNotes/en.json";
 import learningNotesKo from "../i18n/locales/learningNotes/ko.json";
 import boardEn from "../i18n/locales/board/en.json";
 import boardKo from "../i18n/locales/board/ko.json";
+import miniGameEn from "../i18n/locales/miniGame/en.json";
+import miniGameKo from "../i18n/locales/miniGame/ko.json";
 import profileEn from "../i18n/locales/profile/en.json";
 import profileKo from "../i18n/locales/profile/ko.json";
 
@@ -26,6 +28,7 @@ type Translations = typeof commonKo & {
   find: typeof findKo;
   learningNotes: typeof learningNotesKo;
   board: typeof boardKo;
+  miniGame: typeof miniGameKo;
   profile: typeof profileKo;
 };
 
@@ -38,6 +41,7 @@ const translations: Record<Language, Translations> = {
     find: findKo,
     learningNotes: learningNotesKo,
     board: boardKo,
+    miniGame: miniGameKo,
     profile: profileKo,
   },
   en: {
@@ -48,6 +52,7 @@ const translations: Record<Language, Translations> = {
     find: findEn,
     learningNotes: learningNotesEn,
     board: boardEn,
+    miniGame: miniGameEn,
     profile: profileEn,
   },
 };

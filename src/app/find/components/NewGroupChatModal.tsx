@@ -2,6 +2,7 @@
 
 import { useCreateGroupChat } from "@/global/api/useChatQuery";
 import { useLoginStore } from "@/global/stores/useLoginStore";
+import { useTheme } from "@/contexts/ThemeContext";
 import { CreateGroupChatReq } from "@/global/types/chat.types";
 import { X } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -26,6 +27,7 @@ export default function NewGroupChatModal({
   const router = useRouter();
   const { mutate: createGroupChat, isPending } = useCreateGroupChat();
   const member = useLoginStore((state) => state.member);
+  const { theme } = useTheme();
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -98,16 +100,16 @@ export default function NewGroupChatModal({
   ];
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div className={`fixed inset-0 ${theme === "dark" ? "bg-black bg-opacity-70" : "bg-black bg-opacity-30"} flex items-center justify-center p-4 z-50`}>
       <div
         ref={modalRef}
-        className="bg-gray-800 rounded-lg max-w-md w-full shadow-xl"
+        className={`${theme === "dark" ? "bg-gray-800 text-white" : "bg-white text-gray-900"} rounded-lg max-w-md w-full shadow-xl`}
       >
-        <div className="p-6 border-b border-gray-700 flex justify-between items-center">
-          <h2 className="text-xl font-bold text-white">Create New Group Chat</h2>
+        <div className={`p-6 border-b ${theme === "dark" ? "border-gray-700" : "border-gray-200"} flex justify-between items-center`}>
+          <h2 className="text-xl font-bold">Create New Group Chat</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors"
+            className={`${theme === "dark" ? "text-gray-400 hover:text-white" : "text-gray-600 hover:text-gray-800"} transition-colors`}
           >
             <X size={24} />
           </button>
@@ -116,7 +118,7 @@ export default function NewGroupChatModal({
           <div>
             <label
               htmlFor="title"
-              className="block text-sm font-medium text-gray-300 mb-1"
+              className={`block text-sm font-medium ${theme === "dark" ? "text-gray-300" : "text-gray-700"} mb-1`}
             >
               Room Title
             </label>
@@ -125,14 +127,14 @@ export default function NewGroupChatModal({
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 ${theme === "dark" ? "bg-gray-700 border-gray-600 text-white" : "bg-white border-gray-300 text-gray-900"}`}
               required
             />
           </div>
           <div>
             <label
               htmlFor="description"
-              className="block text-sm font-medium text-gray-300 mb-1"
+              className={`block text-sm font-medium ${theme === "dark" ? "text-gray-300" : "text-gray-700"} mb-1`}
             >
               Room Description
             </label>
@@ -140,14 +142,14 @@ export default function NewGroupChatModal({
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 ${theme === "dark" ? "bg-gray-700 border-gray-600 text-white" : "bg-white border-gray-300 text-gray-900"}`}
               rows={3}
             />
           </div>
           <div>
             <label
               htmlFor="topic"
-              className="block text-sm font-medium text-gray-300 mb-1"
+              className={`block text-sm font-medium ${theme === "dark" ? "text-gray-300" : "text-gray-700"} mb-1`}
             >
               Room Topic
             </label>
@@ -155,7 +157,7 @@ export default function NewGroupChatModal({
               id="topic"
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
-              className="w-full appearance-none bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className={`w-full appearance-none border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 ${theme === "dark" ? "bg-gray-700 border-gray-600 text-white" : "bg-white border-gray-300 text-gray-900"}`}
             >
               {topics.map((t) => (
                 <option key={t.value} value={t.value}>
@@ -171,11 +173,11 @@ export default function NewGroupChatModal({
                 type="checkbox"
                 checked={usePassword}
                 onChange={(e) => setUsePassword(e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                className={`h-4 w-4 rounded ${theme === "dark" ? "border-gray-500" : "border-gray-300"} text-emerald-600 focus:ring-emerald-500`}
               />
               <label
                 htmlFor="usePassword"
-                className="ml-2 block text-sm text-gray-300"
+                className={`ml-2 block text-sm ${theme === "dark" ? "text-gray-300" : "text-gray-700"}`}
               >
                 Use Password
               </label>
@@ -185,7 +187,7 @@ export default function NewGroupChatModal({
             <div>
               <label
                 htmlFor="password"
-                className="block text-sm font-medium text-gray-300 mb-1"
+                className={`block text-sm font-medium ${theme === "dark" ? "text-gray-300" : "text-gray-700"} mb-1`}
               >
                 Room Password
               </label>
@@ -194,7 +196,7 @@ export default function NewGroupChatModal({
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 ${theme === "dark" ? "bg-gray-700 border-gray-600 text-white" : "bg-white border-gray-300 text-gray-900"}`}
               />
             </div>
           )}
@@ -202,7 +204,7 @@ export default function NewGroupChatModal({
             <button
               type="button"
               onClick={onClose}
-              className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors mr-2"
+              className={`${theme === "dark" ? "bg-gray-600 hover:bg-gray-700 text-white" : "bg-gray-200 hover:bg-gray-300 text-gray-800"} px-4 py-2 rounded-md text-sm font-medium transition-colors mr-2`}
             >
               Cancel
             </button>

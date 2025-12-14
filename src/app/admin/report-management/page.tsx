@@ -7,7 +7,11 @@ import {
   useReportQuery,
   useReportStatusMutation,
 } from "@/global/api/useAdminReportQuery";
-import type { AdminReport, ReportCategory, ReportStatus } from "@/global/types/report.types";
+import type {
+  AdminReport,
+  ReportCategory,
+  ReportStatus,
+} from "@/global/types/report.types";
 
 import AdminGuard from "../AdminGuard";
 
@@ -20,13 +24,17 @@ const statusBadgeClasses: Record<ReportStatus, string> = {
 const categoryBadgeClasses: Record<ReportCategory, string> = {
   ABUSE: "bg-rose-500/15 text-rose-500 border border-rose-400/40",
   SCAM: "bg-amber-400/15 text-amber-500 border border-amber-300/50",
-  INAPPROPRIATE: "bg-violet-500/15 text-violet-400 border border-violet-300/50",
+  INAPPROPRIATE:
+    "bg-violet-500/15 text-violet-400 border border-violet-300/50",
   OTHER: "bg-slate-500/15 text-slate-400 border border-slate-300/40",
 };
 
 export default function ReportManagementPage() {
   const { t } = useLanguage();
+
   const [page, setPage] = useState(0);
+  const [selected, setSelected] = useState<AdminReport | null>(null);
+  const [newStatus, setNewStatus] = useState<ReportStatus>("WAITING");
 
   const { data, isLoading } = useReportQuery(page);
   const statusMutation = useReportStatusMutation();
@@ -36,14 +44,12 @@ export default function ReportManagementPage() {
   const currentPage = data?.number ?? 0;
   const pageNumbers = Array.from({ length: totalPages }, (_, i) => i);
 
-  const [selected, setSelected] = useState<AdminReport | null>(null);
-  const [newStatus, setNewStatus] = useState<ReportStatus>("WAITING");
-
   const getStatusLabel = (status: ReportStatus) => {
     const key = `admin.report.statuses.${status.toLowerCase()}`;
     const label = t(key);
     return label === key ? status : label;
   };
+
   const getCategoryLabel = (category: ReportCategory) => {
     const key = `admin.report.categories.${category.toLowerCase()}`;
     const label = t(key);
@@ -66,6 +72,26 @@ export default function ReportManagementPage() {
             {t("admin.report.listTitle")}
           </div>
 
+          {/* LOADING */}
+          {isLoading && (
+            <div
+              className="p-10 text-center text-sm"
+              style={{ color: "var(--surface-muted-text)" }}
+            >
+              {t("admin.report.loading")}
+            </div>
+          )}
+
+          {/* EMPTY */}
+          {!isLoading && list.length === 0 && (
+            <div
+              className="p-10 text-center text-sm"
+              style={{ color: "var(--surface-muted-text)" }}
+            >
+              {t("admin.report.empty")}
+            </div>
+          )}
+
           {/* TABLE */}
           {!isLoading && list.length > 0 && (
             <div className="overflow-x-auto">
@@ -81,7 +107,6 @@ export default function ReportManagementPage() {
                     <th className="px-4 py-3 text-left font-semibold">
                       {t("admin.report.table.category")}
                     </th>
-
                     <th className="px-4 py-3 text-left font-semibold">
                       상세 내용
                     </th>
@@ -157,103 +182,150 @@ export default function ReportManagementPage() {
             </div>
           )}
 
-          {/* ------------------ DETAIL PANEL ------------------ */}
-          {selected && (
-            <div className="fixed inset-0 theme-overlay flex justify-end z-50">
-              <div
-                className="w-full max-w-md h-full theme-card border-l p-6 overflow-y-auto"
-                style={{ borderColor: "var(--surface-border)" }}
+          {/* PAGINATION */}
+          {!isLoading && totalPages > 1 && (
+            <div
+              className="flex justify-center gap-2 p-4"
+              style={{ borderTop: "1px solid var(--surface-border)" }}
+            >
+              <button
+                disabled={currentPage === 0}
+                onClick={() => {
+                  setSelected(null);
+                  setPage((p) => Math.max(p - 1, 0));
+                }}
+                className="px-3 py-1 rounded-full text-sm font-medium bg-[var(--surface-panel-muted)] text-[var(--surface-muted-text)] disabled:opacity-40"
               >
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-semibold">
-                    {t("admin.report.detail.title")}
-                  </h2>
-                  <button
-                    className="text-2xl leading-none text-[var(--surface-muted-text)] hover:text-red-400"
-                    onClick={() => setSelected(null)}
-                  >
-                    ×
-                  </button>
-                </div>
+                이전
+              </button>
 
-                <div className="mb-4">
-                  <label
-                    className="text-sm font-semibold block mb-2"
-                    style={{ color: "var(--surface-muted-text)" }}
-                  >
-                    {t("admin.report.detail.category")}
-                  </label>
+              {pageNumbers.map((p) => (
+                <button
+                  key={p}
+                  onClick={() => {
+                    setSelected(null);
+                    setPage(p);
+                  }}
+                  className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                    p === currentPage
+                      ? "bg-emerald-500 text-white"
+                      : "bg-[var(--surface-panel-muted)] text-[var(--surface-muted-text)] hover:text-[var(--page-text)]"
+                  }`}
+                >
+                  {p + 1}
+                </button>
+              ))}
 
-                  <span
-                    className={`px-3 py-1 rounded-full text-xs font-semibold ${categoryBadgeClasses[selected.category]}`}
-                  >
-                    {getCategoryLabel(selected.category)}
-                  </span>
-                </div>
-
-                {/* 🔥 상세 내용 → reportedReason */}
-                <div className="mb-4">
-                  <label
-                    className="text-sm font-semibold block mb-2"
-                    style={{ color: "var(--surface-muted-text)" }}
-                  >
-                    상세 내용
-                  </label>
-                  <textarea
-                    readOnly
-                    className="w-full theme-field rounded-2xl p-3 text-sm min-h-[120px]"
-                    value={selected.reportedReason ?? t("내용 없음")}
-                  />
-                </div>
-
-                {/* 🔥 메시지 내용은 삭제됨 */}
-
-                {/* Status 변경 */}
-                <div className="mb-6">
-                  <label
-                    className="text-sm font-semibold block mb-2"
-                    style={{ color: "var(--surface-muted-text)" }}
-                  >
-                    {t("admin.report.detail.status")}
-                  </label>
-
-                  <select
-                    value={newStatus}
-                    onChange={(e) =>
-                      setNewStatus(e.target.value as ReportStatus)
-                    }
-                    className="theme-field w-full rounded-2xl p-3"
-                  >
-                    <option value="WAITING">{getStatusLabel("WAITING")}</option>
-                    <option value="APPROVED">{getStatusLabel("APPROVED")}</option>
-                    <option value="REJECTED">{getStatusLabel("REJECTED")}</option>
-                  </select>
-                </div>
-
-                <div className="flex justify-between gap-3">
-                  <button
-                    onClick={() => setSelected(null)}
-                    className="flex-1 px-4 py-2 rounded-2xl border border-[var(--surface-border)] text-[var(--page-text)] hover:border-emerald-400"
-                  >
-                    {t("admin.report.detail.cancel")}
-                  </button>
-
-                  <button
-                    onClick={() =>
-                      statusMutation.mutate(
-                        { id: selected.id, status: newStatus },
-                        { onSuccess: () => setSelected(null) }
-                      )
-                    }
-                    className="flex-1 px-4 py-2 rounded-2xl bg-emerald-500 text-white font-semibold hover:bg-emerald-400"
-                  >
-                    {t("admin.report.detail.save")}
-                  </button>
-                </div>
-              </div>
+              <button
+                disabled={currentPage === totalPages - 1}
+                onClick={() => {
+                  setSelected(null);
+                  setPage((p) => Math.min(p + 1, totalPages - 1));
+                }}
+                className="px-3 py-1 rounded-full text-sm font-medium bg-[var(--surface-panel-muted)] text-[var(--surface-muted-text)] disabled:opacity-40"
+              >
+                다음
+              </button>
             </div>
           )}
         </div>
+
+        {/* DETAIL PANEL */}
+        {selected && (
+          <div className="fixed inset-0 theme-overlay flex justify-end z-50">
+            <div
+              className="w-full max-w-md h-full theme-card border-l p-6 overflow-y-auto"
+              style={{ borderColor: "var(--surface-border)" }}
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold">
+                  {t("admin.report.detail.title")}
+                </h2>
+                <button
+                  className="text-2xl leading-none text-[var(--surface-muted-text)] hover:text-red-400"
+                  onClick={() => setSelected(null)}
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="mb-4">
+                <label
+                  className="text-sm font-semibold block mb-2"
+                  style={{ color: "var(--surface-muted-text)" }}
+                >
+                  {t("admin.report.detail.category")}
+                </label>
+                <span
+                  className={`px-3 py-1 rounded-full text-xs font-semibold ${categoryBadgeClasses[selected.category]}`}
+                >
+                  {getCategoryLabel(selected.category)}
+                </span>
+              </div>
+
+              <div className="mb-4">
+                <label
+                  className="text-sm font-semibold block mb-2"
+                  style={{ color: "var(--surface-muted-text)" }}
+                >
+                  상세 내용
+                </label>
+                <textarea
+                  readOnly
+                  className="w-full theme-field rounded-2xl p-3 text-sm min-h-[120px]"
+                  value={selected.reportedReason ?? t("내용 없음")}
+                />
+              </div>
+
+              <div className="mb-6">
+                <label
+                  className="text-sm font-semibold block mb-2"
+                  style={{ color: "var(--surface-muted-text)" }}
+                >
+                  {t("admin.report.detail.status")}
+                </label>
+                <select
+                  value={newStatus}
+                  onChange={(e) =>
+                    setNewStatus(e.target.value as ReportStatus)
+                  }
+                  className="theme-field w-full rounded-2xl p-3"
+                >
+                  <option value="WAITING">
+                    {getStatusLabel("WAITING")}
+                  </option>
+                  <option value="APPROVED">
+                    {getStatusLabel("APPROVED")}
+                  </option>
+                  <option value="REJECTED">
+                    {getStatusLabel("REJECTED")}
+                  </option>
+                </select>
+              </div>
+
+              <div className="flex justify-between gap-3">
+                <button
+                  onClick={() => setSelected(null)}
+                  className="flex-1 px-4 py-2 rounded-2xl border border-[var(--surface-border)] text-[var(--page-text)] hover:border-emerald-400"
+                >
+                  {t("admin.report.detail.cancel")}
+                </button>
+
+                <button
+                  onClick={() =>
+                    statusMutation.mutate(
+                      { id: selected.id, status: newStatus },
+                      { onSuccess: () => setSelected(null) }
+                    )
+                  }
+                  className="flex-1 px-4 py-2 rounded-2xl bg-emerald-500 text-white font-semibold hover:bg-emerald-400"
+                >
+                  {t("admin.report.detail.save")}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </AdminGuard>
   );

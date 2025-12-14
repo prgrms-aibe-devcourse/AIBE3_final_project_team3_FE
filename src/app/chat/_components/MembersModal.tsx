@@ -17,9 +17,10 @@ interface MembersModalProps {
   ownerId: number;
   currentUserId: number;
   isOwner: boolean;
+  onSelectMemberForProfile: (member: ChatRoomMember) => void; // New prop
 }
 
-export default function MembersModal({ isOpen, onClose, roomId, members, ownerId, currentUserId, isOwner }: MembersModalProps) {
+export default function MembersModal({ isOpen, onClose, roomId, members, ownerId, currentUserId, isOwner, onSelectMemberForProfile }: MembersModalProps) {
   const { t } = useLanguage();
   const [openMenuId, setOpenMenuId] = useState<number | null>(null);
   const [reportTargetMember, setReportTargetMember] = useState<ChatRoomMember | null>(null);
@@ -60,7 +61,22 @@ export default function MembersModal({ isOpen, onClose, roomId, members, ownerId
     switch (action) {
       case '강퇴하기':
         if (window.confirm(t('chat.ui.kick_confirm', { nickname: member.nickname }))) {
-          kickMember({ roomId, memberId: member.id });
+          kickMember(
+            { roomId, memberId: member.id },
+            {
+              onSuccess: () => {
+                if (member.id === currentUserId) {
+                  addToast(t('chat.ui.you_have_been_kicked', { roomName: roomId.toString() }), 'error');
+                  onClose(); // Close the modal if the current user is kicked
+                } else {
+                  addToast(t('chat.ui.member_kicked_success', { nickname: member.nickname }), 'success');
+                }
+              },
+              onError: (error) => {
+                addToast(error.message || t('chat.ui.kick_member_failed'), 'error');
+              }
+            }
+          );
         }
         break;
       case '방장 위임':
@@ -105,6 +121,11 @@ export default function MembersModal({ isOpen, onClose, roomId, members, ownerId
     setOpenMenuId(openMenuId === memberId ? null : memberId);
   };
 
+  const handleMemberClick = (member: ChatRoomMember) => {
+    onSelectMemberForProfile(member);
+    onClose();
+  };
+
   return (
     <div
       className="fixed inset-0 z-40 flex items-center justify-center px-4"
@@ -127,12 +148,16 @@ export default function MembersModal({ isOpen, onClose, roomId, members, ownerId
         <div className="flex-1 overflow-y-auto p-4 space-y-3 max-h-[60vh]">
           {sortedMembers.map((member) => (
             <div key={member.id} className="group flex items-center justify-between p-2 rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-panel)] hover:border-emerald-400 transition-colors">
-              <div className="flex items-center">
+              <div className="flex items-center cursor-pointer" onClick={() => handleMemberClick(member)}>
                 <div
                   className="w-10 h-10 rounded-full flex items-center justify-center text-lg font-semibold"
                   style={{ background: "var(--surface-panel-muted)", color: "var(--page-text)" }}
                 >
-                  {member.nickname.charAt(0).toUpperCase()}
+                  {member.profileImageUrl ? (
+                    <img src={member.profileImageUrl} alt={member.nickname} className="w-full h-full rounded-full object-cover" />
+                  ) : (
+                    member.nickname.charAt(0).toUpperCase()
+                  )}
                 </div>
                 <p className="ml-4 font-medium" style={{ color: "var(--page-text)" }}>
                   {member.nickname}

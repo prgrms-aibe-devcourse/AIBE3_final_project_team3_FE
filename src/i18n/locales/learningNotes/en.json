@@ -18,5 +18,6 @@
   "error": "Failed to load notes.",
   "original": "Original",
   "corrected": "Corrected",
-  "description": "Description"
+  "description": "Description",
+  "detailFeedback": "Detailed feedback"
 }

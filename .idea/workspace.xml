@@ -4,9 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="604cf4b1-e42f-4556-9e86-677cc0cb0762" name="변경" comment="Merge branch 'main' into feat/mode">
-      <change beforePath="$PROJECT_DIR$/tsconfig.json" beforeDir="false" afterPath="$PROJECT_DIR$/tsconfig.json" afterDir="false" />
-    </list>
+    <list default="true" id="604cf4b1-e42f-4556-9e86-677cc0cb0762" name="변경" comment="Merge branch 'main' into feat/mode" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -28,7 +26,7 @@
     &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
     &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;feat/mode 병합 중&quot;,
     &quot;js.debugger.nextJs.config.created.client&quot;: &quot;true&quot;,
     &quot;js.debugger.nextJs.config.created.server&quot;: &quot;true&quot;,
     &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
@@ -78,6 +76,7 @@
       <workItem from="1765344454023" duration="99000" />
       <workItem from="1765431838429" duration="1290000" />
       <workItem from="1765505534313" duration="408000" />
+      <workItem from="1765525083236" duration="2772000" />
     </task>
     <task id="LOCAL-00001" summary="Merge branch 'main' into fix/learning-cors">
       <option name="closed" value="true" />
@@ -119,7 +118,31 @@
       <option name="project" value="LOCAL" />
       <updated>1765505557247</updated>
     </task>
-    <option name="localTasksCounter" value="6" />
+    <task id="LOCAL-00006" summary="Merge branch 'main' into feat/mode">
+      <option name="closed" value="true" />
+      <created>1765525093970</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1765525093970</updated>
+    </task>
+    <task id="LOCAL-00007" summary="Merge branch 'main' into main">
+      <option name="closed" value="true" />
+      <created>1765525153292</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1765525153292</updated>
+    </task>
+    <task id="LOCAL-00008" summary="Merge branch 'main' into feat/mode">
+      <option name="closed" value="true" />
+      <created>1765527034168</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1765527034168</updated>
+    </task>
+    <option name="localTasksCounter" value="9" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -133,6 +156,7 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Merge branch 'main' into fix/learning-cors" />
     <MESSAGE value="Merge branch 'main' into refactor/learning-notes" />
+    <MESSAGE value="Merge branch 'main' into main" />
     <MESSAGE value="Merge branch 'main' into feat/mode" />
     <option name="LAST_COMMIT_MESSAGE" value="Merge branch 'main' into feat/mode" />
   </component>

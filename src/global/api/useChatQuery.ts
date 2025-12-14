@@ -24,6 +24,74 @@ ChatSearchResult
 
 // --- Type Definitions ---
 // Types are now imported from chat.types.ts
+type PaginatedListPage<T> = {
+  items: T[];
+  totalPages: number | null;
+  totalElements: number | null;
+  pageIndex: number;
+  pageSize: number;
+  isFirst: boolean;
+  isLast: boolean;
+};
+
+const normaliseInteger = (value: unknown, fallback: number | null = null): number | null => {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return Math.trunc(value);
+  }
+  if (typeof value === "string" && value.trim().length > 0) {
+    const parsed = Number.parseInt(value, 10);
+    if (!Number.isNaN(parsed)) {
+      return Math.trunc(parsed);
+    }
+  }
+  return fallback;
+};
+
+const extractPaginatedPayload = <T>(payload: any): PaginatedListPage<T> => {
+  const root = payload && typeof payload === "object" ? payload : {};
+  const dataNode = root.data && typeof root.data === "object" ? root.data : root;
+
+  const items: T[] = (() => {
+    const candidates = [dataNode?.content, dataNode?.items, dataNode?.data];
+    for (const candidate of candidates) {
+      if (Array.isArray(candidate)) {
+        return candidate as T[];
+      }
+    }
+    return [];
+  })();
+
+  const pageIndex = normaliseInteger(
+    dataNode?.number,
+    normaliseInteger(dataNode?.page, normaliseInteger(dataNode?.pageIndex, 0))
+  ) ?? 0;
+  const pageSize = normaliseInteger(dataNode?.size, items.length || 0) ?? (items.length || 0);
+  const totalPages = normaliseInteger(dataNode?.totalPages, null);
+  const totalElements = normaliseInteger(dataNode?.totalElements, null);
+  const isFirst = typeof dataNode?.first === "boolean" ? dataNode.first : pageIndex <= 0;
+  const inferredLast = (() => {
+    if (typeof dataNode?.last === "boolean") {
+      return dataNode.last;
+    }
+    if (typeof totalPages === "number" && totalPages > 0) {
+      return pageIndex >= totalPages - 1;
+    }
+    if (pageSize > 0) {
+      return items.length < pageSize;
+    }
+    return items.length === 0;
+  })();
+
+  return {
+    items,
+    totalPages,
+    totalElements,
+    pageIndex,
+    pageSize,
+    isFirst,
+    isLast: inferredLast,
+  };
+};
 
 // --- Fetch Functions ---
 
@@ -129,10 +197,18 @@ const fetchChatSearch = async (keyword: string, chatRoomType: string): Promise<C
   return [];
 };
 
-const fetchPublicGroupChatRooms = async (): Promise<GroupChatRoomPublicResp[]> => {
-  const response = await apiClient.GET("/api/v1/chats/rooms/group/public");
-  const rooms = await unwrap<GroupChatRoomPublicResp[]>(response);
-  return rooms || [];
+const fetchPublicGroupChatRooms = async (page: number = 0, size: number = 12): Promise<PaginatedListPage<GroupChatRoomPublicResp>> => {
+  const safePage = Math.max(page, 0);
+  const safeSize = size > 0 ? Math.min(size, 50) : 12;
+
+  const response = await apiClient.GET("/api/v1/chats/rooms/group/public", {
+    params: {
+      query: { page: safePage, size: safeSize },
+    },
+  });
+
+  const pagePayload = await unwrap<any>(response);
+  return extractPaginatedPayload<GroupChatRoomPublicResp>(pagePayload);
 };
 
 // --- Query Hooks ---
@@ -193,11 +269,14 @@ export const useGetGroupChatRoomDetailQuery = (roomId: number | null) => {
   });
 };
 
-export const useGetPublicGroupChatRoomsQuery = () => {
+export const useGetPublicGroupChatRoomsQuery = (options?: { page?: number; size?: number }) => {
   const { accessToken } = useLoginStore();
-  return useQuery<GroupChatRoomPublicResp[], Error>({
-    queryKey: ["chatRooms", "group", "public"],
-    queryFn: fetchPublicGroupChatRooms,
+  const page = options?.page ?? 0;
+  const size = options?.size ?? 12;
+
+  return useQuery<PaginatedListPage<GroupChatRoomPublicResp>, Error>({
+    queryKey: ["chatRooms", "group", "public", page, size],
+    queryFn: () => fetchPublicGroupChatRooms(page, size),
     enabled: !!accessToken,
   });
 };
@@ -444,7 +523,7 @@ export const useLeaveChatRoom = () => {
       queryClient.invalidateQueries({ queryKey: ["chatRooms"] });
 
       alert("채팅방을 나갔습니다.");
-      router.push("/chat/user"); // Redirect to the user's chat list
+      router.push("/chat"); // Redirect to the chat main page
     },
     onError: (error) => {
       console.error("Failed to leave chat room:", error);

@@ -39,13 +39,32 @@ export default function ChatRoomPage() {
   // useRoomClosedRedirect();
 
   // When message data is successfully loaded, it means markAsReadOnEnter was called on the backend.
-  // We can now invalidate the room list query to update the unread count badge.
+  // We optimistically update the unread count and lastReadSequence for the current room.
   useEffect(() => {
-    if (data) {
-      console.log('[Query Invalidation] Messages loaded, invalidating chatRooms query to update unread count.');
-      queryClient.invalidateQueries({ queryKey: ['chatRooms', chatRoomType] });
+    if (data && data.pages.length > 0) {
+      // The most recent page (first fetched) contains the updated lastReadSequence
+      const latestPage = data.pages[0];
+      const updatedLastReadSequence = latestPage.lastReadSequence;
+
+      console.log(`[Optimistic Update] Messages loaded for room ${roomId}. Setting unreadCount=0, lastReadSequence=${updatedLastReadSequence}`);
+      
+      queryClient.setQueryData(['chatRooms', chatRoomType], (oldData: any[]) => {
+        if (!oldData) return oldData;
+        
+        return oldData.map((room) => {
+          if (room.id === roomId) {
+            return { 
+              ...room, 
+              unreadCount: 0,
+              // Update lastReadSequence if provided by the backend
+              ...(updatedLastReadSequence !== undefined && { lastReadSequence: updatedLastReadSequence })
+            };
+          }
+          return room;
+        });
+      });
     }
-  }, [data, chatRoomType, queryClient]);
+  }, [data, chatRoomType, roomId, queryClient]);
 
   // Find room details from API data
   const roomDetails = useMemo(() => {
@@ -101,11 +120,18 @@ export default function ChatRoomPage() {
     if (data?.pages) {
       const allMessages = data.pages
         .filter(page => page?.messages)
-        .flatMap(page => page.messages)
-        // 전체를 한번 정렬해서 순서 뒤섞임 방지 (오래된 → 최신)
-        .sort((a, b) => (a.sequence || 0) - (b.sequence || 0));
-      console.log(`[Data] Loaded ${allMessages.length} messages from ${data.pages.length} pages`);
-      setMessages(allMessages);
+        .flatMap(page => page.messages);
+
+      // Deduplicate by ID
+      const uniqueMessages = Array.from(
+        new Map(allMessages.map((msg) => [msg.id, msg])).values()
+      );
+
+      // 전체를 한번 정렬해서 순서 뒤섞임 방지 (오래된 → 최신)
+      uniqueMessages.sort((a, b) => (a.sequence || 0) - (b.sequence || 0));
+
+      console.log(`[Data] Loaded ${uniqueMessages.length} messages from ${data.pages.length} pages`);
+      setMessages(uniqueMessages);
     }
   }, [data]);
 
@@ -127,6 +153,19 @@ export default function ChatRoomPage() {
       destination,
       (message: IMessage) => {
         const payload = JSON.parse(message.body);
+
+        // 0. 읽음 카운트 업데이트 (배열 형태로 옴)
+        if (Array.isArray(payload)) {
+           console.log(`[WebSocket] Received unread count updates:`, payload);
+           setMessages((prevMessages) => {
+             const updateMap = new Map(payload.map((u: any) => [u.messageId, u.unreadCount]));
+             return prevMessages.map((msg) => {
+               const newCount = updateMap.get(msg.id);
+               return newCount !== undefined ? { ...msg, unreadCount: newCount } : msg;
+             });
+           });
+           return;
+        }
         
         // 방 폐쇄 이벤트 처리
         if (payload.type === "ROOM_CLOSED") {
@@ -185,11 +224,21 @@ export default function ChatRoomPage() {
         }
         // 4. 일반 메시지 처리
         else {
+          // RoomLastMessageUpdateResp 등이 같은 토픽으로 올 수 있으므로 id가 없으면 무시
+          if (!payload.id) {
+             console.log('[WebSocket] Ignoring non-message payload (likely RoomLastMessageUpdateResp):', payload);
+             return;
+          }
+
           const receivedMessage = payload as MessageResp;
           console.log(`[WebSocket] Received message:`, receivedMessage);
-          setMessages((prevMessages) =>
-            [...prevMessages, receivedMessage].sort((a, b) => (a.sequence || 0) - (b.sequence || 0))
-          );
+          setMessages((prevMessages) => {
+            // Prevent duplicate messages
+            if (prevMessages.some(m => m.id === receivedMessage.id)) {
+              return prevMessages;
+            }
+            return [...prevMessages, receivedMessage].sort((a, b) => (a.sequence || 0) - (b.sequence || 0));
+          });
 
           // 채팅방 리스트 캐시 업데이트 (실시간 정렬용)
           const roomType = chatRoomType;

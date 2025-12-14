@@ -137,6 +137,7 @@ export interface ChatRoomPageDataResp {
   messages: MessageResp[];
   nextCursor: number | null;
   hasMore: boolean;
+  lastReadSequence?: number;
 }
 
 export interface ReadStatusUpdateEvent {

@@ -295,10 +295,67 @@ const GroupRoomCard = ({ room }: { room: GroupChatRoomPublicResp }) => {
 
 
 // Main Component to Fetch and Display the List
-export default function GroupRoomList() {
-  const { data: rooms, isLoading, error } = useGetPublicGroupChatRoomsQuery();
+const PAGE_SIZE = 12;
+const MAX_PAGE_LINKS = 5;
 
-  if (isLoading) {
+const buildPageNumbers = (currentPage: number, totalPages?: number | null, maxLinks = MAX_PAGE_LINKS) => {
+  if (typeof totalPages !== "number" || totalPages <= 0) {
+    return [];
+  }
+
+  if (totalPages <= maxLinks) {
+    return Array.from({ length: totalPages }, (_, idx) => idx + 1);
+  }
+
+  const offset = Math.floor(maxLinks / 2);
+  let start = currentPage - offset;
+  let end = currentPage + offset;
+
+  if (maxLinks % 2 === 0) {
+    end -= 1;
+  }
+
+  if (start < 1) {
+    end += 1 - start;
+    start = 1;
+  }
+
+  if (end > totalPages) {
+    start -= end - totalPages;
+    end = totalPages;
+  }
+
+  return Array.from({ length: maxLinks }, (_, idx) => start + idx);
+};
+
+export default function GroupRoomList() {
+  const [currentPage, setCurrentPage] = useState(1);
+  const { data, isLoading, error, isFetching } = useGetPublicGroupChatRoomsQuery({
+    page: currentPage - 1,
+    size: PAGE_SIZE,
+  });
+
+  const rooms = data?.items ?? [];
+  const totalPages = data?.totalPages ?? null;
+  const derivedTotalPages = (() => {
+    if (typeof totalPages === "number" && totalPages > 0) {
+      return totalPages;
+    }
+    if (typeof data?.totalElements === "number" && data.totalElements > 0) {
+      return Math.max(Math.ceil(data.totalElements / PAGE_SIZE), 1);
+    }
+    return null;
+  })();
+  const isFirstPage = data?.isFirst ?? currentPage <= 1;
+  const isLastPage = data?.isLast ?? (typeof derivedTotalPages === "number" ? currentPage >= derivedTotalPages : rooms.length < PAGE_SIZE);
+
+  useEffect(() => {
+    if (typeof derivedTotalPages === "number" && derivedTotalPages > 0 && currentPage > derivedTotalPages) {
+      setCurrentPage(derivedTotalPages);
+    }
+  }, [derivedTotalPages, currentPage]);
+
+  if (isLoading && !data) {
     return (
       <div className="text-center text-white">
         <p>Loading group chats...</p>
@@ -322,11 +379,67 @@ export default function GroupRoomList() {
     );
   }
 
+  const pageNumbers = buildPageNumbers(currentPage, derivedTotalPages);
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-      {rooms.map((room) => (
-        <GroupRoomCard key={room.id} room={room} />
-      ))}
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {rooms.map((room) => (
+          <GroupRoomCard key={room.id} room={room} />
+        ))}
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <button
+          type="button"
+          onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+          disabled={isFirstPage || isLoading}
+          className="px-4 py-2 rounded border border-[var(--surface-border)] bg-[var(--surface-panel-muted)] text-[var(--page-text)] transition-colors disabled:opacity-60 disabled:cursor-not-allowed hover:bg-[var(--surface-panel)]"
+        >
+          Previous
+        </button>
+
+        <div className="flex-1 min-w-[240px] flex flex-col items-center gap-2">
+          {pageNumbers.length > 0 ? (
+            <div className="flex items-center gap-2">
+              {pageNumbers.map((pageNumber) => {
+                const isActive = pageNumber === currentPage;
+                return (
+                  <button
+                    key={pageNumber}
+                    type="button"
+                    onClick={() => setCurrentPage(pageNumber)}
+                    disabled={isLoading && pageNumber === currentPage}
+                    className={`min-w-[2.5rem] px-3 py-1.5 rounded-lg border text-sm transition-colors ${isActive
+                      ? "border-emerald-500 text-white bg-emerald-500/10"
+                      : "border-gray-600 text-gray-300 hover:border-emerald-400"
+                      } disabled:opacity-60 disabled:cursor-not-allowed`}
+                  >
+                    {pageNumber}
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <div />
+          )}
+
+          <div className="text-sm text-gray-300">
+            Page {currentPage}
+            {typeof derivedTotalPages === "number" && derivedTotalPages > 0 ? ` / ${derivedTotalPages}` : ""}
+            {isFetching ? <span className="ml-2 text-xs text-gray-400">Updating...</span> : null}
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setCurrentPage((prev) => prev + 1)}
+          disabled={isLastPage || isLoading}
+          className="px-4 py-2 rounded border border-[var(--surface-border)] bg-[var(--surface-panel-muted)] text-[var(--page-text)] transition-colors disabled:opacity-60 disabled:cursor-not-allowed hover:bg-[var(--surface-panel)]"
+        >
+          Next
+        </button>
+      </div>
     </div>
   );
 }

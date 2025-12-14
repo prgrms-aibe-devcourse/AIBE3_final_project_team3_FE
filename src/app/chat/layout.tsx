@@ -41,6 +41,7 @@ export default function ChatLayout({
   const queryClient = useQueryClient();
   const pathname = usePathname();
   const userQueueSubscriptionRef = useRef<any>(null);
+  const activeRoomIdRef = useRef<string | null>(selectedRoomId);
 
   // 인증 체크: Hydration 완료 후 토큰이 없으면 로그인 페이지로 리다이렉트
   useEffect(() => {
@@ -48,6 +49,10 @@ export default function ChatLayout({
       router.replace("/auth/login");
     }
   }, [accessToken, hasHydrated, router]);
+
+  useEffect(() => {
+    activeRoomIdRef.current = selectedRoomId;
+  }, [selectedRoomId]);
 
   useEffect(() => {
     const parts = pathname.split('/');
@@ -70,78 +75,138 @@ export default function ChatLayout({
   useEffect(() => {
     if (!member || !accessToken) return;
 
+    let subscription: any = null;
+
     function subscribeToUserQueue() {
       const client = getStompClient();
+      const myId = currentMemberId ?? resolveStoreMemberId(useLoginStore.getState().member);
 
-      // 이미 구독 중이면 스킵
-      if (userQueueSubscriptionRef.current) {
-        console.log('[Layout User Queue] Already subscribed to user queue');
+      if (!client || !client.connected || !myId) {
+        console.warn('[Layout User Queue] Client not connected or Member ID missing, cannot subscribe yet.');
         return;
       }
 
-      const destination = '/user/queue/rooms.update';
-      console.log(`[Layout User Queue] Subscribing to ${destination}`);
+      // Fallback Topic Destination (Reliable)
+      const topicDestination = `/topic/users.${myId}.rooms.update`;
+      // Standard User Destination (May have Broker/Config issues)
+      const userDestination = '/user/queue/rooms.update';
 
-      const subscription = client.subscribe(destination, (message: IMessage) => {
-        const payload = JSON.parse(message.body);
-        console.log(`[Layout User Queue] Received message:`, payload);
+      console.log(`[Layout User Queue] Subscribing to ${topicDestination} (primary) and ${userDestination} (backup)`);
 
-        // RoomLastMessageUpdateResp 처리
-        if (payload.chatRoomType && payload.latestSequence !== undefined) {
-          const update = payload as RoomLastMessageUpdateResp;
-          const roomType = update.chatRoomType.toLowerCase();
-          const cacheKey = ['chatRooms', roomType];
+      const handleMessage = (message: IMessage) => {
+        try {
+          const payload = JSON.parse(message.body);
+          console.log(`[Layout User Queue] Received message from ${message.headers.destination}:`, payload);
 
-          console.log(`[Layout User Queue Update] Processing RoomLastMessageUpdate for room ${update.roomId}, type=${roomType}, sequence=${update.latestSequence}`);
+          // RoomLastMessageUpdateResp 처리
+            if (payload.chatRoomType && payload.latestSequence !== undefined) {
+              const update = payload as RoomLastMessageUpdateResp;
+              const roomType = update.chatRoomType.toLowerCase();
+              const cacheKey = ['chatRooms', roomType];
+              const activeRoomKey = `${roomType}-${update.roomId}`;
+              const isRoomCurrentlyOpen = activeRoomIdRef.current === activeRoomKey;
 
-          queryClient.setQueryData<any[]>(cacheKey, (prevRooms) => {
-            if (!prevRooms) {
-              console.warn(`[Layout User Queue Update] No cached rooms found for ${roomType}`);
-              return prevRooms;
-            }
+            console.log(`[Layout User Queue Update] Processing update for room ${update.roomId} (${roomType}), sender=${update.senderId}, seq=${update.latestSequence}`);
 
-            const updated = prevRooms.map((room: any) => {
-              if (room.id !== update.roomId) return room;
-
-              let unreadCount = room.unreadCount || 0;
-              if (update.senderId !== currentMemberId) {
-                const lastReadSequence = room.lastReadSequence ?? 0;
-                unreadCount = Math.max(0, update.latestSequence - lastReadSequence);
-                console.log(`[Layout User Queue Update] Room ${update.roomId} unreadCount: ${unreadCount} (latestSeq=${update.latestSequence}, lastReadSeq=${lastReadSequence})`);
-              } else {
-                unreadCount = 0;
-                console.log(`[Layout User Queue Update] Room ${update.roomId} - own message, unreadCount=0`);
+            queryClient.setQueryData<any[]>(cacheKey, (prevRooms) => {
+              if (!prevRooms) {
+                console.warn(`[Layout User Queue Update] No cached rooms found for ${roomType}. Triggering refetch.`);
+                queryClient.invalidateQueries({ queryKey: cacheKey });
+                return prevRooms;
               }
 
-              return {
-                ...room,
-                lastMessageAt: update.lastMessageAt,
-                lastMessageContent: update.lastMessageContent,
-                unreadCount: unreadCount
-              };
-            });
+              // Check if room exists in cache
+              const exists = prevRooms.some((r: any) => r.id === update.roomId);
+              
+              if (!exists) {
+                console.log(`[Layout User Queue Update] Room ${update.roomId} not found in ${roomType} cache. It might be a new room. Invalidating cache to fetch fresh list.`);
+                // Force refetch to get the new room
+                queryClient.invalidateQueries({ queryKey: cacheKey });
+                return prevRooms;
+              }
 
-            const sorted = updated.sort((a: any, b: any) => {
-              const timeA = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
-              const timeB = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0;
-              return timeB - timeA;
-            });
+              const updated = prevRooms.map((room: any) => {
+                if (room.id !== update.roomId) return room;
 
-            console.log(`[Layout User Queue Update] Updated and sorted ${roomType} rooms:`, sorted.map(r => ({ id: r.id, lastMessageAt: r.lastMessageAt, unreadCount: r.unreadCount })));
-            return sorted;
-          });
+                let unreadCount = room.unreadCount || 0;
+                // currentMemberId가 undefined이면(로딩중) 계산이 부정확할 수 있으나, 보통 로딩 후 구독됨.
+                const currentMyId = currentMemberId ?? resolveStoreMemberId(useLoginStore.getState().member);
+
+                // 타입 안전한 비교 (String 변환)
+                const isOwnMessage = String(update.senderId) === String(currentMyId);
+                let lastReadSequence = room.lastReadSequence ?? 0;
+
+                if (isOwnMessage) {
+                  unreadCount = 0;
+                  // 내가 보낸 메시지라면, 내 lastReadSequence도 최신으로 업데이트해야 함
+                  lastReadSequence = update.latestSequence;
+                  console.log(`[Layout User Queue Update] Room ${update.roomId} - own message, unreadCount=0, updating lastReadSeq to ${lastReadSequence}`);
+                } else if (isRoomCurrentlyOpen) {
+                  unreadCount = 0;
+                  // 방이 열려있으면 바로 읽은 것으로 처리
+                  lastReadSequence = update.latestSequence;
+                  console.log(`[Layout User Queue Update] Room ${update.roomId} is currently open; keeping unreadCount=0, updating lastReadSeq to ${lastReadSequence}`);
+                } else {
+                  unreadCount = Math.max(0, update.latestSequence - lastReadSequence);
+                  console.log(`[Layout User Queue Update] Room ${update.roomId} unreadCount: ${unreadCount} (latestSeq=${update.latestSequence}, lastReadSeq=${lastReadSequence})`);
+                }
+
+                return {
+                  ...room,
+                  lastMessageAt: update.lastMessageAt,
+                  lastMessageContent: update.lastMessageContent,
+                  unreadCount: unreadCount,
+                  lastReadSequence: lastReadSequence
+                };
+              });
+
+              const sorted = updated.sort((a: any, b: any) => {
+                const timeA = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
+                const timeB = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0;
+                return timeB - timeA;
+              });
+
+              console.log(`[Layout User Queue Update] Sorted ${roomType} top room ID:`, sorted.length > 0 ? sorted[0].id : 'none');
+              return sorted;
+            });
+          }
+        } catch (err) {
+          console.error('[Layout User Queue] Error processing message:', err);
         }
-      });
+      };
 
+      // Subscribe to BOTH destinations to be safe
+      const topicSub = client.subscribe(topicDestination, handleMessage);
+      const userSub = client.subscribe(userDestination, handleMessage);
+
+      // Store unsubscription logic
+      subscription = {
+        unsubscribe: () => {
+          topicSub.unsubscribe();
+          userSub.unsubscribe();
+        }
+      };
+      
       userQueueSubscriptionRef.current = subscription;
-      console.log(`[Layout User Queue] Successfully subscribed to user queue`);
     }
 
-    // STOMP 연결 후 구독 (재연결 시에도 자동 실행)
+    // STOMP 연결 후 구독
     connect(accessToken, () => {
-      console.log('[Layout User Queue] STOMP connected, subscribing to user queue...');
+      // Clean up previous subscription if exists (though useEffect cleanup handles this usually)
+      if (userQueueSubscriptionRef.current) {
+        userQueueSubscriptionRef.current.unsubscribe();
+        userQueueSubscriptionRef.current = null;
+      }
       subscribeToUserQueue();
     });
+
+    return () => {
+      if (userQueueSubscriptionRef.current) {
+        console.log('[Layout User Queue] Unsubscribing from user queue');
+        userQueueSubscriptionRef.current.unsubscribe();
+        userQueueSubscriptionRef.current = null;
+      }
+    };
 
   }, [member, accessToken, queryClient, currentMemberId]);
 

@@ -1,0 +1,47 @@
+{
+  "brand": "Mini Game",
+  "title": "문장 미니게임",
+  "loading": "로딩 중...",
+  "errors": {
+    "fetchFailed": "문장 수 정보를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.",
+    "noSentences": "등록된 게임 문장이 없습니다."
+  },
+  "totalCountMessage": "등록된 총 문장 수는 {count} 개입니다.",
+  "instructions": "원하는 문제 수를 선택하면 즉시 게임이 시작됩니다.",
+  "selectLabel": "문제 수 선택",
+  "selectPlaceholder": "선택해주세요",
+  "unit": "문제",
+  "startButton": "게임 시작",
+  "alerts": {
+    "selectCount": "문제 수를 선택해주세요!"
+  },
+  "play": {
+    "fetchFailed": "문제를 불러올 수 없습니다.",
+    "finishedTitle": "🎉 게임 완료!",
+    "resultSummary": "총 {total}문제 중 {correct}문제 정답!",
+    "reviewWrongTitle": "❌ 틀린 문제 복습",
+    "problemLabel": "문제 {num}: {content}",
+    "correctAnswer": "정답: {answer}",
+    "feedback": {
+      "tag": "[{tag}]",
+      "problem": "문제:",
+      "correction": "수정:",
+      "extra": "설명:"
+    },
+    "pagination": {
+      "prev": "이전",
+      "next": "다음"
+    },
+    "toLearningNotes": "학습노트로 이동 →",
+    "restart": "다시하기 ↺",
+    "progress": "문제 {current} / {total}",
+    "wrongSentenceLabel": "잘못된 문장:",
+    "inputPlaceholder": "올바른 문장을 입력하세요",
+    "submitButton": "제출하기",
+    "correctMessage": "정답입니다! 🎉",
+    "incorrectMessage": "틀렸습니다.",
+    "correctLabel": "정답:",
+    "feedbackTitle": "피드백:",
+    "nextButton": "다음으로 →"
+  }
+}

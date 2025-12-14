@@ -55,6 +55,9 @@
     "friend_request_sent": "Friend request sent to {nickname}.",
     "friend_request_already_sent": "Friend request already sent.",
     "friend_request_failed": "Failed to send friend request.",
-    "action_not_implemented": "Executing {action} on {nickname}. (To be implemented)"
+    "action_not_implemented": "Executing {action} on {nickname}. (To be implemented)",
+    "you_have_been_kicked": "You have been kicked from the chat room {roomName}.",
+    "member_kicked_success": "{nickname} has been kicked from the chat.",
+    "kick_member_failed": "Failed to kick member."
   }
 }

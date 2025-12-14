@@ -1,0 +1,47 @@
+{
+  "brand": "Mini Game",
+  "title": "Sentence Mini Game",
+  "loading": "Loading...",
+  "errors": {
+    "fetchFailed": "Failed to load sentence counts. Please try again later.",
+    "noSentences": "No game sentences are registered."
+  },
+  "totalCountMessage": "Total registered sentences: {count}.",
+  "instructions": "Select the number of questions to start the game immediately.",
+  "selectLabel": "Select number",
+  "selectPlaceholder": "Please select",
+  "unit": "items",
+  "startButton": "Start Game",
+  "alerts": {
+    "selectCount": "Please select the number of questions!"
+  },
+  "play": {
+    "fetchFailed": "Unable to load questions.",
+    "finishedTitle": "🎉 Game Complete!",
+    "resultSummary": "{total} questions, {correct} correct!",
+    "reviewWrongTitle": "❌ Review Wrong Questions",
+    "problemLabel": "Question {num}: {content}",
+    "correctAnswer": "Answer: {answer}",
+    "feedback": {
+      "tag": "[{tag}]",
+      "problem": "Problem:",
+      "correction": "Correction:",
+      "extra": "Explanation:"
+    },
+    "pagination": {
+      "prev": "Prev",
+      "next": "Next"
+    },
+    "toLearningNotes": "Go to Learning Notes →",
+    "restart": "Restart ↺",
+    "progress": "Question {current} / {total}",
+    "wrongSentenceLabel": "Wrong sentence:",
+    "inputPlaceholder": "Enter the correct sentence",
+    "submitButton": "Submit",
+    "correctMessage": "Correct! 🎉",
+    "incorrectMessage": "Incorrect.",
+    "correctLabel": "Answer:",
+    "feedbackTitle": "Feedback:",
+    "nextButton": "Next →"
+  }
+}

@@ -55,6 +55,9 @@
     "friend_request_sent": "{nickname}님에게 친구 요청을 보냈습니다.",
     "friend_request_already_sent": "이미 친구 신청을 보낸 상태입니다.",
     "friend_request_failed": "친구 요청을 보내지 못했습니다.",
-    "action_not_implemented": "{nickname}님에게 {action} 액션을 실행합니다. (구현 필요)"
+    "action_not_implemented": "{nickname}님에게 {action} 액션을 실행합니다. (구현 필요)",
+    "you_have_been_kicked": "{roomName} 채팅방에서 강퇴당했습니다.",
+    "member_kicked_success": "{nickname} 님이 채팅에서 강퇴되었습니다.",
+    "kick_member_failed": "회원 강퇴에 실패했습니다."
   }
 }

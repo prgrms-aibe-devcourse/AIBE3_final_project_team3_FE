@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import { useSignup } from "@/global/api/useAuthQuery";
 import type { CountryCode } from "@/global/lib/countries";
 import { COUNTRY_OPTIONS, isSupportedCountryCode } from "@/global/lib/countries";
@@ -28,6 +29,7 @@ export default function SignupPage() {
   const router = useRouter();
   const { mutate: signup, isPending } = useSignup();
   const { t } = useLanguage();
+  const { theme } = useTheme();
 
   const [formData, setFormData] = useState<SignupFormState>({
     name: "",
@@ -229,7 +231,11 @@ export default function SignupPage() {
                 </label>
                 <button
                   type="button"
-                  className="w-5 h-5 flex items-center justify-center rounded-full border border-blue-200 text-xs font-semibold text-blue-600 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                  className={`w-5 h-5 flex items-center justify-center rounded-full border text-xs font-semibold focus:outline-none focus:ring-2 ${
+                    theme === "dark"
+                      ? "border-blue-400 text-blue-300 hover:bg-blue-900/30 focus:ring-blue-500"
+                      : "border-blue-200 text-blue-600 hover:bg-blue-50 focus:ring-blue-300"
+                  }`}
                   aria-label={t("auth.signup.helpers.levelTooltipLabel")}
                   onFocus={() => setIsLevelTooltipOpen(true)}
                   onBlur={() => setIsLevelTooltipOpen(false)}
@@ -239,12 +245,16 @@ export default function SignupPage() {
                 {isLevelTooltipOpen && (
                   <div
                     role="tooltip"
-                    className="absolute left-8 top-full z-10 mt-1 w-72 rounded-md bg-gray-900 p-4 text-xs text-white shadow-lg"
+                    className={`absolute left-8 top-full z-10 mt-1 w-72 rounded-md p-4 text-xs shadow-lg ${
+                      theme === "dark"
+                        ? "bg-gray-800 text-gray-100 border border-gray-700"
+                        : "bg-gray-100 text-gray-800 border border-gray-300"
+                    }`}
                   >
-                    <p className="font-semibold mb-2">
+                    <p className={`font-semibold mb-2 ${theme === "dark" ? "text-gray-100" : "text-gray-900"}`}>
                       {t("auth.signup.helpers.levelTooltipLabel")}
                     </p>
-                    <p className="leading-relaxed whitespace-pre-line">
+                    <p className={`leading-relaxed whitespace-pre-line ${theme === "dark" ? "text-gray-300" : "text-gray-700"}`}>
                       {t("auth.signup.helpers.levelTooltip")}
                     </p>
                   </div>

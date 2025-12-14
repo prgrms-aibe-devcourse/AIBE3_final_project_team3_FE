@@ -55,61 +55,37 @@ export default function ChatSidebar({
 
   const showingSearch = debouncedTerm.length >= 2
 
-  // --- Merge Server Results + Local Matches ---
-  const combinedResults = useMemo(() => {
-    if (!showingSearch) return []
+  const searchHitMap = useMemo(() => {
+    if (!showingSearch) return new Map<string, any>()
+    const map = new Map<string, any>()
+    searchResults.forEach((hit: any) => {
+      const key = `${activeTab}-${hit.chatRoomId}`
+      if (!map.has(key)) {
+        map.set(key, hit)
+      }
+    })
+    return map
+  }, [activeTab, searchResults, showingSearch])
+
+  const displayedRooms = useMemo(() => {
+    if (!showingSearch) return rooms
+
+    const matchedIds = new Set(
+      searchResults.map((hit: any) => `${activeTab}-${hit.chatRoomId}`)
+    )
+    const fromSearch = rooms.filter((room) =>
+      matchedIds.has(room.id)
+    )
+
+    if (fromSearch.length > 0) return fromSearch
 
     const keyword = debouncedTerm.toLowerCase()
-
-    // 1. Local Hits (from loaded rooms)
-    const localHits = rooms
-      .filter((room) => {
-        const name = room.name?.toLowerCase() || ''
-        const last = room.lastMessage?.toLowerCase() || ''
-        return name.includes(keyword) || last.includes(keyword)
-      })
-      .map((room) => ({
-        messageId: `local-${room.id}`,
-        chatRoomId: Number(room.id.split('-')[1]), // "group-123" -> 123
-        senderName: room.name, // Approximate sender as room name
-        content: room.lastMessage || '',
-        createdAt: room.lastMessageTime || new Date().toISOString(), // Use provided time or now
-        isLocal: true,
-      }))
-
-    // 2. Deduplicate: If server found it, prefer server (has real ID/Date)
-    // Simple check: if we have a server hit for this room, and content matches roughly
-    const serverHits = searchResults || []
-    
-    // Filter out local hits that seem to be duplicates of server hits
-    // (Optimization: Since server search is full-text and local is just last-message, 
-    // it's safer to show BOTH if they differ, but if content is identical, hide local)
-    const uniqueLocalHits = localHits.filter(local => {
-      return !serverHits.some((server: any) => 
-        server.chatRoomId === local.chatRoomId && 
-        server.content === local.content
-      )
-    })
-
-    // 3. Combine and Sort (Newest first)
-    // Note: Local hits might have "10:42 PM" as time, Server has ISO.
-    // Sorting might be imperfect but putting local (likely recent) at top is a good heuristic if needed.
-    // For now, we just append local to server or vice versa.
-    // Let's put server results first as they are "deep search", local is "recent/cache".
-    // Or actually, user wants "recent messages" to show up. Local IS recent.
-    return [...uniqueLocalHits, ...serverHits]
-  }, [showingSearch, debouncedTerm, rooms, searchResults])
-
-  // --- 기존의 방 목록 필터링 (검색어 없을 때 로컬 필터링용) ---
-  const filteredRooms = useMemo(() => {
-    if (showingSearch) return [] // 검색 모드일 땐 서버 결과(searchResults)만 사용
-    const keyword = searchTerm.toLowerCase() // debouncedTerm 대신 즉각 반응
     return rooms.filter((room) => {
       const name = room.name?.toLowerCase() || ''
       const last = room.lastMessage?.toLowerCase() || ''
       return name.includes(keyword) || last.includes(keyword)
     })
-  }, [rooms, searchTerm, showingSearch])
+  }, [rooms, searchResults, activeTab, showingSearch, debouncedTerm])
 
   const handlePlusClick = () => {
     if (activeTab === 'direct') {
@@ -229,7 +205,7 @@ export default function ChatSidebar({
           <TabButton tabName="ai" label="AI Chat" Icon={Bot} />
         </div>
 
-        {/* Room List OR Search Results */}
+        {/* Room List */}
         <div className="flex-1 overflow-y-auto">
           <div className="p-2">
             {isSearching ? (
@@ -240,121 +216,20 @@ export default function ChatSidebar({
               <div className="text-sm text-red-400 px-3 py-2">
                 Search failed.
               </div>
-            ) : showingSearch ? (
-              // --- 검색 결과 리스트 모드 (메시지 단위 표시) ---
-              combinedResults.length === 0 ? (
-                <div className="text-sm text-gray-400 px-3 py-2">
-                  No results found.
-                </div>
-              ) : (
-                combinedResults.map((hit: any) => {
-                  // hit: ChatSearchResult
-                  const roomIdStr = `${activeTab}-${hit.chatRoomId}`
-                  // 해당 메시지의 실제 방 정보(이름, 아바타 등)를 찾기 위해 rooms 리스트 참조
-                  const roomInfo = rooms.find((r) => r.id === roomIdStr) || {
-                    name: hit.senderName || 'Unknown Room',
-                    avatar: '',
-                    id: `search-${activeTab}-${hit.chatRoomId}`,
-                    type: activeTab,
-                  } as ChatRoom
-
-                  // 클릭 시 해당 방으로 이동
-                  const href = `/chat/${activeTab}/${hit.chatRoomId}`
-
-                  return (
-                    <Link
-                      href={href}
-                      key={`${hit.messageId}-${hit.chatRoomId}`} // 고유 키 보장
-                      className="flex items-start p-3 rounded-lg cursor-pointer transition-colors hover:bg-[var(--surface-panel-muted)]"
-                      onClick={() => setSelectedRoomId(roomIdStr)}
-                    >
-                       <div className="relative mt-1">
-                        {/* 검색 결과에서도 아바타 표시 */}
-                        {(() => {
-                          if (activeTab === 'group') {
-                            return (
-                              <Avatar
-                                size={40}
-                            name={roomInfo.topic || roomInfo.name}
-                                variant="beam"
-                                colors={["#92A1C6", "#146A7C", "#F0AB3D", "#C271B4", "#C20D90"]}
-                              />
-                            )
-                          }
-                          const src = roomInfo.avatar?.trim() ?? ''
-                          const isImageAvatar =
-                            src.startsWith('http') || src.startsWith('/')
-                          
-                          if (isImageAvatar) {
-                            return (
-                              <Image
-                                src={src}
-                                alt={roomInfo.name}
-                                width={40}
-                                height={40}
-                                unoptimized
-                                className="w-10 h-10 rounded-full object-cover"
-                              />
-                            )
-                          }
-                          return (
-                            <div
-                              className="w-10 h-10 rounded-full flex items-center justify-center text-lg font-semibold text-white"
-                              style={{ background: 'var(--surface-panel-muted)' }}
-                            >
-                              {src || roomInfo.name?.charAt(0).toUpperCase()}
-                            </div>
-                          )
-                        })()}
-                       </div>
-
-                      <div className="ml-3 flex-1 min-w-0">
-                        <div className="flex justify-between items-center">
-                          <h3 className="font-semibold text-sm text-white truncate">
-                            {roomInfo.name}
-                          </h3>
-                          <span className="text-xs text-gray-500">
-                             {/* Local hits might have non-standard date formats, handle gracefully */}
-                             {(() => {
-                               try {
-                                 // If it's a simple time string like "10:42 PM", just show it
-                                 if (hit.createdAt && hit.createdAt.includes('M') && !hit.createdAt.includes('-')) {
-                                   return hit.createdAt
-                                 }
-                                 return new Date(hit.createdAt).toLocaleDateString()
-                               } catch {
-                                 return ''
-                               }
-                             })()}
-                          </span>
-                        </div>
-                        
-                        {/* 검색된 메시지 내용 표시 */}
-                        <p className="text-sm text-emerald-400 truncate mt-0.5">
-                          {hit.translatedContent || hit.content}
-                        </p>
-                        
-                        <div className="flex items-center text-xs text-gray-500 mt-1">
-                           <span className="truncate max-w-[150px]">
-                             Sender: {hit.senderName}
-                           </span>
-                           {hit.isLocal && (
-                             <span className="ml-2 text-[10px] bg-gray-700 text-gray-300 px-1 rounded">
-                               Recent
-                             </span>
-                           )}
-                        </div>
-                      </div>
-                    </Link>
-                  )
-                })
-              )
+            ) : showingSearch && displayedRooms.length === 0 ? (
+              <div className="text-sm text-gray-400 px-3 py-2">
+                No results.
+              </div>
             ) : (
-              // --- 기존 방 목록 모드 ---
-              filteredRooms.map((room) => {
+              displayedRooms.map((room) => {
                 const roomId = room.id
                 const roomName = room.name
-                const lastMessage = room.lastMessage
+                const matchingHit = searchHitMap.get(roomId)
+                const lastMessage = matchingHit
+                  ? matchingHit.translatedContent ||
+                    matchingHit.content ||
+                    room.lastMessage
+                  : room.lastMessage
                 const [type, actualId] = roomId.split('-')
                 const href = `/chat/${type}/${actualId}`
 
