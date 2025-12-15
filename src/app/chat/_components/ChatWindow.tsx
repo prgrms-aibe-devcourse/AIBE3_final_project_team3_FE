@@ -9,6 +9,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useAiFeedbackMutation, useGetGroupChatRoomDetailQuery, useLeaveChatRoom, useUploadFileMutation } from "@/global/api/useChatQuery";
 import { MemberSummaryResp } from "@/global/types/auth.types";
 import { AiFeedbackResp, ChatRoomMember, MessageResp } from "@/global/types/chat.types";
+import { parseApiDate } from "@/global/lib/date";
 import { Loader2, LogOut, LucideIcon, MoreVertical, Phone, ShieldAlert, Sparkles, UserPlus, Users, Video } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import InviteFriendModal from "./InviteFriendModal";
@@ -590,7 +591,7 @@ export default function ChatWindow({
                             {msg.unreadCount}
                           </p>
                         )}
-                        <p className="text-xs text-gray-500">{new Date(msg.createdAt).toLocaleTimeString(language === 'ko' ? 'ko-KR' : 'en-US', { hour: '2-digit', minute: '2-digit' })}</p>
+                        <p className="text-xs text-gray-500">{(parseApiDate(msg.createdAt) ?? new Date(msg.createdAt)).toLocaleTimeString(language === 'ko' ? 'ko-KR' : 'en-US', { hour: '2-digit', minute: '2-digit' })}</p>
                       </div>
                     </div>
                   </div>

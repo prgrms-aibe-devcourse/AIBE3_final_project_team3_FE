@@ -4,6 +4,7 @@ import { useGetGroupChatRoomDetailQuery, useUpdateGroupChatPasswordMutation } fr
 import { useSendFriendRequest } from "@/global/api/useFriendshipMutation";
 import { useToastStore } from "@/global/stores/useToastStore";
 import { ChatRoomMember } from "@/global/types/chat.types";
+import { parseApiDate } from "@/global/lib/date";
 import { Calendar, Crown, Hash, Key, Lock, ShieldAlert, UserPlus, Users, X } from "lucide-react";
 import Image, { ImageLoaderProps } from "next/image";
 import { useState } from "react";
@@ -251,7 +252,7 @@ export default function ChatRoomInfoModal({
                       <Calendar size={16} className="text-blue-400" />
                       <span>생성일:</span>
                       <span style={{ color: "var(--page-text)" }}>
-                        {new Date(effectiveRoomDetails.createdAt).toLocaleDateString("ko-KR")}
+                        {(parseApiDate(effectiveRoomDetails.createdAt) ?? new Date(effectiveRoomDetails.createdAt)).toLocaleDateString("ko-KR")}
                       </span>
                     </div>
                   )}

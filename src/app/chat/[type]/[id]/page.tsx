@@ -3,6 +3,7 @@
 import { useChatMessagesQuery, useGetAiChatRoomsQuery, useGetDirectChatRoomsQuery, useGetGroupChatRoomsQuery } from "@/global/api/useChatQuery";
 import { connect, getStompClient } from "@/global/stomp/stompClient";
 import { useLoginStore } from "@/global/stores/useLoginStore";
+import { getApiTime } from "@/global/lib/date";
 import { AIChatRoomResp, DirectChatRoomResp, GroupChatRoomResp, MessageResp, SubscriberCountUpdateResp, UnreadCountUpdateEvent } from "@/global/types/chat.types";
 import type { IMessage } from "@stomp/stompjs";
 import { useQueryClient } from "@tanstack/react-query";
@@ -260,8 +261,8 @@ export default function ChatRoomPage() {
 
             // lastMessageAt 기준으로 재정렬
             return updated.sort((a: any, b: any) => {
-              const timeA = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
-              const timeB = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0;
+              const timeA = getApiTime(a.lastMessageAt);
+              const timeB = getApiTime(b.lastMessageAt);
               return timeB - timeA;
             });
           });

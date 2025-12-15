@@ -9,6 +9,7 @@ import { useDeleteFriend } from "@/global/api/useFriendshipMutation";
 import { useFriendDetailQuery } from "@/global/api/useMemberQuery";
 import { useToastStore } from "@/global/stores/useToastStore";
 import { MemberProfileUpdateReq } from "@/global/types/member.types";
+import { parseApiDate } from "@/global/lib/date";
 
 import { useProfileTabs } from "./ProfileTabsProvider";
 
@@ -88,8 +89,8 @@ const formatLastSeen = (timestamp?: string | null) => {
     return "-";
   }
 
-  const parsed = new Date(timestamp);
-  if (Number.isNaN(parsed.getTime())) {
+  const parsed = parseApiDate(timestamp);
+  if (!parsed) {
     return "-";
   }
 

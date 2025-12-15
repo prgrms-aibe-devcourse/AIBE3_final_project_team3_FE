@@ -15,6 +15,7 @@ import {
 import { useToastStore } from "@/global/stores/useToastStore";
 import { MemberProfileUpdateReq } from "@/global/types/member.types";
 import { NotificationItem } from "@/global/types/notification.types";
+import { parseApiDate } from "@/global/lib/date";
 
 import { useProfileTabs } from "./ProfileTabsProvider";
 
@@ -54,8 +55,8 @@ const formatLastSeenSummary = (timestamp?: string | null) => {
     return "-";
   }
 
-  const parsed = new Date(timestamp);
-  if (Number.isNaN(parsed.getTime())) {
+  const parsed = parseApiDate(timestamp);
+  if (!parsed) {
     return "-";
   }
 
@@ -341,8 +342,11 @@ export function NotificationsPanel() {
         <>
           <ul className="space-y-3">
             {paginatedNotifications.map((notification) => {
+              const createdAt = notification.createdAt ? parseApiDate(notification.createdAt) : null;
               const formattedDate = notification.createdAt
-                ? dateFormatter.format(new Date(notification.createdAt))
+                ? createdAt
+                  ? dateFormatter.format(createdAt)
+                  : dateFormatter.format(new Date(notification.createdAt))
                 : t("profile.notifications.time.justNow");
               const isMarking = pendingReadId === notification.id;
               const isDeleting = pendingDeleteId === notification.id;

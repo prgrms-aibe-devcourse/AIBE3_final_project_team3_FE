@@ -15,6 +15,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import { useChatSearchQuery } from '@/global/api/useChatQuery'
+import { parseApiDate } from '@/global/lib/date'
 import Avatar from "boring-avatars"
 
 type ChatSidebarProps = {
@@ -321,7 +322,7 @@ export default function ChatSidebar({
                                  if (hit.createdAt && hit.createdAt.includes('M') && !hit.createdAt.includes('-')) {
                                    return hit.createdAt
                                  }
-                                 return new Date(hit.createdAt).toLocaleDateString()
+                                 return (parseApiDate(hit.createdAt) ?? new Date(hit.createdAt)).toLocaleDateString()
                                } catch {
                                  return ''
                                }

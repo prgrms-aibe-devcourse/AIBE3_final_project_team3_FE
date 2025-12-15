@@ -8,6 +8,7 @@ import { PostSortType } from "@/global/types/post.types";
 import { useAdminPostDeleteMutation } from "@/global/hooks/useAdminPostDeleteMutation";
 import { useToastStore } from "@/global/stores/useToastStore";
 import { useLoginStore } from "@/global/stores/useLoginStore"; // ✅ 관리자 검증
+import { getApiTime, parseApiDate } from "@/global/lib/date";
 
 export default function BoardListPage() {
   const { t, language } = useLanguage();
@@ -46,7 +47,7 @@ export default function BoardListPage() {
   ];
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
+    const date = parseApiDate(dateString) ?? new Date(dateString);
     const locale = language === "ko" ? "ko-KR" : "en-US";
     return date.toLocaleDateString(locale, {
       year: "numeric",
@@ -148,7 +149,7 @@ export default function BoardListPage() {
                   <div className="flex gap-4">
                     <span>{post.authorNickname}</span>
                     <span>{formatDate(post.createdAt)}</span>
-                    {new Date(post.createdAt).getTime() !== new Date(post.modifiedAt).getTime() && (
+                    {getApiTime(post.createdAt) !== getApiTime(post.modifiedAt) && (
                       <span className="text-gray-400">{t("board.list.modified", { date: formatDate(post.modifiedAt) })}</span>
                     )}
                   </div>

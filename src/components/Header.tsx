@@ -19,6 +19,7 @@ import apiClient from "@/global/backend/client";
 import { useLoginStore } from "@/global/stores/useLoginStore";
 import { useNotificationStore } from "@/global/stores/useNotificationStore";
 import { NotificationItem } from "@/global/types/notification.types";
+import { parseApiDate } from "@/global/lib/date";
 import { useShallow } from "zustand/react/shallow";
 
 const FRIEND_REQUEST_ID_KEYS = [
@@ -150,8 +151,8 @@ export default function Header() {
   }, [meData, setMember]);
 
   const formatTimeAgo = (timestamp: string) => {
-    const date = new Date(timestamp);
-    if (Number.isNaN(date.getTime())) {
+    const date = parseApiDate(timestamp);
+    if (!date) {
       return "-";
     }
 

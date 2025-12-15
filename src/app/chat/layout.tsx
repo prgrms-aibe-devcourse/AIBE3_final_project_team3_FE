@@ -4,6 +4,7 @@ import { useGetAiChatRoomsQuery, useGetDirectChatRoomsQuery, useGetGroupChatRoom
 import { connect, getStompClient } from "@/global/stomp/stompClient";
 import { ChatRoom, useChatStore } from "@/global/stores/useChatStore";
 import { useLoginStore } from '@/global/stores/useLoginStore';
+import { getApiTime } from '@/global/lib/date';
 import { AIChatRoomResp, DirectChatRoomResp, GroupChatRoomSummaryResp, RoomLastMessageUpdateResp } from '@/global/types/chat.types';
 import type { IMessage } from "@stomp/stompjs";
 import { useQueryClient } from "@tanstack/react-query";
@@ -161,8 +162,8 @@ export default function ChatLayout({
               });
 
               const sorted = updated.sort((a: any, b: any) => {
-                const timeA = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
-                const timeB = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0;
+                const timeA = getApiTime(a.lastMessageAt);
+                const timeB = getApiTime(b.lastMessageAt);
                 return timeB - timeA;
               });
 
@@ -254,9 +255,7 @@ export default function ChatLayout({
     });
 
     const parseTime = (value?: string) => {
-      if (!value) return 0;
-      const t = new Date(value).getTime();
-      return Number.isFinite(t) ? t : 0;
+      return getApiTime(value);
     };
 
     const sortByLastMessage = (list: ChatRoom[]) =>

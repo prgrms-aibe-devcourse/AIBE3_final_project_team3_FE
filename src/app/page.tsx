@@ -1,9 +1,12 @@
 "use client";
 
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useLoginStore } from "@/global/stores/useLoginStore";
 
 export default function Home() {
   const { t } = useLanguage();
+  const { accessToken, hasHydrated } = useLoginStore();
+  const isLoggedIn = !!accessToken;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -23,12 +26,14 @@ export default function Home() {
           >
             {t("home.primaryCta")}
           </a>
-          <a
-            href="/auth/signup"
-            className="border-2 border-emerald-600 text-emerald-400 px-8 py-3 rounded-lg text-lg font-medium hover:bg-emerald-600 hover:text-white transition-colors"
-          >
-            {t("home.secondaryCta")}
-          </a>
+          {hasHydrated && !isLoggedIn && (
+            <a
+              href="/auth/signup"
+              className="border-2 border-emerald-600 text-emerald-400 px-8 py-3 rounded-lg text-lg font-medium hover:bg-emerald-600 hover:text-white transition-colors"
+            >
+              {t("home.secondaryCta")}
+            </a>
+          )}
         </div>
       </section>
 

@@ -1,4 +1,5 @@
 import { NotificationItem, NotificationType } from "@/global/types/notification.types";
+import { parseApiDate } from "@/global/lib/date";
 
 const normaliseNumericId = (value: unknown): number | undefined => {
   if (typeof value === "number" && Number.isFinite(value)) {
@@ -28,9 +29,9 @@ const parseDate = (value: unknown): string => {
   }
 
   if (typeof value === "string" && value.trim().length > 0) {
-    const date = new Date(value);
-    if (!Number.isNaN(date.getTime())) {
-      return date.toISOString();
+    const parsed = parseApiDate(value);
+    if (parsed) {
+      return parsed.toISOString();
     }
   }
 

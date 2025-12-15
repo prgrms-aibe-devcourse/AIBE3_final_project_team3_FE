@@ -1,5 +1,6 @@
 import { MemberPresenceSummaryResp } from "@/global/types/auth.types";
 import { FriendSummary } from "@/global/types/member.types";
+import { parseApiDate } from "@/global/lib/date";
 
 export type MemberSource = "members" | "friends";
 export type MemberListItem = (MemberPresenceSummaryResp | FriendSummary) & {
@@ -87,7 +88,7 @@ export const getPresenceMeta = (isOnline?: boolean) => ({
 });
 
 export const formatFriendSince = (value: string, locale = "ko-KR"): string => {
-  const date = new Date(value);
+  const date = parseApiDate(value) ?? new Date(value);
   if (Number.isNaN(date.getTime())) {
     return value;
   }
@@ -102,7 +103,7 @@ export const formatFriendSince = (value: string, locale = "ko-KR"): string => {
 };
 
 export const formatLastSeen = (value: string, locale = "ko-KR"): string => {
-  const date = new Date(value);
+  const date = parseApiDate(value) ?? new Date(value);
   if (Number.isNaN(date.getTime())) {
     return value;
   }

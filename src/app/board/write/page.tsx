@@ -138,7 +138,7 @@ export default function WritePostPage() {
                       src={url}
                       alt={`Preview ${index + 1}`}
                       fill
-                      className="object-cover"
+                      className="object-contain"
                     />
                     <button
                       type="button"

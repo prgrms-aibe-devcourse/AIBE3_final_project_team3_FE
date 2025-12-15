@@ -13,6 +13,7 @@ import {
 import { useFetchMe } from '@/global/api/useAuthQuery';
 import CommentSection from '@/app/board/_components/CommentSection';
 import { useLoginStore } from '@/global/stores/useLoginStore';
+import { getApiTime, parseApiDate } from '@/global/lib/date';
 
 interface PostDetailPageProps {
   params: Promise<{
@@ -32,7 +33,7 @@ export default function PostDetailPage({ params }: PostDetailPageProps) {
   const { data: meData } = useFetchMe();
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
+    const date = parseApiDate(dateString) ?? new Date(dateString);
     const locale = language === 'ko' ? 'ko-KR' : 'en-US';
     return date.toLocaleDateString(locale, {
       year: 'numeric',
@@ -99,7 +100,7 @@ export default function PostDetailPage({ params }: PostDetailPageProps) {
             <div className="flex gap-4">
               <span className="font-semibold">{post.authorNickname}</span>
               <span>{formatDate(post.createdAt)}</span>
-              {new Date(post.createdAt).getTime() !== new Date(post.modifiedAt).getTime() && (
+              {getApiTime(post.createdAt) !== getApiTime(post.modifiedAt) && (
                 <span className="text-gray-400">{t('board.detail.modified', { date: formatDate(post.modifiedAt) })}</span>
               )}
             </div>
@@ -125,7 +126,7 @@ export default function PostDetailPage({ params }: PostDetailPageProps) {
                     src={url}
                     alt={`Image ${index + 1}`}
                     fill
-                    className="object-cover"
+                    className="object-contain"
                   />
                 </div>
               ))}

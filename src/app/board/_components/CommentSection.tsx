@@ -11,6 +11,7 @@ import {
   useToggleCommentLikeMutation,
 } from '@/global/api/usePostQuery';
 import { useLoginStore } from '@/global/stores/useLoginStore';
+import { getApiTime, parseApiDate } from '@/global/lib/date';
 
 interface CommentSectionProps {
   postId: number;
@@ -52,7 +53,7 @@ export default function CommentSection({ postId }: CommentSectionProps) {
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
+    const date = parseApiDate(dateString) ?? new Date(dateString);
     const locale = language === 'ko' ? 'ko-KR' : 'en-US';
     return date.toLocaleDateString(locale, {
       year: 'numeric',
@@ -188,7 +189,7 @@ function CommentItem({
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
+    const date = parseApiDate(dateString) ?? new Date(dateString);
     return date.toLocaleDateString(locale, {
       year: 'numeric',
       month: '2-digit',
@@ -209,7 +210,7 @@ function CommentItem({
             <span className="text-sm text-gray-500 ml-2">
               {formatDate(comment.createdAt)}
             </span>
-            {new Date(comment.createdAt).getTime() !== new Date(comment.modifiedAt).getTime() && (
+            {getApiTime(comment.createdAt) !== getApiTime(comment.modifiedAt) && (
                 <span className="text-xs text-gray-400 ml-1">{t('board.comments.edited')}</span>
             )}
           </div>

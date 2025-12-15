@@ -221,7 +221,7 @@ export default function EditPostPage({ params }: EditPostPageProps) {
                         src={url}
                         alt={`Preview ${index + 1}`}
                         fill
-                        className="object-cover"
+                        className="object-contain"
                       />
                       {isMarkedForRemoval && (
                         <div className="absolute top-1 left-1 bg-red-500 text-white text-xs px-2 py-1 rounded">

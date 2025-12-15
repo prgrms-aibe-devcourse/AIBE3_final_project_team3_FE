@@ -93,77 +93,16 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <input
-                id="remember-me"
-                name="remember-me"
-                type="checkbox"
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-[color:var(--auth-input-border)] rounded"
-              />
-              <label
-                htmlFor="remember-me"
-                className="ml-2 block text-sm text-[color:var(--auth-heading)]"
-              >
-                {t("auth.login.options.remember")}
-              </label>
-            </div>
-
-            <div className="text-sm">
-              <a
-                href="#"
-                className="font-medium text-blue-600 hover:text-blue-500"
-              >
-                {t("auth.login.options.forgot")}
-              </a>
-            </div>
-          </div>
-
           <div>
             <button
               type="submit"
               disabled={isPending}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="group relative w-11/12 mx-auto flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isPending
                 ? t("auth.login.buttons.submitting")
                 : t("auth.login.buttons.submit")}
             </button>
-          </div>
-
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-[color:var(--auth-input-border)]" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-[color:var(--auth-bg)] text-[color:var(--auth-subtext)]">
-                  {t("auth.login.divider")}
-                </span>
-              </div>
-            </div>
-
-            <div className="mt-6 grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                className="w-full inline-flex justify-center py-2 px-4 border border-[color:var(--auth-input-border)] rounded-md shadow-sm bg-[color:var(--auth-input-bg)] text-sm font-medium text-[color:var(--auth-subtext)] hover:bg-[color:var(--auth-bg)]"
-              >
-                <span className="sr-only">
-                  {t("auth.login.buttons.googleSr")}
-                </span>
-                <span>{t("auth.login.buttons.google")}</span>
-              </button>
-
-              <button
-                type="button"
-                className="w-full inline-flex justify-center py-2 px-4 border border-[color:var(--auth-input-border)] rounded-md shadow-sm bg-[color:var(--auth-input-bg)] text-sm font-medium text-[color:var(--auth-subtext)] hover:bg-[color:var(--auth-bg)]"
-              >
-                <span className="sr-only">
-                  {t("auth.login.buttons.githubSr")}
-                </span>
-                <span>{t("auth.login.buttons.github")}</span>
-              </button>
-            </div>
           </div>
         </form>
       </div>
